@@ -40,10 +40,13 @@ export function Topbar({
   };
 
   return (
-    <header className="flex items-center justify-between gap-4 flex-wrap pb-4 mb-6 border-b border-[var(--line)] bg-[var(--bg)]">
+    <header className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-3 sm:gap-4 pb-2 sm:pb-4 mb-4 sm:mb-6 border-b-0 sm:border-b sm:border-[var(--line)] bg-transparent sm:bg-[var(--bg)] w-full">
       {/* Brand Identity & Logo */}
-      <div className="flex items-center gap-3">
-        <Link href="/" className="relative w-36 h-12 md:w-44 md:h-14 flex items-center justify-start shrink-0 cursor-pointer">
+      <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-3 w-full sm:w-auto">
+        <Link
+          href="/"
+          className="relative w-40 h-14 md:w-44 md:h-14 flex items-center justify-center sm:justify-start shrink-0 cursor-pointer"
+        >
           <Image
             src="/logo.png"
             alt="REP TRACK - Sunny Medical Group"
@@ -58,13 +61,17 @@ export function Topbar({
             Sunny Medical Group
           </p>
           <p className="text-[10px] text-[var(--ink-soft)] font-medium">
-            {isCurrentAdmin ? (language === 'ar' ? 'لوحة تحكم الإدارة' : 'Manager Administration Panel') : t('app.subtitle')}
+            {isCurrentAdmin
+              ? language === 'ar'
+                ? 'لوحة تحكم الإدارة'
+                : 'Manager Administration Panel'
+              : t('app.subtitle')}
           </p>
         </div>
       </div>
 
       {/* Navigation Controls & Language Switcher */}
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center justify-center gap-2 flex-wrap w-full sm:w-auto">
         {!isCurrentAdmin ? (
           /* Normal User Navigation (ONLY Submit and My Reports) */
           <nav className="flex gap-1 bg-[var(--surface)] p-1 rounded-xl border border-[var(--line)] shadow-card">

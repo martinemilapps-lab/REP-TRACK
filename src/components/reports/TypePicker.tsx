@@ -24,6 +24,7 @@ export function TypePicker({ selectedType, onSelect }: TypePickerProps) {
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
       {types.map((item) => {
         const isSelected = selectedType === item.type;
+        const isLastItem = item.type === 'availability';
         return (
           <button
             key={item.type}
@@ -33,7 +34,7 @@ export function TypePicker({ selectedType, onSelect }: TypePickerProps) {
               isSelected
                 ? 'border-[var(--gold)] bg-gradient-to-b from-[var(--gold-tint)] to-[var(--surface)] text-[var(--ink)] shadow-hover'
                 : 'border-[var(--line)] bg-[var(--surface)] text-[var(--ink-secondary)] hover:border-[var(--gold-light)] hover:bg-[#FAF9F5]'
-            }`}
+            } ${isLastItem ? 'col-span-2 sm:col-span-1' : ''}`}
           >
             <span className="text-2xl mb-1.5 transform transition-transform group-hover:scale-110">
               {item.icon}
