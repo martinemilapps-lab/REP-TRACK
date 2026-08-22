@@ -96,7 +96,7 @@ body {
   background: var(--gold);
 }
 
-/* Animation Keyframes */
+/* Base Keyframes */
 @keyframes pulseSubtle {
   0%, 100% {
     transform: scale(1);
@@ -128,63 +128,109 @@ body {
   }
 }
 
-/* Medical Capsule Floating Keyframes */
-@keyframes floatCapsule1 {
+/* ========================================================= */
+/* DYNAMIC MEDICAL CAPSULES HIGH-MOTION KEYFRAMES            */
+/* ========================================================= */
+
+@keyframes floatActive1 {
   0% {
-    transform: translateY(0px) translateX(0px) rotate(22deg);
+    transform: translateY(0px) translateX(0px) rotate(15deg) scale(1);
   }
-  50% {
-    transform: translateY(-40px) translateX(25px) rotate(35deg);
+  30% {
+    transform: translateY(-65px) translateX(35px) rotate(48deg) scale(1.05);
+  }
+  70% {
+    transform: translateY(-110px) translateX(-20px) rotate(80deg) scale(0.98);
   }
   100% {
-    transform: translateY(0px) translateX(0px) rotate(22deg);
+    transform: translateY(0px) translateX(0px) rotate(15deg) scale(1);
   }
 }
 
-@keyframes floatCapsule2 {
+@keyframes floatActive2 {
   0% {
-    transform: translateY(0px) translateX(0px) rotate(-45deg);
+    transform: translateY(0px) translateX(0px) rotate(-35deg) scale(1);
   }
-  50% {
-    transform: translateY(35px) translateX(-20px) rotate(-28deg);
+  35% {
+    transform: translateY(75px) translateX(-45px) rotate(-10deg) scale(1.06);
+  }
+  65% {
+    transform: translateY(120px) translateX(25px) rotate(20deg) scale(0.95);
   }
   100% {
-    transform: translateY(0px) translateX(0px) rotate(-45deg);
+    transform: translateY(0px) translateX(0px) rotate(-35deg) scale(1);
   }
 }
 
-@keyframes floatCapsule3 {
+@keyframes floatActive3 {
   0% {
-    transform: translateY(0px) translateX(0px) rotate(70deg);
+    transform: translateY(0px) translateX(0px) rotate(60deg) scale(1);
   }
-  50% {
-    transform: translateY(-50px) translateX(-30px) rotate(95deg);
+  40% {
+    transform: translateY(-85px) translateX(-50px) rotate(115deg) scale(1.08);
+  }
+  80% {
+    transform: translateY(-40px) translateX(40px) rotate(85deg) scale(1.02);
   }
   100% {
-    transform: translateY(0px) translateX(0px) rotate(70deg);
+    transform: translateY(0px) translateX(0px) rotate(60deg) scale(1);
   }
 }
 
-@keyframes floatCapsule4 {
+@keyframes floatActive4 {
   0% {
-    transform: translateY(0px) translateX(0px) rotate(-15deg);
+    transform: translateY(0px) translateX(0px) rotate(-20deg) scale(1);
   }
-  50% {
-    transform: translateY(45px) translateX(35px) rotate(5deg);
+  30% {
+    transform: translateY(90px) translateX(60px) rotate(25deg) scale(0.96);
+  }
+  75% {
+    transform: translateY(-50px) translateX(30px) rotate(-45deg) scale(1.05);
   }
   100% {
-    transform: translateY(0px) translateX(0px) rotate(-15deg);
+    transform: translateY(0px) translateX(0px) rotate(-20deg) scale(1);
   }
 }
 
-@keyframes floatPlus {
-  0%, 100% {
-    transform: translateY(0px) scale(1) rotate(0deg);
-    opacity: 0.25;
+@keyframes floatActive5 {
+  0% {
+    transform: translateY(0px) translateX(0px) rotate(110deg) scale(1);
   }
   50% {
-    transform: translateY(-25px) scale(1.15) rotate(45deg);
-    opacity: 0.55;
+    transform: translateY(-95px) translateX(55px) rotate(160deg) scale(1.07);
+  }
+  100% {
+    transform: translateY(0px) translateX(0px) rotate(110deg) scale(1);
+  }
+}
+
+@keyframes floatActive6 {
+  0% {
+    transform: translateY(0px) translateX(0px) rotate(-65deg) scale(1);
+  }
+  45% {
+    transform: translateY(105px) translateX(-35px) rotate(-20deg) scale(1.04);
+  }
+  85% {
+    transform: translateY(40px) translateX(50px) rotate(-85deg) scale(0.98);
+  }
+  100% {
+    transform: translateY(0px) translateX(0px) rotate(-65deg) scale(1);
+  }
+}
+
+@keyframes floatOrbitCross {
+  0% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translateY(-45px) rotate(180deg) scale(1.3);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translateY(0px) rotate(360deg) scale(1);
+    opacity: 0.4;
   }
 }
 
@@ -200,25 +246,33 @@ body {
   animation: rayRotate 20s linear infinite;
 }
 
-/* Capsule animation utility classes */
-.animate-capsule-1 {
-  animation: floatCapsule1 18s ease-in-out infinite;
+/* High-motion Capsule animation classes (Lively 6s - 12s loops) */
+.animate-capsule-active-1 {
+  animation: floatActive1 7.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
 }
 
-.animate-capsule-2 {
-  animation: floatCapsule2 24s ease-in-out infinite;
+.animate-capsule-active-2 {
+  animation: floatActive2 9s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
 }
 
-.animate-capsule-3 {
-  animation: floatCapsule3 20s ease-in-out infinite;
+.animate-capsule-active-3 {
+  animation: floatActive3 8s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
 }
 
-.animate-capsule-4 {
-  animation: floatCapsule4 28s ease-in-out infinite;
+.animate-capsule-active-4 {
+  animation: floatActive4 10.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
 }
 
-.animate-plus-float {
-  animation: floatPlus 12s ease-in-out infinite;
+.animate-capsule-active-5 {
+  animation: floatActive5 8.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+.animate-capsule-active-6 {
+  animation: floatActive6 11s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+.animate-cross-active {
+  animation: floatOrbitCross 6s ease-in-out infinite;
 }
 
 /* Form control focus states */
