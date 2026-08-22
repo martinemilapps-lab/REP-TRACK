@@ -74,7 +74,7 @@ export default function AdminPage() {
   return (
     <main className="max-w-[1240px] mx-auto px-4 py-5 md:py-8 transition-all">
       <Topbar
-        activeView="dashboard"
+        isAdminPage={true}
         isManagerUnlocked={isManagerUnlocked}
         onLockManager={handleManagerLock}
       />
