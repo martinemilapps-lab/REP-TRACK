@@ -12,8 +12,8 @@ interface CapsuleProps {
 
 function MedicalCapsule({
   color = '#F5A623',
-  width = 110,
-  height = 40,
+  width = 105,
+  height = 38,
   style = {},
   className = '',
 }: CapsuleProps) {
@@ -23,7 +23,7 @@ function MedicalCapsule({
 
   return (
     <div
-      className={`absolute select-none pointer-events-none drop-shadow-lg transition-transform ${className}`}
+      className={`absolute select-none pointer-events-none drop-shadow-md transition-transform ${className}`}
       style={{
         width,
         height,
@@ -41,29 +41,29 @@ function MedicalCapsule({
         <defs>
           {/* Primary Color Half Gradient */}
           <linearGradient id={`capsuleGrad-${safeId}`} x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor={color} stopOpacity="0.95" />
-            <stop offset="60%" stopColor={color} stopOpacity="0.88" />
-            <stop offset="100%" stopColor="#B45309" stopOpacity="0.8" />
+            <stop offset="0%" stopColor={color} stopOpacity="0.9" />
+            <stop offset="70%" stopColor={color} stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#C27803" stopOpacity="0.75" />
           </linearGradient>
 
           {/* Crisp Pure White Half Gradient */}
           <linearGradient id="whiteHalfGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="1" />
-            <stop offset="70%" stopColor="#F9FAFB" stopOpacity="0.95" />
-            <stop offset="100%" stopColor="#E5E7EB" stopOpacity="0.85" />
+            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.95" />
+            <stop offset="70%" stopColor="#F9FAFB" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#E5E7EB" stopOpacity="0.8" />
           </linearGradient>
 
           {/* Gloss Top Specular Highlight */}
           <linearGradient id="glossGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.8" />
-            <stop offset="50%" stopColor="#FFFFFF" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.75" />
+            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.75" />
+            <stop offset="50%" stopColor="#FFFFFF" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.65" />
           </linearGradient>
 
           {/* Bottom Ambient Shadow */}
           <linearGradient id="bottomShadowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="transparent" />
-            <stop offset="100%" stopColor="rgba(0,0,0,0.15)" />
+            <stop offset="100%" stopColor="rgba(0,0,0,0.1)" />
           </linearGradient>
         </defs>
 
@@ -75,7 +75,7 @@ function MedicalCapsule({
           height={height - 2}
           rx={radius - 1}
           fill="none"
-          stroke="#D1D5DB"
+          stroke="#E2E2D8"
           strokeWidth="1.5"
         />
 
@@ -114,7 +114,7 @@ function MedicalCapsule({
           y1="1.5"
           x2={halfWidth}
           y2={height - 1.5}
-          stroke="#9CA3AF"
+          stroke="#CBD5E1"
           strokeWidth="1.5"
         />
 
@@ -123,8 +123,8 @@ function MedicalCapsule({
           x={radius * 0.7}
           y={height * 0.16}
           width={width - radius * 1.4}
-          height={height * 0.24}
-          rx={height * 0.12}
+          height={height * 0.22}
+          rx={height * 0.11}
           fill="url(#glossGrad)"
         />
       </svg>
@@ -139,106 +139,97 @@ export function MedicalBackground() {
       className="fixed inset-0 pointer-events-none overflow-hidden z-0 select-none"
     >
       {/* Ambient Gradient Glow Spheres */}
-      <div className="absolute -top-24 -end-24 w-[480px] h-[480px] bg-gradient-to-br from-[#FDE68A] via-[#FEF3C7] to-transparent rounded-full blur-3xl opacity-70 pointer-events-none" />
-      <div className="absolute top-1/3 -start-32 w-[420px] h-[420px] bg-gradient-to-tr from-[#FFFBEB] via-[#FEF3C7] to-transparent rounded-full blur-3xl opacity-60 pointer-events-none" />
-      <div className="absolute -bottom-24 end-1/3 w-[500px] h-[500px] bg-gradient-to-tl from-[#FDE68A] to-transparent rounded-full blur-3xl opacity-50 pointer-events-none" />
+      <div className="absolute -top-24 -end-24 w-[460px] h-[460px] bg-gradient-to-br from-[#FDE68A] via-[#FEF3C7] to-transparent rounded-full blur-3xl opacity-60 pointer-events-none" />
+      <div className="absolute top-1/3 -start-32 w-[400px] h-[400px] bg-gradient-to-tr from-[#FFFBEB] via-[#FEF3C7] to-transparent rounded-full blur-3xl opacity-50 pointer-events-none" />
+      <div className="absolute -bottom-24 end-1/3 w-[460px] h-[460px] bg-gradient-to-tl from-[#FDE68A] to-transparent rounded-full blur-3xl opacity-45 pointer-events-none" />
 
-      {/* Dynamic Floating Medical Capsules (Visible, vivid, distinct motion paths) */}
+      {/* Floating Medical Capsules (Harmonic smooth float, visible & non-distracting) */}
 
-      {/* Capsule 1: Top-Left Header Zone (Lively Float 1) */}
+      {/* Capsule 1: Top-Left (Smooth Float 1) */}
       <MedicalCapsule
         color="#F5A623"
-        width={125}
-        height={44}
-        className="animate-capsule-active-1 opacity-90"
-        style={{ top: '6%', left: '4%' }}
-      />
-
-      {/* Capsule 2: Top-Right Area (Float 2) */}
-      <MedicalCapsule
-        color="#E59819"
-        width={105}
-        height={38}
-        className="animate-capsule-active-2 opacity-85"
-        style={{ top: '12%', right: '6%' }}
-      />
-
-      {/* Capsule 3: Mid-Left Floating Across (Float 3) */}
-      <MedicalCapsule
-        color="#D97706"
         width={115}
         height={40}
-        className="animate-capsule-active-3 opacity-90"
-        style={{ top: '42%', left: '2%' }}
+        className="animate-capsule-smooth-1 opacity-80"
+        style={{ top: '7%', left: '5%' }}
       />
 
-      {/* Capsule 4: Mid-Right Active Drift (Float 4) */}
-      <MedicalCapsule
-        color="#F59E0B"
-        width={130}
-        height={46}
-        className="animate-capsule-active-4 opacity-95"
-        style={{ top: '48%', right: '3%' }}
-      />
-
-      {/* Capsule 5: Upper-Center Drift (Float 5) */}
-      <MedicalCapsule
-        color="#F5A623"
-        width={95}
-        height={34}
-        className="animate-capsule-active-5 opacity-80"
-        style={{ top: '22%', right: '32%' }}
-      />
-
-      {/* Capsule 6: Lower-Left Zone (Float 6) */}
-      <MedicalCapsule
-        color="#C27803"
-        width={110}
-        height={38}
-        className="animate-capsule-active-6 opacity-85"
-        style={{ bottom: '15%', left: '7%' }}
-      />
-
-      {/* Capsule 7: Bottom-Right Corner (Float 1) */}
+      {/* Capsule 2: Top-Right (Smooth Float 2) */}
       <MedicalCapsule
         color="#E59819"
-        width={120}
-        height={42}
-        className="animate-capsule-active-1 opacity-90"
-        style={{ bottom: '8%', right: '10%' }}
+        width={100}
+        height={35}
+        className="animate-capsule-smooth-2 opacity-75"
+        style={{ top: '12%', right: '7%' }}
       />
 
-      {/* Capsule 8: Bottom-Center Floating (Float 3) */}
+      {/* Capsule 3: Mid-Left (Smooth Float 3) */}
+      <MedicalCapsule
+        color="#D97706"
+        width={108}
+        height={38}
+        className="animate-capsule-smooth-3 opacity-80"
+        style={{ top: '44%', left: '3%' }}
+      />
+
+      {/* Capsule 4: Mid-Right (Smooth Float 4) */}
       <MedicalCapsule
         color="#F59E0B"
-        width={100}
+        width={120}
+        height={42}
+        className="animate-capsule-smooth-4 opacity-80"
+        style={{ top: '48%', right: '4%' }}
+      />
+
+      {/* Capsule 5: Upper-Center Drift (Smooth Float 5) */}
+      <MedicalCapsule
+        color="#F5A623"
+        width={90}
+        height={32}
+        className="animate-capsule-smooth-5 opacity-70"
+        style={{ top: '24%', right: '30%' }}
+      />
+
+      {/* Capsule 6: Lower-Left Zone (Smooth Float 6) */}
+      <MedicalCapsule
+        color="#C27803"
+        width={105}
         height={36}
-        className="animate-capsule-active-3 opacity-80"
-        style={{ bottom: '18%', left: '42%' }}
+        className="animate-capsule-smooth-6 opacity-75"
+        style={{ bottom: '14%', left: '8%' }}
+      />
+
+      {/* Capsule 7: Bottom-Right Corner (Smooth Float 1) */}
+      <MedicalCapsule
+        color="#E59819"
+        width={110}
+        height={38}
+        className="animate-capsule-smooth-1 opacity-80"
+        style={{ bottom: '9%', right: '11%' }}
       />
 
       {/* Dynamic Animated Medical Cross / Plus Signs */}
       <div
-        className="absolute text-[var(--gold)] text-3xl font-black animate-cross-active select-none drop-shadow-sm"
+        className="absolute text-[var(--gold)] text-2xl font-black animate-cross-smooth select-none"
         style={{ top: '18%', left: '16%', animationDelay: '0s' }}
       >
         ✚
       </div>
       <div
-        className="absolute text-[var(--gold-light)] text-2xl font-black animate-cross-active select-none drop-shadow-sm"
-        style={{ top: '32%', right: '18%', animationDelay: '1.5s' }}
+        className="absolute text-[var(--gold-light)] text-xl font-black animate-cross-smooth select-none"
+        style={{ top: '32%', right: '18%', animationDelay: '2s' }}
       >
         ✚
       </div>
       <div
-        className="absolute text-[var(--gold-dark)] text-xl font-bold animate-cross-active select-none drop-shadow-sm"
-        style={{ bottom: '28%', left: '22%', animationDelay: '3s' }}
+        className="absolute text-[var(--gold-dark)] text-lg font-bold animate-cross-smooth select-none"
+        style={{ bottom: '28%', left: '22%', animationDelay: '4s' }}
       >
         ✚
       </div>
       <div
-        className="absolute text-[var(--gold)] text-2xl font-black animate-cross-active select-none drop-shadow-sm"
-        style={{ bottom: '34%', right: '14%', animationDelay: '4.5s' }}
+        className="absolute text-[var(--gold)] text-xl font-black animate-cross-smooth select-none"
+        style={{ bottom: '34%', right: '15%', animationDelay: '6s' }}
       >
         ✚
       </div>
