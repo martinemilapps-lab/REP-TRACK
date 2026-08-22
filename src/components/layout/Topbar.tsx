@@ -40,27 +40,27 @@ export function Topbar({
   };
 
   return (
-    <header className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-3 sm:gap-4 pb-2 sm:pb-4 mb-4 sm:mb-6 border-b-0 sm:border-b sm:border-[var(--line)] bg-transparent sm:bg-[var(--bg)] w-full">
+    <header className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-3 sm:gap-4 pb-3 sm:pb-4 mb-4 sm:mb-6 border-b-0 sm:border-b sm:border-[var(--line)] bg-transparent sm:bg-[var(--bg)] w-full">
       {/* Brand Identity & Logo */}
-      <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-3 w-full sm:w-auto">
+      <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-3 sm:gap-4 w-full sm:w-auto">
         <Link
           href="/"
-          className="flex items-center justify-center sm:justify-start shrink-0 cursor-pointer"
+          className="flex items-center justify-center sm:justify-start shrink-0 cursor-pointer transition-transform hover:scale-[1.02]"
         >
           <Image
             src="/logo.png"
             alt="REP TRACK - Sunny Medical Group"
-            width={180}
-            height={56}
+            width={260}
+            height={85}
             priority
-            className="h-12 md:h-14 w-auto object-contain drop-shadow-2xs"
+            className="h-16 sm:h-18 md:h-20 w-auto object-contain drop-shadow-xs"
           />
         </Link>
-        <div className="hidden sm:block border-s border-[var(--line-strong)] ps-3">
-          <p className="text-[11px] font-extrabold text-[var(--gold-dark)] tracking-wider uppercase">
+        <div className="hidden sm:block border-s-2 border-[var(--line-strong)] ps-3.5 py-1">
+          <p className="text-xs md:text-sm font-extrabold text-[var(--gold-dark)] tracking-wider uppercase">
             Sunny Medical Group
           </p>
-          <p className="text-[10px] text-[var(--ink-soft)] font-medium">
+          <p className="text-[11px] md:text-xs text-[var(--ink-soft)] font-semibold mt-0.5">
             {isCurrentAdmin
               ? language === 'ar'
                 ? 'لوحة تحكم الإدارة'
