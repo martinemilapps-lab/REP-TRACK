@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { MONTHS_LIST, PRODUCTS_LIST } from '@/lib/constants';
 import { useTranslation } from '@/lib/i18nContext';
 import { Button } from '@/components/ui/Button';
+import { CustomSelect, SelectOption } from '@/components/ui/CustomSelect';
 
 interface AvailabilityFormProps {
   selectedRep: string;
@@ -25,11 +26,20 @@ export function AvailabilityForm({ selectedRep, onSuccess, onError }: Availabili
   });
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
   };
+
+  const handleSelectChange = (id: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const statusOptions: SelectOption[] = [
+    { value: 'Available', label: t('status.available') },
+    { value: 'Not Available', label: t('status.notAvailable') },
+  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,18 +149,11 @@ export function AvailabilityForm({ selectedRep, onSuccess, onError }: Availabili
           <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
             {t('form.month')}
           </label>
-          <select
-            id="month"
+          <CustomSelect
+            options={MONTHS_LIST}
             value={formData.month}
-            onChange={handleChange}
-            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-medium"
-          >
-            {MONTHS_LIST.map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => handleSelectChange('month', val)}
+          />
         </div>
 
         <div>
@@ -172,15 +175,11 @@ export function AvailabilityForm({ selectedRep, onSuccess, onError }: Availabili
           <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
             {t('form.availabilityStatus')}
           </label>
-          <select
-            id="status"
+          <CustomSelect
+            options={statusOptions}
             value={formData.status}
-            onChange={handleChange}
-            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-medium"
-          >
-            <option value="Available">{t('status.available')}</option>
-            <option value="Not Available">{t('status.notAvailable')}</option>
-          </select>
+            onChange={(val) => handleSelectChange('status', val)}
+          />
         </div>
       </div>
 

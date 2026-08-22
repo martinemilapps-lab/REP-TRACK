@@ -16,6 +16,7 @@ import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Badge } from '@/components/ui/Badge';
 import { EntityTabs } from '@/components/ui/EntityTabs';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { CustomSelect, SelectOption } from '@/components/ui/CustomSelect';
 import { useTranslation } from '@/lib/i18nContext';
 import { calculateRepCoverage, calculateRepOverviewStats, statusBucket } from '@/lib/coverage';
 
@@ -82,6 +83,23 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
     return calculateRepOverviewStats(allVisits, data.availabilities.length);
   }, [data]);
 
+  const repOptions: SelectOption[] = useMemo(() => {
+    return reps.map((r) => ({
+      value: r.name,
+      label: r.name,
+      sublabel: r.area,
+    }));
+  }, [reps]);
+
+  const statusFilterOptions: SelectOption[] = useMemo(() => {
+    return [
+      { value: '', label: t('status.all') },
+      { value: 'visited', label: t('status.visited') },
+      { value: 'notvisited', label: t('status.notVisited') },
+      { value: 'overdue', label: t('status.overdue') },
+    ];
+  }, [t]);
+
   const filteredHospitals = useMemo(() => {
     if (!statusFilter) return data.hospitals;
     return data.hospitals.filter((r) => statusBucket(r.status) === statusFilter);
@@ -110,19 +128,14 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
         <p className="text-xs text-[var(--ink-soft)] mb-3.5 leading-relaxed">
           {t('rep.myReports.desc')}
         </p>
-        <div className="max-w-xs">
-          <select
+        <div className="max-w-xs md:max-w-sm">
+          <CustomSelect
+            options={repOptions}
             value={selectedRep}
-            onChange={(e) => onSelectRep(e.target.value)}
-            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-bold text-[var(--ink)] shadow-2xs transition-all"
-          >
-            <option value="">{t('rep.selector.placeholder')}</option>
-            {reps.map((r) => (
-              <option key={r.id || r.name} value={r.name}>
-                {r.name} — {r.area}
-              </option>
-            ))}
-          </select>
+            onChange={onSelectRep}
+            placeholder={t('rep.selector.placeholder')}
+            searchable={true}
+          />
         </div>
       </div>
 
@@ -187,16 +200,14 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                   <label className="text-xs font-bold text-[var(--ink-soft)] whitespace-nowrap">
                     {t('status.filter')}
                   </label>
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="px-3 py-1.5 text-xs bg-white border border-[var(--line)] rounded-lg font-medium"
-                  >
-                    <option value="">{t('status.all')}</option>
-                    <option value="visited">{t('status.visited')}</option>
-                    <option value="notvisited">{t('status.notVisited')}</option>
-                    <option value="overdue">{t('status.overdue')}</option>
-                  </select>
+                  <div className="w-36">
+                    <CustomSelect
+                      options={statusFilterOptions}
+                      value={statusFilter}
+                      onChange={setStatusFilter}
+                      size="sm"
+                    />
+                  </div>
                 </div>
               )}
             </div>

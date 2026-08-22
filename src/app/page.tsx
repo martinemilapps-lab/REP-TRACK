@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Representative, ActivityType } from '@/types';
 import { Topbar, ViewType } from '@/components/layout/Topbar';
@@ -13,6 +13,7 @@ import { DoctorForm } from '@/components/reports/DoctorForm';
 import { BranchForm } from '@/components/reports/BranchForm';
 import { AvailabilityForm } from '@/components/reports/AvailabilityForm';
 import { MyReportsView } from '@/components/my-reports/MyReportsView';
+import { CustomSelect, SelectOption } from '@/components/ui/CustomSelect';
 import { useTranslation } from '@/lib/i18nContext';
 import { INITIAL_REPRESENTATIVES } from '@/lib/constants';
 
@@ -88,6 +89,14 @@ function HomePageContent() {
     showToast(t('msg.lockedSuccess'));
   };
 
+  const repOptions: SelectOption[] = useMemo(() => {
+    return reps.map((r) => ({
+      value: r.name,
+      label: r.name,
+      sublabel: r.area,
+    }));
+  }, [reps]);
+
   if (initialLoading) {
     return <LoadingScreen message={t('app.loading')} />;
   }
@@ -115,19 +124,14 @@ function HomePageContent() {
             <p className="text-xs text-[var(--ink-soft)] mb-3.5 leading-relaxed">
               {t('rep.selector.desc')}
             </p>
-            <div className="max-w-xs">
-              <select
+            <div className="max-w-xs md:max-w-sm">
+              <CustomSelect
+                options={repOptions}
                 value={selectedRep}
-                onChange={(e) => setSelectedRep(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-bold text-[var(--ink)] shadow-2xs transition-all"
-              >
-                <option value="">{t('rep.selector.placeholder')}</option>
-                {reps.map((r) => (
-                  <option key={r.id || r.name} value={r.name}>
-                    {r.name} — {r.area}
-                  </option>
-                ))}
-              </select>
+                onChange={setSelectedRep}
+                placeholder={t('rep.selector.placeholder')}
+                searchable={true}
+              />
             </div>
           </div>
 

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { PHARMACY_CLASSES, VISIT_STATUS_OPTIONS } from '@/lib/constants';
 import { useTranslation } from '@/lib/i18nContext';
 import { Button } from '@/components/ui/Button';
+import { CustomSelect, SelectOption } from '@/components/ui/CustomSelect';
 
 interface PharmacyFormProps {
   selectedRep: string;
@@ -31,11 +32,20 @@ export function PharmacyForm({ selectedRep, onSuccess, onError }: PharmacyFormPr
   });
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
   };
+
+  const handleSelectChange = (id: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const classOptions: SelectOption[] = PHARMACY_CLASSES.map((c) => ({
+    value: c,
+    label: `Class ${c}`,
+  }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,18 +177,11 @@ export function PharmacyForm({ selectedRep, onSuccess, onError }: PharmacyFormPr
           <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
             {t('th.classification')}
           </label>
-          <select
-            id="cls"
+          <CustomSelect
+            options={classOptions}
             value={formData.cls}
-            onChange={handleChange}
-            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-medium"
-          >
-            {PHARMACY_CLASSES.map((cls) => (
-              <option key={cls} value={cls}>
-                Class {cls}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => handleSelectChange('cls', val)}
+          />
         </div>
 
         <div>
@@ -225,18 +228,11 @@ export function PharmacyForm({ selectedRep, onSuccess, onError }: PharmacyFormPr
           <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
             {t('th.status')}
           </label>
-          <select
-            id="status"
+          <CustomSelect
+            options={VISIT_STATUS_OPTIONS}
             value={formData.status}
-            onChange={handleChange}
-            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-medium"
-          >
-            {VISIT_STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => handleSelectChange('status', val)}
+          />
         </div>
 
         <div>

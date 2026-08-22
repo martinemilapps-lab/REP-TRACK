@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/Badge';
 import { EntityTabs } from '@/components/ui/EntityTabs';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Button } from '@/components/ui/Button';
+import { CustomSelect, SelectOption } from '@/components/ui/CustomSelect';
 import { useTranslation } from '@/lib/i18nContext';
 import { calculateRepCoverage } from '@/lib/coverage';
 
@@ -111,6 +112,17 @@ export function ManagerDashboardView({
       return { rep: r, cov };
     });
   }, [reps, data.hospitals, data.pharmacies, data.doctors]);
+
+  const repFilterOptions: SelectOption[] = useMemo(() => {
+    return [
+      { value: '', label: t('manager.allReps') },
+      ...reps.map((r) => ({
+        value: r.name,
+        label: r.name,
+        sublabel: r.area,
+      })),
+    ];
+  }, [reps, t]);
 
   // Filters
   const matchesSearch = (text?: string | null) => {
@@ -262,19 +274,14 @@ export function ManagerDashboardView({
             />
 
             {/* Rep Selector Filter */}
-            <div className="flex items-center gap-1.5">
-              <select
+            <div className="w-44 md:w-56">
+              <CustomSelect
+                options={repFilterOptions}
                 value={filterRep}
-                onChange={(e) => setFilterRep(e.target.value)}
-                className="px-3 py-1.5 text-xs bg-white border border-[var(--line)] rounded-lg font-medium"
-              >
-                <option value="">{t('manager.allReps')}</option>
-                {reps.map((r) => (
-                  <option key={r.id || r.name} value={r.name}>
-                    {r.name}
-                  </option>
-                ))}
-              </select>
+                onChange={setFilterRep}
+                size="sm"
+                searchable={true}
+              />
             </div>
           </div>
         </div>

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { HOSPITAL_TYPES, VISIT_STATUS_OPTIONS } from '@/lib/constants';
 import { useTranslation } from '@/lib/i18nContext';
 import { Button } from '@/components/ui/Button';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 
 interface HospitalFormProps {
   selectedRep: string;
@@ -32,9 +33,13 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
   });
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { id, value } = e.target;
+    setFormData((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handleSelectChange = (id: string, value: string) => {
     setFormData((prev) => ({ ...prev, [id]: value }));
   };
 
@@ -129,18 +134,11 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
           <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
             {t('form.type')}
           </label>
-          <select
-            id="type"
+          <CustomSelect
+            options={HOSPITAL_TYPES}
             value={formData.type}
-            onChange={handleChange}
-            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-medium"
-          >
-            {HOSPITAL_TYPES.map((type) => (
-              <option key={type.value} value={type.value}>
-                {type.label}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => handleSelectChange('type', val)}
+          />
         </div>
 
         <div>
@@ -241,18 +239,11 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
           <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
             {t('th.status')}
           </label>
-          <select
-            id="status"
+          <CustomSelect
+            options={VISIT_STATUS_OPTIONS}
             value={formData.status}
-            onChange={handleChange}
-            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-medium"
-          >
-            {VISIT_STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => handleSelectChange('status', val)}
+          />
         </div>
 
         <div>
@@ -287,12 +278,12 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
           {t('form.notes')}
         </label>
         <textarea
-          id="notes"
-          rows={2}
-          value={formData.notes}
-          onChange={handleChange}
-          placeholder="أي تفاصيل أو تعليقات بخصوص الزيارة..."
-          className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-medium"
+            id="notes"
+            rows={2}
+            value={formData.notes}
+            onChange={handleChange}
+            placeholder="أي تفاصيل أو تعليقات بخصوص الزيارة..."
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-medium"
         />
       </div>
 
