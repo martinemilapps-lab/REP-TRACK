@@ -134,83 +134,83 @@ body {
 
 @keyframes floatSmooth1 {
   0% {
-    transform: translateY(0px) translateX(0px) rotate(14deg);
+    transform: translate3d(0px, 0px, 0px) rotate(14deg);
   }
   50% {
-    transform: translateY(-50px) translateX(25px) rotate(28deg);
+    transform: translate3d(25px, -50px, 0px) rotate(28deg);
   }
   100% {
-    transform: translateY(0px) translateX(0px) rotate(14deg);
+    transform: translate3d(0px, 0px, 0px) rotate(14deg);
   }
 }
 
 @keyframes floatSmooth2 {
   0% {
-    transform: translateY(0px) translateX(0px) rotate(-28deg);
+    transform: translate3d(0px, 0px, 0px) rotate(-28deg);
   }
   50% {
-    transform: translateY(55px) translateX(-28px) rotate(-14deg);
+    transform: translate3d(-28px, 55px, 0px) rotate(-14deg);
   }
   100% {
-    transform: translateY(0px) translateX(0px) rotate(-28deg);
+    transform: translate3d(0px, 0px, 0px) rotate(-28deg);
   }
 }
 
 @keyframes floatSmooth3 {
   0% {
-    transform: translateY(0px) translateX(0px) rotate(45deg);
+    transform: translate3d(0px, 0px, 0px) rotate(45deg);
   }
   50% {
-    transform: translateY(-60px) translateX(-30px) rotate(65deg);
+    transform: translate3d(-30px, -60px, 0px) rotate(65deg);
   }
   100% {
-    transform: translateY(0px) translateX(0px) rotate(45deg);
+    transform: translate3d(0px, 0px, 0px) rotate(45deg);
   }
 }
 
 @keyframes floatSmooth4 {
   0% {
-    transform: translateY(0px) translateX(0px) rotate(-16deg);
+    transform: translate3d(0px, 0px, 0px) rotate(-16deg);
   }
   50% {
-    transform: translateY(48px) translateX(32px) rotate(4deg);
+    transform: translate3d(32px, 48px, 0px) rotate(4deg);
   }
   100% {
-    transform: translateY(0px) translateX(0px) rotate(-16deg);
+    transform: translate3d(0px, 0px, 0px) rotate(-16deg);
   }
 }
 
 @keyframes floatSmooth5 {
   0% {
-    transform: translateY(0px) translateX(0px) rotate(80deg);
+    transform: translate3d(0px, 0px, 0px) rotate(80deg);
   }
   50% {
-    transform: translateY(-52px) translateX(26px) rotate(102deg);
+    transform: translate3d(26px, -52px, 0px) rotate(102deg);
   }
   100% {
-    transform: translateY(0px) translateX(0px) rotate(80deg);
+    transform: translate3d(0px, 0px, 0px) rotate(80deg);
   }
 }
 
 @keyframes floatSmooth6 {
   0% {
-    transform: translateY(0px) translateX(0px) rotate(-48deg);
+    transform: translate3d(0px, 0px, 0px) rotate(-48deg);
   }
   50% {
-    transform: translateY(58px) translateX(-24px) rotate(-26deg);
+    transform: translate3d(-24px, 58px, 0px) rotate(-26deg);
   }
   100% {
-    transform: translateY(0px) translateX(0px) rotate(-48deg);
+    transform: translate3d(0px, 0px, 0px) rotate(-48deg);
   }
 }
 
 @keyframes floatSmoothCross {
   0%, 100% {
-    transform: translateY(0px) rotate(0deg);
+    transform: translate3d(0px, 0px, 0px) rotate(0deg);
     opacity: 0.35;
   }
   50% {
-    transform: translateY(-28px) rotate(90deg);
+    transform: translate3d(0px, -28px, 0px) rotate(90deg);
     opacity: 0.7;
   }
 }
@@ -227,7 +227,19 @@ body {
   animation: rayRotate 20s linear infinite;
 }
 
-/* Balanced Capsule animation classes (Smooth 12s - 18s loops) */
+/* Balanced Capsule animation classes with GPU hardware acceleration */
+.animate-capsule-smooth-1,
+.animate-capsule-smooth-2,
+.animate-capsule-smooth-3,
+.animate-capsule-smooth-4,
+.animate-capsule-smooth-5,
+.animate-capsule-smooth-6,
+.animate-cross-smooth {
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
 .animate-capsule-smooth-1 {
   animation: floatSmooth1 13s cubic-bezier(0.42, 0, 0.58, 1) infinite;
 }

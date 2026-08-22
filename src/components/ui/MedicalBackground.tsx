@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useId } from 'react';
 
 interface CapsuleProps {
   color?: string;
@@ -17,9 +17,10 @@ function MedicalCapsule({
   style = {},
   className = '',
 }: CapsuleProps) {
+  const generatedId = useId();
+  const safeId = `cap-${generatedId.replace(/[^a-zA-Z0-9]/g, '')}`;
   const radius = height / 2;
   const halfWidth = width / 2;
-  const safeId = color.replace('#', '');
 
   return (
     <div
@@ -27,6 +28,10 @@ function MedicalCapsule({
       style={{
         width,
         height,
+        willChange: 'transform',
+        transform: 'translate3d(0,0,0)',
+        backfaceVisibility: 'hidden',
+        WebkitBackfaceVisibility: 'hidden',
         ...style,
       }}
     >
@@ -37,6 +42,10 @@ function MedicalCapsule({
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         className="w-full h-full"
+        style={{
+          shapeRendering: 'geometricPrecision',
+          textRendering: 'geometricPrecision',
+        }}
       >
         <defs>
           {/* Primary Color Half Gradient */}
@@ -47,21 +56,21 @@ function MedicalCapsule({
           </linearGradient>
 
           {/* Crisp Pure White Half Gradient */}
-          <linearGradient id="whiteHalfGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <linearGradient id={`whiteHalfGrad-${safeId}`} x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.95" />
             <stop offset="70%" stopColor="#F9FAFB" stopOpacity="0.9" />
             <stop offset="100%" stopColor="#E5E7EB" stopOpacity="0.8" />
           </linearGradient>
 
           {/* Gloss Top Specular Highlight */}
-          <linearGradient id="glossGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <linearGradient id={`glossGrad-${safeId}`} x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.75" />
             <stop offset="50%" stopColor="#FFFFFF" stopOpacity="0.25" />
             <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.65" />
           </linearGradient>
 
           {/* Bottom Ambient Shadow */}
-          <linearGradient id="bottomShadowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <linearGradient id={`bottomShadowGrad-${safeId}`} x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="transparent" />
             <stop offset="100%" stopColor="rgba(0,0,0,0.1)" />
           </linearGradient>
@@ -95,7 +104,7 @@ function MedicalCapsule({
               L ${width - radius} 1.5 
               A ${radius - 1.5} ${radius - 1.5} 0 0 1 ${width - radius} ${height - 1.5} 
               L ${halfWidth} ${height - 1.5} Z`}
-          fill="url(#whiteHalfGrad)"
+          fill={`url(#whiteHalfGrad-${safeId})`}
         />
 
         {/* Bottom Ambient Soft Shadow */}
@@ -105,7 +114,7 @@ function MedicalCapsule({
           width={width - 2}
           height={height - 2}
           rx={radius - 1}
-          fill="url(#bottomShadowGrad)"
+          fill={`url(#bottomShadowGrad-${safeId})`}
         />
 
         {/* Center Divider Groove Line */}
@@ -125,7 +134,7 @@ function MedicalCapsule({
           width={width - radius * 1.4}
           height={height * 0.22}
           rx={height * 0.11}
-          fill="url(#glossGrad)"
+          fill={`url(#glossGrad-${safeId})`}
         />
       </svg>
     </div>
@@ -137,20 +146,24 @@ export function MedicalBackground() {
     <div
       aria-hidden="true"
       className="fixed inset-0 pointer-events-none overflow-hidden z-0 select-none"
+      style={{
+        transform: 'translate3d(0,0,0)',
+        WebkitTransform: 'translate3d(0,0,0)',
+      }}
     >
       {/* Ambient Gradient Glow Spheres */}
       <div className="absolute -top-24 -end-24 w-[460px] h-[460px] bg-gradient-to-br from-[#FDE68A] via-[#FEF3C7] to-transparent rounded-full blur-3xl opacity-60 pointer-events-none" />
       <div className="absolute top-1/3 -start-32 w-[400px] h-[400px] bg-gradient-to-tr from-[#FFFBEB] via-[#FEF3C7] to-transparent rounded-full blur-3xl opacity-50 pointer-events-none" />
       <div className="absolute -bottom-24 end-1/3 w-[460px] h-[460px] bg-gradient-to-tl from-[#FDE68A] to-transparent rounded-full blur-3xl opacity-45 pointer-events-none" />
 
-      {/* Floating Medical Capsules (Harmonic smooth float, visible & non-distracting) */}
+      {/* Floating Medical Capsules (Exact same 7 capsules across all screen sizes) */}
 
-      {/* Capsule 1: Top-Left (Smooth Float 1) - Hidden on Mobile Screens only */}
+      {/* Capsule 1: Top-Left (Smooth Float 1) */}
       <MedicalCapsule
         color="#F5A623"
         width={115}
         height={40}
-        className="hidden sm:block animate-capsule-smooth-1 opacity-80"
+        className="animate-capsule-smooth-1 opacity-80"
         style={{ top: '7%', left: '5%' }}
       />
 
