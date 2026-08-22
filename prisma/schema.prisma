@@ -1,0 +1,260 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  MANAGER
+  REPRESENTATIVE
+}
+
+enum VisitStatus {
+  VISITED
+  OVERDUE
+  NOT_VISITED
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  NOT_AVAILABLE
+}
+
+enum EntityClassification {
+  A
+  B
+  C
+}
+
+model User {
+  id           String          @id @default(cuid())
+  username     String          @unique
+  passwordHash String
+  name         String
+  role         Role            @default(REPRESENTATIVE)
+  repId        String?         @unique
+  representative Representative? @relation(fields: [repId], references: [id])
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@map("users")
+}
+
+model Representative {
+  id                 String                @id @default(cuid())
+  name               String                @unique
+  area               String
+  assignedHospitals  Int                   @default(0)
+  assignedPharmacies Int                   @default(0)
+  assignedDrs        Int                   @default(0)
+  isActive           Boolean               @default(true)
+  user               User?
+  hospitalVisits     HospitalVisit[]
+  pharmacyVisits     PharmacyVisit[]
+  doctorVisits       DoctorVisit[]
+  branchVisits       BranchVisit[]
+  availabilities     ProductAvailability[]
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  @@map("representatives")
+}
+
+model Hospital {
+  id        String          @id @default(cuid())
+  name      String
+  area      String
+  type      String          @default("Private")
+  dept      String?
+  contact   String?
+  phone     String?
+  cycleDays Int?
+  visits    HospitalVisit[]
+  availabilities ProductAvailability[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@unique([name, area])
+  @@map("hospitals")
+}
+
+model HospitalVisit {
+  id              String         @id @default(cuid())
+  repId           String
+  representative  Representative @relation(fields: [repId], references: [id], onDelete: Cascade)
+  hospitalName    String
+  area            String
+  hospitalType    String         @default("Private")
+  dept            String?
+  drsVisited      Int?           @default(0)
+  contact         String?
+  phone           String?
+  cycleDays       Int?
+  lastVisitDate   DateTime?
+  nextVisitDate   DateTime?
+  status          String         @default("Visited")
+  ourProducts     String?
+  competitor      String?
+  notes           String?
+  hospitalId      String?
+  hospital        Hospital?      @relation(fields: [hospitalId], references: [id], onDelete: SetNull)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([repId])
+  @@index([hospitalName])
+  @@map("hospital_visits")
+}
+
+model Pharmacy {
+  id             String          @id @default(cuid())
+  name           String
+  area           String
+  address        String?
+  pharmacist     String?
+  mobile         String?
+  classification String          @default("A")
+  cycleDays      Int?
+  visits         PharmacyVisit[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@unique([name, area])
+  @@map("pharmacies")
+}
+
+model PharmacyVisit {
+  id             String         @id @default(cuid())
+  repId          String
+  representative Representative @relation(fields: [repId], references: [id], onDelete: Cascade)
+  pharmacyName   String
+  area           String
+  address        String?
+  pharmacist     String?
+  mobile         String?
+  classification String         @default("A")
+  cycleDays      Int?
+  lastVisitDate  DateTime?
+  nextVisitDate  DateTime?
+  status         String         @default("Visited")
+  ourProducts    String?
+  competitor     String?
+  notes          String?
+  pharmacyId     String?
+  pharmacy       Pharmacy?      @relation(fields: [pharmacyId], references: [id], onDelete: SetNull)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([repId])
+  @@index([pharmacyName])
+  @@map("pharmacy_visits")
+}
+
+model Doctor {
+  id             String        @id @default(cuid())
+  code           String?
+  name           String
+  specialty      String?
+  workplace      String?
+  area           String
+  mobile         String?
+  classification String        @default("A")
+  cycleDays      Int?
+  visits         DoctorVisit[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([name, area])
+  @@map("doctors")
+}
+
+model DoctorVisit {
+  id              String         @id @default(cuid())
+  repId           String
+  representative  Representative @relation(fields: [repId], references: [id], onDelete: Cascade)
+  doctorCode      String?
+  doctorName      String
+  specialty       String?
+  workplace       String?
+  area            String
+  mobile          String?
+  classification  String         @default("A")
+  visitDate       DateTime?
+  cycleDays       Int?
+  nextVisitDate   DateTime?
+  status          String         @default("Visited")
+  product1        String?
+  product2        String?
+  product3        String?
+  reminderProduct String?
+  notes           String?
+  doctorId        String?
+  doctor          Doctor?        @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([repId])
+  @@index([doctorName])
+  @@map("doctor_visits")
+}
+
+model DistributionBranch {
+  id                  String        @id @default(cuid())
+  name                String
+  coverageArea        String
+  contact             String?
+  phone               String?
+  distributedProducts String?
+  visits              BranchVisit[]
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  @@unique([name, coverageArea])
+  @@map("distribution_branches")
+}
+
+model BranchVisit {
+  id                  String              @id @default(cuid())
+  repId               String
+  representative      Representative      @relation(fields: [repId], references: [id], onDelete: Cascade)
+  branchName          String
+  coverageArea        String
+  contact             String?
+  phone               String?
+  distributedProducts String?
+  lastVisitDate       DateTime?
+  notes               String?
+  branchId            String?
+  branch              DistributionBranch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@index([repId])
+  @@index([branchName])
+  @@map("branch_visits")
+}
+
+model ProductAvailability {
+  id             String         @id @default(cuid())
+  repId          String
+  representative Representative @relation(fields: [repId], references: [id], onDelete: Cascade)
+  hospitalName   String
+  area           String
+  productName    String
+  month          String
+  salesUnits     Int?           @default(0)
+  status         String         @default("Available")
+  notes          String?
+  hospitalId     String?
+  hospital       Hospital?      @relation(fields: [hospitalId], references: [id], onDelete: SetNull)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@unique([repId, hospitalName, productName, month])
+  @@index([repId])
+  @@index([hospitalName])
+  @@map("product_availabilities")
+}
