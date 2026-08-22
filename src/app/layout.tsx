@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { I18nProvider } from '@/lib/i18nContext';
+import { MedicalBackground } from '@/components/ui/MedicalBackground';
 
 export const metadata: Metadata = {
   title: 'REP TRACK — Sunny Medical Group',
@@ -22,8 +23,11 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-screen bg-[var(--bg)] text-[var(--ink)] antialiased font-sans">
-        <I18nProvider>{children}</I18nProvider>
+      <body className="min-h-screen bg-[var(--bg)] text-[var(--ink)] antialiased font-sans relative overflow-x-hidden">
+        <I18nProvider>
+          <MedicalBackground />
+          <div className="relative z-10">{children}</div>
+        </I18nProvider>
       </body>
     </html>
   );
