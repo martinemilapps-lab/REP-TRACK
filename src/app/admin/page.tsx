@@ -8,10 +8,11 @@ import { LoadingScreen } from '@/components/ui/LoadingScreen';
 import { ManagerDashboardView } from '@/components/manager/ManagerDashboardView';
 import { ManagerAuthGate } from '@/components/manager/ManagerAuthGate';
 import { useTranslation } from '@/lib/i18nContext';
+import { INITIAL_REPRESENTATIVES } from '@/lib/constants';
 
 export default function AdminPage() {
   const { t } = useTranslation();
-  const [reps, setReps] = useState<Representative[]>([]);
+  const [reps, setReps] = useState<Representative[]>(INITIAL_REPRESENTATIVES);
   const [isManagerUnlocked, setIsManagerUnlocked] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [toast, setToast] = useState<ToastMessage | null>(null);
@@ -31,14 +32,18 @@ export default function AdminPage() {
           fetch('/api/auth/session'),
         ]);
 
-        const repsData = await repsRes.json();
-        if (repsData.reps) {
-          setReps(repsData.reps);
+        if (repsRes.ok) {
+          const repsData = await repsRes.json();
+          if (repsData.reps && Array.isArray(repsData.reps) && repsData.reps.length > 0) {
+            setReps(repsData.reps);
+          }
         }
 
-        const sessionData = await sessionRes.json();
-        if (sessionData.authenticated && sessionData.user?.role === 'MANAGER') {
-          setIsManagerUnlocked(true);
+        if (sessionRes.ok) {
+          const sessionData = await sessionRes.json();
+          if (sessionData.authenticated && sessionData.user?.role === 'MANAGER') {
+            setIsManagerUnlocked(true);
+          }
         }
       } catch (err) {
         console.error('Failed to initialize admin session:', err);

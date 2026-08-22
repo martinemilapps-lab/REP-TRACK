@@ -3,20 +3,31 @@ import {
   getAllRepresentatives,
   getAllRepresentativesCoverage,
 } from '@/lib/services/representativeService';
-import { handleApiError } from '@/lib/errors';
+import { INITIAL_REPRESENTATIVES } from '@/lib/constants';
 
 export async function GET() {
   try {
-    const [allReps, coverageSummaries] = await Promise.all([
-      getAllRepresentatives(),
-      getAllRepresentativesCoverage(),
-    ]);
+    let allReps = await getAllRepresentatives();
+    if (!allReps || allReps.length === 0) {
+      allReps = INITIAL_REPRESENTATIVES;
+    }
+
+    let coverageSummaries: any[] = [];
+    try {
+      coverageSummaries = await getAllRepresentativesCoverage();
+    } catch (covErr) {
+      console.warn('Could not compute coverage summaries for reps:', covErr);
+    }
 
     return NextResponse.json({
       reps: allReps,
       coverage: coverageSummaries,
     });
   } catch (error) {
-    return handleApiError(error);
+    console.error('Error in /api/reps:', error);
+    return NextResponse.json({
+      reps: INITIAL_REPRESENTATIVES,
+      coverage: [],
+    });
   }
 }

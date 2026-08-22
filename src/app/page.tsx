@@ -14,6 +14,7 @@ import { BranchForm } from '@/components/reports/BranchForm';
 import { AvailabilityForm } from '@/components/reports/AvailabilityForm';
 import { MyReportsView } from '@/components/my-reports/MyReportsView';
 import { useTranslation } from '@/lib/i18nContext';
+import { INITIAL_REPRESENTATIVES } from '@/lib/constants';
 
 function HomePageContent() {
   const { t } = useTranslation();
@@ -21,7 +22,7 @@ function HomePageContent() {
   const initialView = (searchParams.get('view') as ViewType) || 'submit';
 
   const [activeView, setActiveView] = useState<ViewType>(initialView);
-  const [reps, setReps] = useState<Representative[]>([]);
+  const [reps, setReps] = useState<Representative[]>(INITIAL_REPRESENTATIVES);
   const [selectedRep, setSelectedRep] = useState<string>('');
   const [selectedType, setSelectedType] = useState<ActivityType>('hospital');
   const [isManagerUnlocked, setIsManagerUnlocked] = useState(false);
@@ -52,14 +53,18 @@ function HomePageContent() {
           fetch('/api/auth/session'),
         ]);
 
-        const repsData = await repsRes.json();
-        if (repsData.reps) {
-          setReps(repsData.reps);
+        if (repsRes.ok) {
+          const repsData = await repsRes.json();
+          if (repsData.reps && Array.isArray(repsData.reps) && repsData.reps.length > 0) {
+            setReps(repsData.reps);
+          }
         }
 
-        const sessionData = await sessionRes.json();
-        if (sessionData.authenticated && sessionData.user?.role === 'MANAGER') {
-          setIsManagerUnlocked(true);
+        if (sessionRes.ok) {
+          const sessionData = await sessionRes.json();
+          if (sessionData.authenticated && sessionData.user?.role === 'MANAGER') {
+            setIsManagerUnlocked(true);
+          }
         }
       } catch (err) {
         console.error('Failed to initialize app state:', err);
