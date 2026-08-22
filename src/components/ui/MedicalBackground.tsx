@@ -24,7 +24,7 @@ function MedicalCapsule({
 
   return (
     <div
-      className={`absolute select-none pointer-events-none drop-shadow-md transition-transform ${className}`}
+      className={`absolute select-none pointer-events-none drop-shadow-sm transition-transform ${className}`}
       style={{
         width,
         height,
@@ -152,18 +152,18 @@ export function MedicalBackground() {
       }}
     >
       {/* Ambient Gradient Glow Spheres */}
-      <div className="absolute -top-24 -end-24 w-[460px] h-[460px] bg-gradient-to-br from-[#FDE68A] via-[#FEF3C7] to-transparent rounded-full blur-3xl opacity-60 pointer-events-none" />
-      <div className="absolute top-1/3 -start-32 w-[400px] h-[400px] bg-gradient-to-tr from-[#FFFBEB] via-[#FEF3C7] to-transparent rounded-full blur-3xl opacity-50 pointer-events-none" />
-      <div className="absolute -bottom-24 end-1/3 w-[460px] h-[460px] bg-gradient-to-tl from-[#FDE68A] to-transparent rounded-full blur-3xl opacity-45 pointer-events-none" />
+      <div className="absolute -top-24 -end-24 w-[460px] h-[460px] bg-gradient-to-br from-[#FDE68A] via-[#FEF3C7] to-transparent rounded-full blur-3xl opacity-40 pointer-events-none" />
+      <div className="absolute top-1/3 -start-32 w-[400px] h-[400px] bg-gradient-to-tr from-[#FFFBEB] via-[#FEF3C7] to-transparent rounded-full blur-3xl opacity-35 pointer-events-none" />
+      <div className="absolute -bottom-24 end-1/3 w-[460px] h-[460px] bg-gradient-to-tl from-[#FDE68A] to-transparent rounded-full blur-3xl opacity-30 pointer-events-none" />
 
-      {/* Floating Medical Capsules (Exact same 7 capsules across all screen sizes) */}
+      {/* Floating Medical Capsules (Subtle, non-distracting reduced opacity) */}
 
       {/* Capsule 1: Top-Left (Smooth Float 1) */}
       <MedicalCapsule
         color="#F5A623"
         width={115}
         height={40}
-        className="animate-capsule-smooth-1 opacity-80"
+        className="animate-capsule-smooth-1 opacity-30"
         style={{ top: '7%', left: '5%' }}
       />
 
@@ -172,7 +172,7 @@ export function MedicalBackground() {
         color="#E59819"
         width={100}
         height={35}
-        className="animate-capsule-smooth-2 opacity-75"
+        className="animate-capsule-smooth-2 opacity-25"
         style={{ top: '12%', right: '7%' }}
       />
 
@@ -181,7 +181,7 @@ export function MedicalBackground() {
         color="#D97706"
         width={108}
         height={38}
-        className="animate-capsule-smooth-3 opacity-80"
+        className="animate-capsule-smooth-3 opacity-30"
         style={{ top: '44%', left: '3%' }}
       />
 
@@ -190,7 +190,7 @@ export function MedicalBackground() {
         color="#F59E0B"
         width={120}
         height={42}
-        className="animate-capsule-smooth-4 opacity-80"
+        className="animate-capsule-smooth-4 opacity-30"
         style={{ top: '48%', right: '4%' }}
       />
 
@@ -199,7 +199,7 @@ export function MedicalBackground() {
         color="#F5A623"
         width={90}
         height={32}
-        className="animate-capsule-smooth-5 opacity-70"
+        className="animate-capsule-smooth-5 opacity-25"
         style={{ top: '24%', right: '30%' }}
       />
 
@@ -208,7 +208,7 @@ export function MedicalBackground() {
         color="#C27803"
         width={105}
         height={36}
-        className="animate-capsule-smooth-6 opacity-75"
+        className="animate-capsule-smooth-6 opacity-25"
         style={{ bottom: '14%', left: '8%' }}
       />
 
@@ -217,11 +217,11 @@ export function MedicalBackground() {
         color="#E59819"
         width={110}
         height={38}
-        className="animate-capsule-smooth-1 opacity-80"
+        className="animate-capsule-smooth-1 opacity-30"
         style={{ bottom: '9%', right: '11%' }}
       />
 
-      {/* Dynamic Animated Medical Cross / Plus Signs */}
+      {/* Dynamic Animated Medical Cross / Plus Signs (Gentle & soft) */}
       <div
         className="absolute text-[var(--gold)] text-2xl font-black animate-cross-smooth select-none"
         style={{ top: '18%', left: '16%', animationDelay: '0s' }}
