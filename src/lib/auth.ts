@@ -5,7 +5,7 @@ import { db, users, sessions, representatives, loginAttempts } from '@/lib/db';
 import { eq, and, gt } from 'drizzle-orm';
 import { AppError } from '@/lib/errors';
 
-export const SESSION_COOKIE_NAME = 'rep_hub_session';
+export const SESSION_COOKIE_NAME = 'rep_track_session';
 export const SESSION_DURATION_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 export const MAX_FAILED_ATTEMPTS = 5;
 export const LOCKOUT_DURATION_MS = 1000 * 60 * 15; // 15 minutes

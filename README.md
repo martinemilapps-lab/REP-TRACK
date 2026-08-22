@@ -1,6 +1,6 @@
-# REP HUB 🏢
+# REP TRACK 🏢
 
-**REP HUB** is a high-performance, enterprise-grade Medical Representative Activity & Performance Tracking System built with **Next.js 16 (Turbopack)**, **Drizzle ORM**, and **Turso (libSQL)**.
+**REP TRACK** is a high-performance, enterprise-grade Medical Representative Activity & Performance Tracking System built with **Next.js 16 (Turbopack)**, **Drizzle ORM**, and **Turso (libSQL)**.
 
 ---
 
@@ -40,8 +40,8 @@
 ### 1. Clone and Install Dependencies
 
 ```bash
-git clone https://github.com/martinemilapps-lab/REP-HUB.git
-cd REP-HUB
+git clone https://github.com/martinemilapps-lab/REP-TRACK.git
+cd "REP TRACK"
 npm install
 ```
 

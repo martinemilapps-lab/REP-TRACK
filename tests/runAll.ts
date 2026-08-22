@@ -4,7 +4,7 @@ import { runIntegrationTests } from './integration.test';
 
 async function main() {
   console.log('====================================================');
-  console.log('🚀 REP HUB Phase 2: Comprehensive Test Suite');
+  console.log('🚀 REP TRACK Phase 2: Comprehensive Test Suite');
   console.log('====================================================\n');
 
   const statusResults = runStatusTests();

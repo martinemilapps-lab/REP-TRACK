@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'REP HUB — منصة تجميع تقارير المندوبين',
+  title: 'REP TRACK — منصة تجميع تقارير المندوبين',
   description: 'منصة إدارة وتجميع تقارير الزيارات الميدانية والتغطية البيعية للمندوبين',
 };
 
