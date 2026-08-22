@@ -53,7 +53,7 @@ export function Topbar({
             width={340}
             height={110}
             priority
-            className="h-20 sm:h-24 md:h-28 lg:h-32 w-auto object-contain drop-shadow-sm"
+            className="h-32 sm:h-24 md:h-28 lg:h-32 w-auto object-contain drop-shadow-sm"
           />
         </Link>
         <div className="flex flex-col text-center sm:text-start border-0 sm:border-s-[3px] border-[var(--gold-border)] sm:ps-4 sm:py-1">
