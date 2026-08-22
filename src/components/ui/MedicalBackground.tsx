@@ -145,12 +145,12 @@ export function MedicalBackground() {
 
       {/* Floating Medical Capsules (Harmonic smooth float, visible & non-distracting) */}
 
-      {/* Capsule 1: Top-Left (Smooth Float 1) */}
+      {/* Capsule 1: Top-Left (Smooth Float 1) - Hidden on Mobile Screens only */}
       <MedicalCapsule
         color="#F5A623"
         width={115}
         height={40}
-        className="animate-capsule-smooth-1 opacity-80"
+        className="hidden sm:block animate-capsule-smooth-1 opacity-80"
         style={{ top: '7%', left: '5%' }}
       />
 
