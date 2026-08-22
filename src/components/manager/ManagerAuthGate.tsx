@@ -1,6 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
+import { useTranslation } from '@/lib/i18nContext';
+import { Button } from '@/components/ui/Button';
 
 interface ManagerAuthGateProps {
   onUnlock: () => void;
@@ -8,17 +11,21 @@ interface ManagerAuthGateProps {
 }
 
 export function ManagerAuthGate({ onUnlock, onError }: ManagerAuthGateProps) {
+  const { t } = useTranslation();
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isLockedOut, setIsLockedOut] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!password.trim()) {
-      onError('ادخل كلمة السر');
+      onError(t('auth.passwordPlaceholder'));
       return;
     }
 
     setLoading(true);
+    setIsLockedOut(false);
+
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -26,44 +33,78 @@ export function ManagerAuthGate({ onUnlock, onError }: ManagerAuthGateProps) {
         body: JSON.stringify({ password }),
       });
       const data = await res.json();
+
       if (res.ok && data.success) {
         onUnlock();
       } else {
-        onError(data.message || 'كلمة السر غير صحيحة');
+        if (res.status === 429) {
+          setIsLockedOut(true);
+          onError(t('auth.lockoutWarning'));
+        } else {
+          onError(data.message || t('msg.errorGeneric'));
+        }
         setPassword('');
       }
     } catch {
-      onError('حدث خطأ أثناء التحقق من كلمة السر');
+      onError(t('msg.errorGeneric'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-6 max-w-md mx-auto shadow-xs">
-      <div className="flex items-center gap-2 mb-1">
-        <span className="text-xl">🔒</span>
-        <h2 className="text-base font-bold text-[var(--ink)]">لوحة المدير محمية</h2>
+    <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius-lg)] p-6 md:p-8 max-w-md mx-auto shadow-card animate-fade-in">
+      {/* Branded Header */}
+      <div className="flex flex-col items-center text-center mb-6">
+        <div className="relative w-36 h-14 mb-3">
+          <Image
+            src="/logo.png"
+            alt="REP TRACK"
+            width={160}
+            height={60}
+            className="object-contain"
+          />
+        </div>
+        <div className="w-10 h-10 rounded-full bg-[var(--gold-tint)] border border-[var(--gold-border)] flex items-center justify-center text-lg mb-2 text-[var(--gold-dark)] shadow-2xs">
+          🔒
+        </div>
+        <h2 className="text-base md:text-lg font-extrabold text-[var(--ink)]">
+          {t('auth.title')}
+        </h2>
+        <p className="text-xs text-[var(--ink-soft)] mt-1 max-w-xs leading-relaxed">
+          {t('auth.desc')}
+        </p>
       </div>
-      <p className="text-xs text-[var(--ink-soft)] mb-4">
-        دخّل كلمة السر عشان تشوف بيانات كل المندوبين وتفاصيل التغطية
-      </p>
 
-      <form onSubmit={handleSubmit} className="flex gap-2">
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="كلمة السر"
-          className="flex-1 px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)] font-mono"
-        />
-        <button
+      {isLockedOut && (
+        <div className="bg-[var(--overdue-bg)] border border-[var(--overdue-border)] rounded-xl p-3 mb-4 text-xs font-bold text-[var(--overdue-color)] leading-relaxed">
+          ⚠️ {t('auth.lockoutWarning')}
+        </div>
+      )}
+
+      {/* Login Form */}
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+        <div>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={t('auth.passwordPlaceholder')}
+            disabled={loading}
+            className="w-full px-4 py-3 text-sm bg-white border border-[var(--line)] rounded-xl font-mono text-[var(--ink)] placeholder-[var(--ink-muted)] shadow-2xs transition-all"
+            autoFocus
+          />
+        </div>
+
+        <Button
           type="submit"
-          disabled={loading}
-          className="px-5 py-2 rounded-lg text-sm font-bold bg-[var(--teal)] text-white hover:bg-[var(--teal-deep)] transition-all cursor-pointer disabled:opacity-50"
+          variant="primary"
+          size="md"
+          isLoading={loading}
+          className="w-full"
         >
-          {loading ? 'جاري التحقق...' : 'دخول'}
-        </button>
+          {t('auth.unlockBtn')}
+        </Button>
       </form>
     </div>
   );

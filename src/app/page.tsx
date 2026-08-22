@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Representative, ActivityType } from '@/types';
 import { Topbar, ViewType } from '@/components/layout/Topbar';
 import { Toast, ToastMessage } from '@/components/ui/Toast';
+import { LoadingScreen } from '@/components/ui/LoadingScreen';
 import { TypePicker } from '@/components/reports/TypePicker';
 import { HospitalForm } from '@/components/reports/HospitalForm';
 import { PharmacyForm } from '@/components/reports/PharmacyForm';
@@ -13,55 +14,59 @@ import { AvailabilityForm } from '@/components/reports/AvailabilityForm';
 import { MyReportsView } from '@/components/my-reports/MyReportsView';
 import { ManagerDashboardView } from '@/components/manager/ManagerDashboardView';
 import { ManagerAuthGate } from '@/components/manager/ManagerAuthGate';
+import { useTranslation } from '@/lib/i18nContext';
 
 export default function Home() {
+  const { t } = useTranslation();
   const [activeView, setActiveView] = useState<ViewType>('submit');
   const [reps, setReps] = useState<Representative[]>([]);
   const [selectedRep, setSelectedRep] = useState<string>('');
   const [selectedType, setSelectedType] = useState<ActivityType>('hospital');
   const [isManagerUnlocked, setIsManagerUnlocked] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
   const showToast = useCallback((text: string, isError = false) => {
     setToast({ text, isError });
     setTimeout(() => {
       setToast(null);
-    }, 2800);
+    }, 3200);
   }, []);
 
-  // Fetch representatives
+  // Fetch representatives and check manager session on initial load
   useEffect(() => {
-    async function loadReps() {
+    async function initApp() {
       try {
-        const res = await fetch('/api/reps');
-        const data = await res.json();
-        if (data.reps) {
-          setReps(data.reps);
-        }
-      } catch (err) {
-        console.error('Failed to load reps list:', err);
-      }
-    }
-    loadReps();
+        const [repsRes, sessionRes] = await Promise.all([
+          fetch('/api/reps'),
+          fetch('/api/auth/session'),
+        ]);
 
-    // Check manager session
-    async function checkSession() {
-      try {
-        const res = await fetch('/api/auth/session');
-        const data = await res.json();
-        if (data.authenticated && data.user?.role === 'MANAGER') {
+        const repsData = await repsRes.json();
+        if (repsData.reps) {
+          setReps(repsData.reps);
+        }
+
+        const sessionData = await sessionRes.json();
+        if (sessionData.authenticated && sessionData.user?.role === 'MANAGER') {
           setIsManagerUnlocked(true);
         }
       } catch (err) {
-        console.error('Failed to check session:', err);
+        console.error('Failed to initialize app state:', err);
+      } finally {
+        // Guarantee branded loading presentation
+        setTimeout(() => {
+          setInitialLoading(false);
+        }, 500);
       }
     }
-    checkSession();
+
+    initApp();
   }, []);
 
   const handleManagerUnlock = () => {
     setIsManagerUnlocked(true);
-    showToast('تم تسجيل الدخول بنجاح ✓');
+    showToast(t('msg.loginSuccess'));
   };
 
   const handleManagerLock = async () => {
@@ -71,33 +76,43 @@ export default function Home() {
       // ignore
     }
     setIsManagerUnlocked(false);
-    showToast('تم قفل لوحة المدير');
+    showToast(t('msg.lockedSuccess'));
   };
 
+  if (initialLoading) {
+    return <LoadingScreen message={t('app.loading')} />;
+  }
+
   return (
-    <main className="max-w-[1180px] mx-auto px-4 py-5 md:py-7">
+    <main className="max-w-[1240px] mx-auto px-4 py-5 md:py-8 transition-all">
       <Topbar
         activeView={activeView}
         onViewChange={setActiveView}
         isManagerUnlocked={isManagerUnlocked}
+        onLockManager={handleManagerLock}
       />
 
       {/* ============ VIEW 1: SUBMIT REPORT ============ */}
       {activeView === 'submit' && (
-        <div>
+        <div className="animate-fade-in">
           {/* Identity Selection */}
-          <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 mb-4 shadow-xs">
-            <h2 className="text-base font-bold text-[var(--ink)] mb-1">مين اللي بيبعت؟</h2>
-            <p className="text-xs text-[var(--ink-soft)] mb-3.5">
-              اختار اسمك، وهيتحفظ تلقائيًا مع كل زيارة تسجلها
+          <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 mb-4 shadow-card">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xl">👤</span>
+              <h2 className="text-base font-extrabold text-[var(--ink)]">
+                {t('rep.selector.title')}
+              </h2>
+            </div>
+            <p className="text-xs text-[var(--ink-soft)] mb-3.5 leading-relaxed">
+              {t('rep.selector.desc')}
             </p>
             <div className="max-w-xs">
               <select
                 value={selectedRep}
                 onChange={(e) => setSelectedRep(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)] font-medium"
+                className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-bold text-[var(--ink)] shadow-2xs transition-all"
               >
-                <option value="">-- اختار اسمك --</option>
+                <option value="">{t('rep.selector.placeholder')}</option>
                 {reps.map((r) => (
                   <option key={r.id || r.name} value={r.name}>
                     {r.name} — {r.area}
@@ -108,15 +123,20 @@ export default function Home() {
           </div>
 
           {/* Activity Type Picker */}
-          <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 mb-4 shadow-xs">
-            <h2 className="text-base font-bold text-[var(--ink)] mb-1">نوع الزيارة</h2>
-            <p className="text-xs text-[var(--ink-soft)] mb-3.5">
-              اختار نوع المكان اللي زرته وسجل بياناته زي ما هي في الشيت الأصلي
+          <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 mb-4 shadow-card">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xl">📋</span>
+              <h2 className="text-base font-extrabold text-[var(--ink)]">
+                {t('activity.type.title')}
+              </h2>
+            </div>
+            <p className="text-xs text-[var(--ink-soft)] mb-3.5 leading-relaxed">
+              {t('activity.type.desc')}
             </p>
             <TypePicker selectedType={selectedType} onSelect={setSelectedType} />
           </div>
 
-          {/* Forms */}
+          {/* Activity Forms */}
           {selectedType === 'hospital' && (
             <HospitalForm
               selectedRep={selectedRep}
@@ -187,7 +207,8 @@ export default function Home() {
         </div>
       )}
 
-      <Toast toast={toast} />
+      {/* Toast Feedback */}
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </main>
   );
 }

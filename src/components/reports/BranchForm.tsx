@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from '@/lib/i18nContext';
+import { Button } from '@/components/ui/Button';
 
 interface BranchFormProps {
   selectedRep: string;
@@ -9,6 +11,7 @@ interface BranchFormProps {
 }
 
 export function BranchForm({ selectedRep, onSuccess, onError }: BranchFormProps) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -20,7 +23,9 @@ export function BranchForm({ selectedRep, onSuccess, onError }: BranchFormProps)
     notes: '',
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
   };
@@ -28,11 +33,11 @@ export function BranchForm({ selectedRep, onSuccess, onError }: BranchFormProps)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedRep) {
-      onError('اختار اسمك الأول');
+      onError(t('msg.requiredRep'));
       return;
     }
     if (!formData.name.trim()) {
-      onError('اكتب اسم الفرع');
+      onError(t('form.branchName'));
       return;
     }
 
@@ -45,7 +50,7 @@ export function BranchForm({ selectedRep, onSuccess, onError }: BranchFormProps)
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        onSuccess(data.message);
+        onSuccess(data.message || t('msg.visitSaved'));
         setFormData({
           name: '',
           area: '',
@@ -56,104 +61,126 @@ export function BranchForm({ selectedRep, onSuccess, onError }: BranchFormProps)
           notes: '',
         });
       } else {
-        onError(data.message || 'حصل خطأ، جرب تاني');
+        onError(data.message || t('msg.errorGeneric'));
       }
     } catch {
-      onError('حصل خطأ أثناء الاتصال بالخادم');
+      onError(t('msg.errorGeneric'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 mb-4 shadow-xs">
-      <h2 className="text-base font-bold text-[var(--ink)] mb-3.5">بيانات فرع التوزيع</h2>
+    <form
+      onSubmit={handleSubmit}
+      className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 md:p-6 mb-4 shadow-card animate-fade-in"
+    >
+      <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[var(--line)]">
+        <span className="text-xl">🏢</span>
+        <h2 className="text-base font-extrabold text-[var(--ink)]">
+          {t('activity.branch')} — {t('nav.submit')}
+        </h2>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 mb-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
         <div>
-          <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1.5">اسم الموزّع / الفرع *</label>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
+            {t('form.branchName')}
+          </label>
           <input
             id="name"
             value={formData.name}
             onChange={handleChange}
             placeholder="مثال: دلتا فارما للتوزيع"
             required
-            className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-medium"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1.5">منطقة التغطية</label>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
+            {t('form.coverageArea')}
+          </label>
           <input
             id="area"
             value={formData.area}
             onChange={handleChange}
-            className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+            placeholder="مثال: قطاع الدلتا / الجيزة"
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-medium"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1.5">الشخص المسؤول</label>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
+            {t('form.contact')}
+          </label>
           <input
             id="contact"
             value={formData.contact}
             onChange={handleChange}
-            className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+            placeholder="اسم المسؤول بالفرع"
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-medium"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1.5">رقم التليفون</label>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
+            {t('form.phone')}
+          </label>
           <input
             id="phone"
             type="tel"
             value={formData.phone}
             onChange={handleChange}
-            className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+            placeholder="01xxxxxxxxx"
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-mono"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1.5">المنتجات الموزّعة</label>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
+            {t('form.distributedProducts')}
+          </label>
           <input
             id="products"
             value={formData.products}
             onChange={handleChange}
-            placeholder="مثال: Full product line"
-            className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+            placeholder="مثال: خط المنتجات بالكامل"
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-medium"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1.5">تاريخ آخر زيارة</label>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
+            {t('form.visitDate')}
+          </label>
           <input
             id="lastVisit"
             type="date"
             value={formData.lastVisit}
             onChange={handleChange}
-            className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-mono"
           />
         </div>
       </div>
 
-      <div className="mb-4">
-        <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1.5">ملاحظات</label>
+      <div className="mb-5">
+        <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
+          {t('form.notes')}
+        </label>
         <textarea
           id="notes"
           rows={2}
           value={formData.notes}
           onChange={handleChange}
-          className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+          placeholder="أي تفاصيل أو تعليقات بخصوص الزيارة..."
+          className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-medium"
         />
       </div>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="px-6 py-2.5 rounded-lg text-sm font-bold bg-[var(--teal)] text-white hover:bg-[var(--teal-deep)] transition-all cursor-pointer disabled:opacity-50"
-      >
-        {loading ? 'جاري الإرسال...' : 'إرسال التقرير'}
-      </button>
+      <Button type="submit" variant="primary" size="md" isLoading={loading}>
+        {t('form.submit')}
+      </Button>
     </form>
   );
 }

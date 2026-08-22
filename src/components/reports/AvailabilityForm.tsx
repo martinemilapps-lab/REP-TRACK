@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { MONTHS_LIST, PRODUCTS_LIST } from '@/lib/constants';
+import { useTranslation } from '@/lib/i18nContext';
+import { Button } from '@/components/ui/Button';
 
 interface AvailabilityFormProps {
   selectedRep: string;
@@ -10,6 +12,7 @@ interface AvailabilityFormProps {
 }
 
 export function AvailabilityForm({ selectedRep, onSuccess, onError }: AvailabilityFormProps) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     hospital: '',
@@ -21,7 +24,9 @@ export function AvailabilityForm({ selectedRep, onSuccess, onError }: Availabili
     notes: '',
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
   };
@@ -29,15 +34,15 @@ export function AvailabilityForm({ selectedRep, onSuccess, onError }: Availabili
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedRep) {
-      onError('اختار اسمك الأول');
+      onError(t('msg.requiredRep'));
       return;
     }
     if (!formData.hospital.trim()) {
-      onError('اكتب اسم المستشفى');
+      onError(t('form.hospitalName'));
       return;
     }
     if (!formData.product.trim()) {
-      onError('اكتب اسم المنتج');
+      onError(t('form.product'));
       return;
     }
 
@@ -50,7 +55,7 @@ export function AvailabilityForm({ selectedRep, onSuccess, onError }: Availabili
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        onSuccess(data.message);
+        onSuccess(data.message || t('msg.availabilitySaved'));
         setFormData({
           hospital: '',
           area: '',
@@ -61,48 +66,59 @@ export function AvailabilityForm({ selectedRep, onSuccess, onError }: Availabili
           notes: '',
         });
       } else {
-        onError(data.message || 'حصل خطأ، جرب تاني');
+        onError(data.message || t('msg.errorGeneric'));
       }
     } catch {
-      onError('حصل خطأ أثناء الاتصال بالخادم');
+      onError(t('msg.errorGeneric'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 mb-4 shadow-xs">
-      <h2 className="text-base font-bold text-[var(--ink)] mb-1">توافر المنتج في المستشفى</h2>
-      <p className="text-xs text-[var(--ink-soft)] mb-3.5">
-        سجّل هل المنتج متوفر في صيدلية المستشفى الشهر ده ولا لأ، ومبيعاته لو معروفة
-      </p>
+    <form
+      onSubmit={handleSubmit}
+      className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 md:p-6 mb-4 shadow-card animate-fade-in"
+    >
+      <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[var(--line)]">
+        <span className="text-xl">📦</span>
+        <h2 className="text-base font-extrabold text-[var(--ink)]">
+          {t('activity.availability')} — {t('nav.submit')}
+        </h2>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 mb-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
         <div>
-          <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1.5">اسم المستشفى *</label>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
+            {t('form.hospitalName')}
+          </label>
           <input
             id="hospital"
             value={formData.hospital}
             onChange={handleChange}
             placeholder="مثال: مستشفى دار الشفاء"
             required
-            className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-medium"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1.5">المنطقة</label>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
+            {t('form.area')}
+          </label>
           <input
             id="area"
             value={formData.area}
             onChange={handleChange}
             placeholder="مثال: مدينة نصر"
-            className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-medium"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1.5">المنتج *</label>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
+            {t('form.product')}
+          </label>
           <input
             id="product"
             value={formData.product}
@@ -110,7 +126,7 @@ export function AvailabilityForm({ selectedRep, onSuccess, onError }: Availabili
             list="prodlist-avail"
             placeholder="اختار أو اكتب اسم المنتج"
             required
-            className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-medium"
           />
           <datalist id="prodlist-avail">
             {PRODUCTS_LIST.map((p) => (
@@ -120,63 +136,71 @@ export function AvailabilityForm({ selectedRep, onSuccess, onError }: Availabili
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1.5">الشهر</label>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
+            {t('form.month')}
+          </label>
           <select
             id="month"
             value={formData.month}
             onChange={handleChange}
-            className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-medium"
           >
             {MONTHS_LIST.map((m) => (
-              <option key={m} value={m}>{m}</option>
+              <option key={m} value={m}>
+                {m}
+              </option>
             ))}
           </select>
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1.5">المبيعات (وحدات) — لو معروفة</label>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
+            {t('form.salesUnits')}
+          </label>
           <input
             id="sales"
             type="number"
             min="0"
             value={formData.sales || ''}
             onChange={handleChange}
-            className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+            placeholder="0"
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-mono"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1.5">حالة التوافر</label>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
+            {t('form.availabilityStatus')}
+          </label>
           <select
             id="status"
             value={formData.status}
             onChange={handleChange}
-            className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-medium"
           >
-            <option value="Available">متوفر</option>
-            <option value="Not Available">مش متوفر</option>
+            <option value="Available">{t('status.available')}</option>
+            <option value="Not Available">{t('status.notAvailable')}</option>
           </select>
         </div>
       </div>
 
-      <div className="mb-4">
-        <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1.5">ملاحظات</label>
+      <div className="mb-5">
+        <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
+          {t('form.notes')}
+        </label>
         <textarea
           id="notes"
           rows={2}
           value={formData.notes}
           onChange={handleChange}
-          className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+          placeholder="أي تفاصيل أو تعليقات بخصوص التوافر..."
+          className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-medium"
         />
       </div>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="px-6 py-2.5 rounded-lg text-sm font-bold bg-[var(--teal)] text-white hover:bg-[var(--teal-deep)] transition-all cursor-pointer disabled:opacity-50"
-      >
-        {loading ? 'جاري الإرسال...' : 'إرسال التقرير'}
-      </button>
+      <Button type="submit" variant="primary" size="md" isLoading={loading}>
+        {t('form.submit')}
+      </Button>
     </form>
   );
 }

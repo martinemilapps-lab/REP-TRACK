@@ -2,33 +2,37 @@
 
 import React from 'react';
 import { ActivityType } from '@/types';
+import { useTranslation } from '@/lib/i18nContext';
 
 interface EntityTabsProps {
   activeTab: ActivityType;
   onChange: (tab: ActivityType) => void;
+  className?: string;
 }
 
-const TABS: { key: ActivityType; label: string; icon: string }[] = [
-  { key: 'hospital', label: 'المستشفيات', icon: '🏥' },
-  { key: 'pharmacy', label: 'الصيدليات', icon: '💊' },
-  { key: 'doctor', label: 'الدكاترة', icon: '🩺' },
-  { key: 'branch', label: 'فروع التوزيع', icon: '🏢' },
-  { key: 'availability', label: 'توافر المنتج', icon: '📦' },
-];
+export function EntityTabs({ activeTab, onChange, className = '' }: EntityTabsProps) {
+  const { t } = useTranslation();
 
-export function EntityTabs({ activeTab, onChange }: EntityTabsProps) {
+  const tabs: { type: ActivityType; label: string; icon: string }[] = [
+    { type: 'hospital', label: t('activity.hospital'), icon: '🏥' },
+    { type: 'pharmacy', label: t('activity.pharmacy'), icon: '💊' },
+    { type: 'doctor', label: t('activity.doctor'), icon: '🩺' },
+    { type: 'branch', label: t('activity.branch'), icon: '🏢' },
+    { type: 'availability', label: t('activity.availability'), icon: '📦' },
+  ];
+
   return (
-    <div className="flex gap-2 flex-wrap mb-3.5">
-      {TABS.map((tab) => {
-        const isActive = activeTab === tab.key;
+    <div className={`flex gap-1.5 overflow-x-auto pb-1 max-w-full ${className}`}>
+      {tabs.map((tab) => {
+        const isActive = activeTab === tab.type;
         return (
           <button
-            key={tab.key}
-            onClick={() => onChange(tab.key)}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+            key={tab.type}
+            onClick={() => onChange(tab.type)}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 whitespace-nowrap select-none border ${
               isActive
-                ? 'bg-[var(--ink)] text-white border-[var(--ink)] shadow-xs'
-                : 'bg-white text-[var(--ink-soft)] border-[var(--line)] hover:border-[var(--ink-soft)]'
+                ? 'bg-gradient-to-r from-[var(--gold)] to-[var(--gold-light)] text-white border-[var(--gold-dark)] shadow-xs font-extrabold'
+                : 'bg-[var(--surface)] text-[var(--ink-soft)] border-[var(--line)] hover:border-[var(--gold-light)] hover:text-[var(--ink)]'
             }`}
           >
             <span>{tab.icon}</span>

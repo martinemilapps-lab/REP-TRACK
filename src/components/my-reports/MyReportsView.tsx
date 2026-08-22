@@ -15,6 +15,8 @@ import { CoverageRing } from '@/components/ui/CoverageRing';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Badge } from '@/components/ui/Badge';
 import { EntityTabs } from '@/components/ui/EntityTabs';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { useTranslation } from '@/lib/i18nContext';
 import { calculateRepCoverage, calculateRepOverviewStats, statusBucket } from '@/lib/coverage';
 
 interface MyReportsViewProps {
@@ -24,6 +26,7 @@ interface MyReportsViewProps {
 }
 
 export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewProps) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<ActivityType>('hospital');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [loading, setLoading] = useState(false);
@@ -95,20 +98,25 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
   }, [data.doctors, statusFilter]);
 
   return (
-    <div>
-      {/* Rep Selection Header Card */}
-      <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 mb-4 shadow-xs">
-        <h2 className="text-base font-bold text-[var(--ink)] mb-1">تقاريري أنا بس</h2>
-        <p className="text-xs text-[var(--ink-soft)] mb-3.5">
-          اختار اسمك عشان تشوف بس الزيارات اللي انت سجلتها، ومفيش حد تاني هيشوف بياناتك
+    <div className="animate-fade-in">
+      {/* Identity Selector Card */}
+      <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 mb-4 shadow-card">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-xl">👤</span>
+          <h2 className="text-base font-extrabold text-[var(--ink)]">
+            {t('rep.myReports.title')}
+          </h2>
+        </div>
+        <p className="text-xs text-[var(--ink-soft)] mb-3.5 leading-relaxed">
+          {t('rep.myReports.desc')}
         </p>
         <div className="max-w-xs">
           <select
             value={selectedRep}
             onChange={(e) => onSelectRep(e.target.value)}
-            className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)] font-medium"
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-bold text-[var(--ink)] shadow-2xs transition-all"
           >
-            <option value="">-- اختار اسمك --</option>
+            <option value="">{t('rep.selector.placeholder')}</option>
             {reps.map((r) => (
               <option key={r.id || r.name} value={r.name}>
                 {r.name} — {r.area}
@@ -119,258 +127,285 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
       </div>
 
       {!selectedRep ? (
-        <div className="bg-white border border-[var(--line)] rounded-[var(--radius)] p-12 text-center text-[var(--ink-soft)] text-sm shadow-xs">
-          من فضلك اختار اسمك من القائمة لعرض تقاريرك والتغطية الخاصة بك
-        </div>
+        <EmptyState
+          title={t('rep.myReports.emptyPrompt')}
+          description={t('rep.selector.desc')}
+          icon="👥"
+        />
       ) : loading ? (
-        <div className="bg-white border border-[var(--line)] rounded-[var(--radius)] p-12 text-center text-[var(--ink-soft)] text-sm shadow-xs">
-          <div className="inline-block w-6 h-6 border-2 border-[var(--teal)] border-t-transparent rounded-full animate-spin mb-2" />
-          <div>بيتم تحميل بياناتك...</div>
+        <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-12 text-center text-xs text-[var(--ink-soft)] shadow-card">
+          <div className="inline-block w-7 h-7 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin mb-3" />
+          <div className="font-bold">{t('app.loading')}</div>
         </div>
       ) : (
         <div>
-          {/* Stat Strip */}
-          <div className="flex gap-3 flex-wrap mb-4">
-            <StatPill label="إجمالي الزيارات المسجلة" value={stats.totalVisits} />
-            <StatPill label="تم الزيارة" value={stats.visitedCount} />
-            <StatPill label="لسه ماتزارتش" value={stats.notVisitedCount} />
-            <StatPill label="متأخرة" value={stats.overdueCount} />
+          {/* Top KPI Metrics Strip */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <StatPill label={t('kpi.totalVisits')} value={stats.totalVisits} icon="📊" highlight />
+            <StatPill label={t('status.visited')} value={stats.visitedCount} icon="✓" />
+            <StatPill label={t('status.notVisited')} value={stats.notVisitedCount} icon="⏳" />
+            <StatPill label={t('status.overdue')} value={stats.overdueCount} icon="⚠️" />
           </div>
 
           {/* Coverage Summary Card */}
           {repObj && coverage && (
-            <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-4 mb-4 shadow-xs max-w-sm">
-              <div className="flex items-center gap-3.5 mb-3">
-                <CoverageRing percentage={coverage.overallCoveragePct} />
+            <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 mb-4 shadow-card max-w-md">
+              <div className="flex items-center gap-4 mb-3 pb-3 border-b border-[var(--line)]">
+                <CoverageRing percentage={coverage.overallCoveragePct} size={62} strokeWidth={6} />
                 <div>
-                  <div className="font-bold text-sm text-[var(--ink)]">{repObj.name}</div>
-                  <div className="text-xs text-[var(--ink-soft)]">{repObj.area}</div>
+                  <div className="font-extrabold text-sm md:text-base text-[var(--ink)]">{repObj.name}</div>
+                  <div className="text-xs text-[var(--gold-dark)] font-bold">{repObj.area}</div>
+                  <div className="text-[11px] text-[var(--ink-muted)] mt-0.5">
+                    {t('kpi.overallCoverage')}: <strong className="text-[var(--ink)] font-mono">{coverage.overallCoveragePct}%</strong>
+                  </div>
                 </div>
               </div>
-              <ProgressBar label="مستشفيات" actual={coverage.actualHospitals} assigned={coverage.assignedHospitals} />
-              <ProgressBar label="صيدليات" actual={coverage.actualPharmacies} assigned={coverage.assignedPharmacies} />
-              <ProgressBar label="دكاترة" actual={coverage.actualDrs} assigned={coverage.assignedDrs} />
+              <ProgressBar
+                label={t('activity.hospital')}
+                actual={coverage.actualHospitals}
+                assigned={coverage.assignedHospitals}
+              />
+              <ProgressBar
+                label={t('activity.pharmacy')}
+                actual={coverage.actualPharmacies}
+                assigned={coverage.assignedPharmacies}
+              />
+              <ProgressBar
+                label={t('activity.doctor')}
+                actual={coverage.actualDrs}
+                assigned={coverage.assignedDrs}
+              />
             </div>
           )}
 
-          {/* Records Table Card */}
-          <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 shadow-xs">
-            <div className="flex justify-between items-center gap-3 mb-3.5 flex-wrap">
+          {/* Detailed Records Data Table Card */}
+          <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 shadow-card">
+            <div className="flex justify-between items-center gap-3 mb-4 flex-wrap">
               <EntityTabs activeTab={activeTab} onChange={setActiveTab} />
               {activeTab !== 'availability' && activeTab !== 'branch' && (
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-3 py-1.5 text-xs bg-white border border-[var(--line)] rounded-lg font-medium"
-                >
-                  <option value="">كل الحالات</option>
-                  <option value="visited">تم الزيارة بس</option>
-                  <option value="notvisited">لسه ماتزارتش بس</option>
-                  <option value="overdue">متأخرة بس</option>
-                </select>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-bold text-[var(--ink-soft)] whitespace-nowrap">
+                    {t('status.filter')}
+                  </label>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="px-3 py-1.5 text-xs bg-white border border-[var(--line)] rounded-lg font-medium"
+                  >
+                    <option value="">{t('status.all')}</option>
+                    <option value="visited">{t('status.visited')}</option>
+                    <option value="notvisited">{t('status.notVisited')}</option>
+                    <option value="overdue">{t('status.overdue')}</option>
+                  </select>
+                </div>
               )}
             </div>
 
-            <div className="overflow-x-auto border border-[var(--line)] rounded-xl">
-              {activeTab === 'hospital' && (
-                filteredHospitals.length === 0 ? (
-                  <div className="p-10 text-center text-[var(--ink-soft)] text-xs">لسه مفيش زيارات متسجلة من النوع ده</div>
+            <div className="rep-table-container">
+              {activeTab === 'hospital' &&
+                (filteredHospitals.length === 0 ? (
+                  <EmptyState title={t('empty.noVisits')} icon="🏥" className="border-none shadow-none" />
                 ) : (
-                  <table className="w-full text-right border-collapse text-xs">
-                    <thead>
-                      <tr className="bg-[var(--bg)] border-b border-[var(--line)] text-[var(--ink-soft)] font-bold text-[11px]">
-                        <th className="p-2.5 whitespace-nowrap">المستشفى</th>
-                        <th className="p-2.5 whitespace-nowrap">المنطقة</th>
-                        <th className="p-2.5 whitespace-nowrap">النوع</th>
-                        <th className="p-2.5 whitespace-nowrap">القسم</th>
-                        <th className="p-2.5 whitespace-nowrap">د. زاروا</th>
-                        <th className="p-2.5 whitespace-nowrap">المسؤول</th>
-                        <th className="p-2.5 whitespace-nowrap">التليفون</th>
-                        <th className="p-2.5 whitespace-nowrap">آخر زيارة</th>
-                        <th className="p-2.5 whitespace-nowrap">الزيارة الجاية</th>
-                        <th className="p-2.5 whitespace-nowrap">الحالة</th>
-                        <th className="p-2.5 whitespace-nowrap">منتجاتنا</th>
-                        <th className="p-2.5 whitespace-nowrap">المنافس</th>
-                        <th className="p-2.5 whitespace-nowrap">ملاحظات</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredHospitals.map((r) => (
-                        <tr key={r.id} className="border-b border-[var(--line)] hover:bg-[#FAFAF7]">
-                          <td className="p-2.5 font-bold whitespace-nowrap">{r.name}</td>
-                          <td className="p-2.5 whitespace-nowrap">{r.area}</td>
-                          <td className="p-2.5 whitespace-nowrap">{r.type}</td>
-                          <td className="p-2.5 whitespace-nowrap">{r.dept}</td>
-                          <td className="p-2.5 font-mono whitespace-nowrap">{r.drsVisited}</td>
-                          <td className="p-2.5 whitespace-nowrap">{r.contact}</td>
-                          <td className="p-2.5 font-mono whitespace-nowrap">{r.phone}</td>
-                          <td className="p-2.5 font-mono whitespace-nowrap">{r.lastVisit}</td>
-                          <td className="p-2.5 font-mono whitespace-nowrap">{r.nextVisit}</td>
-                          <td className="p-2.5 whitespace-nowrap"><Badge status={r.status} /></td>
-                          <td className="p-2.5 whitespace-nowrap">{r.ourProducts}</td>
-                          <td className="p-2.5 whitespace-nowrap">{r.competitor}</td>
-                          <td className="p-2.5 whitespace-nowrap">{r.notes}</td>
+                  <div className="overflow-x-auto">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>{t('th.hospital')}</th>
+                          <th>{t('th.area')}</th>
+                          <th>{t('th.type')}</th>
+                          <th>{t('th.dept')}</th>
+                          <th>{t('th.drsVisited')}</th>
+                          <th>{t('th.contact')}</th>
+                          <th>{t('th.phone')}</th>
+                          <th>{t('th.lastVisit')}</th>
+                          <th>{t('th.nextVisit')}</th>
+                          <th>{t('th.status')}</th>
+                          <th>{t('th.ourProducts')}</th>
+                          <th>{t('th.competitor')}</th>
+                          <th>{t('th.notes')}</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )
-              )}
-
-              {activeTab === 'pharmacy' && (
-                filteredPharmacies.length === 0 ? (
-                  <div className="p-10 text-center text-[var(--ink-soft)] text-xs">لسه مفيش زيارات متسجلة من النوع ده</div>
-                ) : (
-                  <table className="w-full text-right border-collapse text-xs">
-                    <thead>
-                      <tr className="bg-[var(--bg)] border-b border-[var(--line)] text-[var(--ink-soft)] font-bold text-[11px]">
-                        <th className="p-2.5 whitespace-nowrap">الصيدلية</th>
-                        <th className="p-2.5 whitespace-nowrap">المنطقة</th>
-                        <th className="p-2.5 whitespace-nowrap">العنوان</th>
-                        <th className="p-2.5 whitespace-nowrap">الصيدلي</th>
-                        <th className="p-2.5 whitespace-nowrap">الموبايل</th>
-                        <th className="p-2.5 whitespace-nowrap">التصنيف</th>
-                        <th className="p-2.5 whitespace-nowrap">آخر زيارة</th>
-                        <th className="p-2.5 whitespace-nowrap">الزيارة الجاية</th>
-                        <th className="p-2.5 whitespace-nowrap">الحالة</th>
-                        <th className="p-2.5 whitespace-nowrap">منتجاتنا</th>
-                        <th className="p-2.5 whitespace-nowrap">المنافس</th>
-                        <th className="p-2.5 whitespace-nowrap">ملاحظات</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredPharmacies.map((r) => (
-                        <tr key={r.id} className="border-b border-[var(--line)] hover:bg-[#FAFAF7]">
-                          <td className="p-2.5 font-bold whitespace-nowrap">{r.name}</td>
-                          <td className="p-2.5 whitespace-nowrap">{r.area}</td>
-                          <td className="p-2.5 whitespace-nowrap">{r.address}</td>
-                          <td className="p-2.5 whitespace-nowrap">{r.pharmacist}</td>
-                          <td className="p-2.5 font-mono whitespace-nowrap">{r.mobile}</td>
-                          <td className="p-2.5 font-bold whitespace-nowrap">{r.cls}</td>
-                          <td className="p-2.5 font-mono whitespace-nowrap">{r.lastVisit}</td>
-                          <td className="p-2.5 font-mono whitespace-nowrap">{r.nextVisit}</td>
-                          <td className="p-2.5 whitespace-nowrap"><Badge status={r.status} /></td>
-                          <td className="p-2.5 whitespace-nowrap">{r.ourProducts}</td>
-                          <td className="p-2.5 whitespace-nowrap">{r.competitor}</td>
-                          <td className="p-2.5 whitespace-nowrap">{r.notes}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )
-              )}
-
-              {activeTab === 'doctor' && (
-                filteredDoctors.length === 0 ? (
-                  <div className="p-10 text-center text-[var(--ink-soft)] text-xs">لسه مفيش زيارات متسجلة من النوع ده</div>
-                ) : (
-                  <table className="w-full text-right border-collapse text-xs">
-                    <thead>
-                      <tr className="bg-[var(--bg)] border-b border-[var(--line)] text-[var(--ink-soft)] font-bold text-[11px]">
-                        <th className="p-2.5 whitespace-nowrap">كود</th>
-                        <th className="p-2.5 whitespace-nowrap">الدكتور</th>
-                        <th className="p-2.5 whitespace-nowrap">التخصص</th>
-                        <th className="p-2.5 whitespace-nowrap">مكان العمل</th>
-                        <th className="p-2.5 whitespace-nowrap">المنطقة</th>
-                        <th className="p-2.5 whitespace-nowrap">الموبايل</th>
-                        <th className="p-2.5 whitespace-nowrap">التصنيف</th>
-                        <th className="p-2.5 whitespace-nowrap">تاريخ الزيارة</th>
-                        <th className="p-2.5 whitespace-nowrap">الزيارة الجاية</th>
-                        <th className="p-2.5 whitespace-nowrap">الحالة</th>
-                        <th className="p-2.5 whitespace-nowrap">المنتجات المعروضة</th>
-                        <th className="p-2.5 whitespace-nowrap">ملاحظات</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredDoctors.map((r) => {
-                        const prods = [r.f1, r.f2, r.f3, r.reminder].filter(Boolean).join(', ');
-                        return (
-                          <tr key={r.id} className="border-b border-[var(--line)] hover:bg-[#FAFAF7]">
-                            <td className="p-2.5 font-mono whitespace-nowrap">{r.code}</td>
-                            <td className="p-2.5 font-bold whitespace-nowrap">{r.name}</td>
-                            <td className="p-2.5 whitespace-nowrap">{r.specialty}</td>
-                            <td className="p-2.5 whitespace-nowrap">{r.workplace}</td>
-                            <td className="p-2.5 whitespace-nowrap">{r.area}</td>
-                            <td className="p-2.5 font-mono whitespace-nowrap">{r.mobile}</td>
-                            <td className="p-2.5 font-bold whitespace-nowrap">{r.cls}</td>
-                            <td className="p-2.5 font-mono whitespace-nowrap">{r.visitDate}</td>
-                            <td className="p-2.5 font-mono whitespace-nowrap">{r.nextVisit}</td>
-                            <td className="p-2.5 whitespace-nowrap"><Badge status={r.status} /></td>
-                            <td className="p-2.5 whitespace-nowrap">{prods}</td>
-                            <td className="p-2.5 whitespace-nowrap">{r.notes}</td>
+                      </thead>
+                      <tbody>
+                        {filteredHospitals.map((r) => (
+                          <tr key={r.id}>
+                            <td className="font-bold text-[var(--ink)] whitespace-nowrap">{r.name}</td>
+                            <td className="whitespace-nowrap">{r.area}</td>
+                            <td className="whitespace-nowrap">{r.type}</td>
+                            <td className="whitespace-nowrap">{r.dept}</td>
+                            <td className="font-mono whitespace-nowrap">{r.drsVisited}</td>
+                            <td className="whitespace-nowrap">{r.contact}</td>
+                            <td className="font-mono whitespace-nowrap">{r.phone}</td>
+                            <td className="font-mono whitespace-nowrap">{r.lastVisit}</td>
+                            <td className="font-mono whitespace-nowrap">{r.nextVisit}</td>
+                            <td className="whitespace-nowrap"><Badge status={r.status} /></td>
+                            <td className="whitespace-nowrap">{r.ourProducts}</td>
+                            <td className="whitespace-nowrap">{r.competitor}</td>
+                            <td className="whitespace-nowrap max-w-xs truncate">{r.notes}</td>
                           </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                )
-              )}
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
 
-              {activeTab === 'branch' && (
-                data.branches.length === 0 ? (
-                  <div className="p-10 text-center text-[var(--ink-soft)] text-xs">لسه مفيش زيارات متسجلة من النوع ده</div>
+              {activeTab === 'pharmacy' &&
+                (filteredPharmacies.length === 0 ? (
+                  <EmptyState title={t('empty.noVisits')} icon="💊" className="border-none shadow-none" />
                 ) : (
-                  <table className="w-full text-right border-collapse text-xs">
-                    <thead>
-                      <tr className="bg-[var(--bg)] border-b border-[var(--line)] text-[var(--ink-soft)] font-bold text-[11px]">
-                        <th className="p-2.5 whitespace-nowrap">الفرع / الموزّع</th>
-                        <th className="p-2.5 whitespace-nowrap">منطقة التغطية</th>
-                        <th className="p-2.5 whitespace-nowrap">المسؤول</th>
-                        <th className="p-2.5 whitespace-nowrap">التليفون</th>
-                        <th className="p-2.5 whitespace-nowrap">المنتجات الموزّعة</th>
-                        <th className="p-2.5 whitespace-nowrap">آخر زيارة</th>
-                        <th className="p-2.5 whitespace-nowrap">ملاحظات</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.branches.map((r) => (
-                        <tr key={r.id} className="border-b border-[var(--line)] hover:bg-[#FAFAF7]">
-                          <td className="p-2.5 font-bold whitespace-nowrap">{r.name}</td>
-                          <td className="p-2.5 whitespace-nowrap">{r.area}</td>
-                          <td className="p-2.5 whitespace-nowrap">{r.contact}</td>
-                          <td className="p-2.5 font-mono whitespace-nowrap">{r.phone}</td>
-                          <td className="p-2.5 whitespace-nowrap">{r.products}</td>
-                          <td className="p-2.5 font-mono whitespace-nowrap">{r.lastVisit}</td>
-                          <td className="p-2.5 whitespace-nowrap">{r.notes}</td>
+                  <div className="overflow-x-auto">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>{t('th.pharmacy')}</th>
+                          <th>{t('th.area')}</th>
+                          <th>{t('th.address')}</th>
+                          <th>{t('th.pharmacist')}</th>
+                          <th>{t('th.mobile')}</th>
+                          <th>{t('th.classification')}</th>
+                          <th>{t('th.lastVisit')}</th>
+                          <th>{t('th.nextVisit')}</th>
+                          <th>{t('th.status')}</th>
+                          <th>{t('th.ourProducts')}</th>
+                          <th>{t('th.competitor')}</th>
+                          <th>{t('th.notes')}</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )
-              )}
+                      </thead>
+                      <tbody>
+                        {filteredPharmacies.map((r) => (
+                          <tr key={r.id}>
+                            <td className="font-bold text-[var(--ink)] whitespace-nowrap">{r.name}</td>
+                            <td className="whitespace-nowrap">{r.area}</td>
+                            <td className="whitespace-nowrap">{r.address}</td>
+                            <td className="whitespace-nowrap">{r.pharmacist}</td>
+                            <td className="font-mono whitespace-nowrap">{r.mobile}</td>
+                            <td className="whitespace-nowrap"><Badge status={r.cls} type="class" /></td>
+                            <td className="font-mono whitespace-nowrap">{r.lastVisit}</td>
+                            <td className="font-mono whitespace-nowrap">{r.nextVisit}</td>
+                            <td className="whitespace-nowrap"><Badge status={r.status} /></td>
+                            <td className="whitespace-nowrap">{r.ourProducts}</td>
+                            <td className="whitespace-nowrap">{r.competitor}</td>
+                            <td className="whitespace-nowrap max-w-xs truncate">{r.notes}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
 
-              {activeTab === 'availability' && (
-                data.availabilities.length === 0 ? (
-                  <div className="p-10 text-center text-[var(--ink-soft)] text-xs">لسه مفيش تقارير توافر مسجلة للمندوب ده</div>
+              {activeTab === 'doctor' &&
+                (filteredDoctors.length === 0 ? (
+                  <EmptyState title={t('empty.noVisits')} icon="🩺" className="border-none shadow-none" />
                 ) : (
-                  <table className="w-full text-right border-collapse text-xs">
-                    <thead>
-                      <tr className="bg-[var(--bg)] border-b border-[var(--line)] text-[var(--ink-soft)] font-bold text-[11px]">
-                        <th className="p-2.5 whitespace-nowrap">المستشفى</th>
-                        <th className="p-2.5 whitespace-nowrap">المنطقة</th>
-                        <th className="p-2.5 whitespace-nowrap">المنتج</th>
-                        <th className="p-2.5 whitespace-nowrap">الشهر</th>
-                        <th className="p-2.5 whitespace-nowrap">المبيعات</th>
-                        <th className="p-2.5 whitespace-nowrap">التوافر</th>
-                        <th className="p-2.5 whitespace-nowrap">ملاحظات</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.availabilities.map((r) => (
-                        <tr key={r.id} className="border-b border-[var(--line)] hover:bg-[#FAFAF7]">
-                          <td className="p-2.5 font-bold whitespace-nowrap">{r.hospital}</td>
-                          <td className="p-2.5 whitespace-nowrap">{r.area}</td>
-                          <td className="p-2.5 font-bold text-[var(--teal-deep)] whitespace-nowrap">{r.product}</td>
-                          <td className="p-2.5 whitespace-nowrap">{r.month}</td>
-                          <td className="p-2.5 font-mono whitespace-nowrap">{r.sales ?? 0}</td>
-                          <td className="p-2.5 whitespace-nowrap"><Badge status={r.status} type="availability" /></td>
-                          <td className="p-2.5 whitespace-nowrap">{r.notes}</td>
+                  <div className="overflow-x-auto">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>{t('th.code')}</th>
+                          <th>{t('th.doctor')}</th>
+                          <th>{t('th.specialty')}</th>
+                          <th>{t('th.workplace')}</th>
+                          <th>{t('th.area')}</th>
+                          <th>{t('th.mobile')}</th>
+                          <th>{t('th.classification')}</th>
+                          <th>{t('th.lastVisit')}</th>
+                          <th>{t('th.nextVisit')}</th>
+                          <th>{t('th.status')}</th>
+                          <th>{t('th.presentedProducts')}</th>
+                          <th>{t('th.notes')}</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )
-              )}
+                      </thead>
+                      <tbody>
+                        {filteredDoctors.map((r) => {
+                          const prods = [r.f1, r.f2, r.f3, r.reminder].filter(Boolean).join(', ');
+                          return (
+                            <tr key={r.id}>
+                              <td className="font-mono whitespace-nowrap">{r.code}</td>
+                              <td className="font-bold text-[var(--ink)] whitespace-nowrap">{r.name}</td>
+                              <td className="whitespace-nowrap">{r.specialty}</td>
+                              <td className="whitespace-nowrap">{r.workplace}</td>
+                              <td className="whitespace-nowrap">{r.area}</td>
+                              <td className="font-mono whitespace-nowrap">{r.mobile}</td>
+                              <td className="whitespace-nowrap"><Badge status={r.cls} type="class" /></td>
+                              <td className="font-mono whitespace-nowrap">{r.visitDate}</td>
+                              <td className="font-mono whitespace-nowrap">{r.nextVisit}</td>
+                              <td className="whitespace-nowrap"><Badge status={r.status} /></td>
+                              <td className="whitespace-nowrap font-medium text-[var(--gold-deep)]">{prods}</td>
+                              <td className="whitespace-nowrap max-w-xs truncate">{r.notes}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
+
+              {activeTab === 'branch' &&
+                (data.branches.length === 0 ? (
+                  <EmptyState title={t('empty.noVisits')} icon="🏢" className="border-none shadow-none" />
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>{t('th.branch')}</th>
+                          <th>{t('th.area')}</th>
+                          <th>{t('th.contact')}</th>
+                          <th>{t('th.phone')}</th>
+                          <th>{t('th.ourProducts')}</th>
+                          <th>{t('th.lastVisit')}</th>
+                          <th>{t('th.notes')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.branches.map((r) => (
+                          <tr key={r.id}>
+                            <td className="font-bold text-[var(--ink)] whitespace-nowrap">{r.name}</td>
+                            <td className="whitespace-nowrap">{r.area}</td>
+                            <td className="whitespace-nowrap">{r.contact}</td>
+                            <td className="font-mono whitespace-nowrap">{r.phone}</td>
+                            <td className="whitespace-nowrap">{r.products}</td>
+                            <td className="font-mono whitespace-nowrap">{r.lastVisit}</td>
+                            <td className="whitespace-nowrap max-w-xs truncate">{r.notes}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
+
+              {activeTab === 'availability' &&
+                (data.availabilities.length === 0 ? (
+                  <EmptyState title={t('empty.noAvailability')} icon="📦" className="border-none shadow-none" />
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>{t('th.hospital')}</th>
+                          <th>{t('th.area')}</th>
+                          <th>{t('th.product')}</th>
+                          <th>{t('th.month')}</th>
+                          <th>{t('th.sales')}</th>
+                          <th>{t('th.availability')}</th>
+                          <th>{t('th.notes')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.availabilities.map((r) => (
+                          <tr key={r.id}>
+                            <td className="font-bold text-[var(--ink)] whitespace-nowrap">{r.hospital}</td>
+                            <td className="whitespace-nowrap">{r.area}</td>
+                            <td className="font-bold text-[var(--gold-dark)] whitespace-nowrap">{r.product}</td>
+                            <td className="whitespace-nowrap">{r.month}</td>
+                            <td className="font-mono whitespace-nowrap font-bold">{r.sales ?? 0}</td>
+                            <td className="whitespace-nowrap"><Badge status={r.status} type="availability" /></td>
+                            <td className="whitespace-nowrap max-w-xs truncate">{r.notes}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
             </div>
           </div>
         </div>

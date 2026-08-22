@@ -1,0 +1,177 @@
+export type Language = 'ar' | 'en';
+export type Direction = 'rtl' | 'ltr';
+
+export interface Translations {
+  [key: string]: {
+    ar: string;
+    en: string;
+  };
+}
+
+export const translations: Record<string, { ar: string; en: string }> = {
+  // Application Branding
+  'app.name': { ar: 'REP TRACK', en: 'REP TRACK' },
+  'app.subtitle': { ar: 'منظومة تتبع وتوثيق نشاط المندوبين والتغطية البيعية', en: 'Medical Representative Activity & Sales Coverage System' },
+  'app.slogan': { ar: 'Sunny Medical Group — When Quality Matters', en: 'Sunny Medical Group — When Quality Matters' },
+  'app.loading': { ar: 'جاري تحميل المنظومة...', en: 'Loading system...' },
+
+  // Navigation
+  'nav.submit': { ar: 'إرسال تقرير', en: 'Submit Visit' },
+  'nav.myReports': { ar: 'تقاريري', en: 'My Reports' },
+  'nav.managerDashboard': { ar: 'لوحة المدير', en: 'Manager Dashboard' },
+  'nav.language': { ar: 'English', en: 'العربية' },
+  'nav.lock': { ar: 'قفل اللوحة', en: 'Lock Dashboard' },
+  'nav.unlock': { ar: 'دخول الإدارة', en: 'Manager Access' },
+  'nav.logout': { ar: 'تسجيل خروج', en: 'Sign Out' },
+
+  // Identity / Rep Selection
+  'rep.selector.title': { ar: 'مين اللي بيبعت؟', en: 'Representative Identity' },
+  'rep.selector.desc': { ar: 'اختار اسمك، وهيتحفظ تلقائيًا مع كل زيارة تسجلها', en: 'Select your name to automatically link it with your recorded visits' },
+  'rep.selector.placeholder': { ar: '-- اختار اسمك --', en: '-- Select Representative --' },
+  'rep.myReports.title': { ar: 'تقاريري أنا بس', en: 'My Personal Reports' },
+  'rep.myReports.desc': { ar: 'سجل كامل للزيارات الخاصة بك ونسب التغطية المحققة مقارنة بالتارجت', en: 'Complete log of your field visits and achieved coverage against targets' },
+  'rep.myReports.emptyPrompt': { ar: 'من فضلك اختار اسمك من القائمة لعرض تقاريرك والتغطية الخاصة بك', en: 'Please select your name from the list above to view your activity and coverage' },
+
+  // Activity Types
+  'activity.type.title': { ar: 'نوع الزيارة / التقرير', en: 'Visit / Activity Type' },
+  'activity.type.desc': { ar: 'اختار نوع الجهة اللي زرتها وسجل بياناتها بدقة', en: 'Select the visited entity type and record details accurately' },
+  'activity.hospital': { ar: 'مستشفى', en: 'Hospital' },
+  'activity.pharmacy': { ar: 'صيدلية', en: 'Pharmacy' },
+  'activity.doctor': { ar: 'دكتور عيادة', en: 'Doctor' },
+  'activity.branch': { ar: 'فرع توزيع / موزّع', en: 'Distribution Branch' },
+  'activity.availability': { ar: 'توافر المنتج شهريًا', en: 'Monthly Availability' },
+
+  // Common Form Fields
+  'form.hospitalName': { ar: 'اسم المستشفى *', en: 'Hospital Name *' },
+  'form.pharmacyName': { ar: 'اسم الصيدلية *', en: 'Pharmacy Name *' },
+  'form.doctorName': { ar: 'اسم الدكتور *', en: 'Doctor Name *' },
+  'form.branchName': { ar: 'اسم الفرع / الموزّع *', en: 'Branch / Distributor Name *' },
+  'form.area': { ar: 'المنطقة', en: 'Area / Region' },
+  'form.type': { ar: 'النوع / التصنيف', en: 'Type / Category' },
+  'form.dept': { ar: 'القسم', en: 'Department' },
+  'form.drsVisited': { ar: 'عدد الأطباء الذين تمت زيارتهم', en: 'Doctors Visited Count' },
+  'form.contact': { ar: 'الشخص المسؤول', en: 'Contact Person' },
+  'form.phone': { ar: 'رقم التليفون', en: 'Phone Number' },
+  'form.mobile': { ar: 'رقم الموبايل', en: 'Mobile Number' },
+  'form.specialty': { ar: 'التخصص الطبي', en: 'Medical Specialty' },
+  'form.workplace': { ar: 'مكان العمل / العيادة', en: 'Workplace / Clinic' },
+  'form.code': { ar: 'كود الطبيب', en: 'Doctor Code' },
+  'form.address': { ar: 'العنوان بالتفصيل', en: 'Address Details' },
+  'form.pharmacist': { ar: 'اسم الصيدلي', en: 'Pharmacist Name' },
+  'form.cycle': { ar: 'دورة الزيارة (أيام)', en: 'Visit Cycle (Days)' },
+  'form.visitDate': { ar: 'تاريخ الزيارة', en: 'Visit Date' },
+  'form.nextVisit': { ar: 'تاريخ الزيارة القادمة', en: 'Next Visit Date' },
+  'form.ourProducts': { ar: 'منتجاتنا التي تم الترويج لها', en: 'Our Products Discussed' },
+  'form.competitor': { ar: 'المنتج المنافس', en: 'Competitor Product' },
+  'form.notes': { ar: 'ملاحظات وتفاصيل إضافية', en: 'Notes & Observations' },
+  'form.product': { ar: 'المنتج *', en: 'Product *' },
+  'form.month': { ar: 'الشهر *', en: 'Month *' },
+  'form.salesUnits': { ar: 'الوحدات المباعة (Sales)', en: 'Sales Units' },
+  'form.availabilityStatus': { ar: 'حالة التوافر *', en: 'Availability Status *' },
+  'form.doctorProductsTitle': { ar: 'المنتجات المعروضة على الطبيب (بالترتيب)', en: 'Discussed Products (Prioritized)' },
+  'form.product1': { ar: 'المنتج الأول (الرئيسي)', en: 'Product 1 (Primary)' },
+  'form.product2': { ar: 'المنتج الثاني', en: 'Product 2' },
+  'form.product3': { ar: 'المنتج الثالث', en: 'Product 3' },
+  'form.reminderProduct': { ar: 'منتج تذكيري (Reminder)', en: 'Reminder Product' },
+  'form.distributedProducts': { ar: 'المنتجات الموزّعة', en: 'Distributed Products' },
+  'form.coverageArea': { ar: 'منطقة التغطية', en: 'Coverage Area' },
+  'form.submit': { ar: 'حفظ وإرسال التقرير', en: 'Submit Visit Report' },
+  'form.submitting': { ar: 'جاري الحفظ...', en: 'Submitting...' },
+
+  // Status Labels & Badges
+  'status.visited': { ar: 'تم الزيارة', en: 'Visited' },
+  'status.overdue': { ar: 'متأخرة', en: 'Overdue' },
+  'status.notVisited': { ar: 'لم تتم الزيارة', en: 'Not visited yet' },
+  'status.available': { ar: 'متوافر', en: 'Available' },
+  'status.notAvailable': { ar: 'غير متوافر', en: 'Not Available' },
+  'status.all': { ar: 'كل الحالات', en: 'All Statuses' },
+  'status.filter': { ar: 'تصفية بالحالة:', en: 'Filter by status:' },
+
+  // Coverage & KPIs
+  'kpi.overallCoverage': { ar: 'التغطية الكلية', en: 'Overall Coverage' },
+  'kpi.hospitalCoverage': { ar: 'تغطية المستشفيات', en: 'Hospital Coverage' },
+  'kpi.pharmacyCoverage': { ar: 'تغطية الصيدليات', en: 'Pharmacy Coverage' },
+  'kpi.doctorCoverage': { ar: 'تغطية الأطباء', en: 'Doctor Coverage' },
+  'kpi.totalVisits': { ar: 'إجمالي الزيارات', en: 'Total Visits' },
+  'kpi.visitedCount': { ar: 'زيارات ناجحة', en: 'Visited Count' },
+  'kpi.notVisitedCount': { ar: 'في انتظار الزيارة', en: 'Pending Visits' },
+  'kpi.overdueCount': { ar: 'زيارات متأخرة', en: 'Overdue Visits' },
+  'kpi.repsCount': { ar: 'عدد المندوبين', en: 'Representatives' },
+  'kpi.availabilityReports': { ar: 'تقارير التوافر', en: 'Availability Logs' },
+  'kpi.branchVisits': { ar: 'زيارات الموزعين', en: 'Branch Visits' },
+  'kpi.target': { ar: 'التارجت', en: 'Target' },
+  'kpi.actual': { ar: 'الفعلي', en: 'Actual' },
+  'kpi.assigned': { ar: 'المعين', en: 'Assigned' },
+
+  // Manager Views & Dashboard
+  'manager.title': { ar: 'لوحة تحكم الإدارة الشاملة', en: 'Manager Operational Dashboard' },
+  'manager.subtitle': { ar: 'متابعة أداء المندوبين، نسب التغطية، وتصدير التقارير الرسمية', en: 'Track representative performance, coverage rates, and export operational reports' },
+  'manager.repPerformance': { ar: 'مقارنة أداء وتغطية المندوبين', en: 'Representative Performance & Coverage Matrix' },
+  'manager.historicalLogs': { ar: 'السجل التاريخي لزيارات الشركة', en: 'Company Historical Activity Log' },
+  'manager.exportExcel': { ar: 'تحميل ملف إكسل شامل (Multi-Tab)', en: 'Download Multi-Tab Excel Report' },
+  'manager.exporting': { ar: 'جاري تجهيز التقرير...', en: 'Generating Report...' },
+  'manager.filterRep': { ar: 'تصفية بالمندوب:', en: 'Filter by Representative:' },
+  'manager.allReps': { ar: 'جميع المندوبين', en: 'All Representatives' },
+  'manager.search': { ar: 'بحث بالاسم أو المنطقة...', en: 'Search by name or area...' },
+  'manager.masterData': { ar: 'قواعد البيانات الرئيسية', en: 'Master Data Directory' },
+  'manager.tab.hospitals': { ar: 'سجل المستشفيات', en: 'Hospitals' },
+  'manager.tab.pharmacies': { ar: 'سجل الصيدليات', en: 'Pharmacies' },
+  'manager.tab.doctors': { ar: 'سجل الأطباء', en: 'Doctors' },
+  'manager.tab.branches': { ar: 'فروع التوزيع', en: 'Branches' },
+  'manager.tab.availability': { ar: 'توافر المنتجات', en: 'Availability' },
+  'manager.tab.reps': { ar: 'المندوبين', en: 'Representatives' },
+
+  // Auth Gate
+  'auth.title': { ar: 'تسجيل دخول الإدارة', en: 'Manager Authentication' },
+  'auth.desc': { ar: 'أدخل كلمة المرور الخاصة بالإدارة للوصول إلى لوحة المتابعة وتصدير البيانات', en: 'Enter the manager password to access the executive dashboard and export reports' },
+  'auth.passwordPlaceholder': { ar: 'كلمة مرور الإدارة...', en: 'Manager password...' },
+  'auth.unlockBtn': { ar: 'دخول لوحة المدير', en: 'Unlock Dashboard' },
+  'auth.verifying': { ar: 'جاري التحقق...', en: 'Verifying...' },
+  'auth.lockoutWarning': { ar: 'تم حظر العنوان مؤقتًا بعد 5 محاولات خاطئة. يرجى الانتظار 15 دقيقة.', en: 'IP temporarily locked after 5 failed attempts. Please wait 15 minutes.' },
+
+  // Table Headers
+  'th.rep': { ar: 'المندوب', en: 'Representative' },
+  'th.hospital': { ar: 'المستشفى', en: 'Hospital' },
+  'th.pharmacy': { ar: 'الصيدلية', en: 'Pharmacy' },
+  'th.doctor': { ar: 'الدكتور', en: 'Doctor' },
+  'th.branch': { ar: 'الفرع / الموزّع', en: 'Branch' },
+  'th.area': { ar: 'المنطقة', en: 'Area' },
+  'th.type': { ar: 'النوع', en: 'Type' },
+  'th.dept': { ar: 'القسم', en: 'Department' },
+  'th.drsVisited': { ar: 'د. زاروا', en: 'Drs Visited' },
+  'th.contact': { ar: 'المسؤول', en: 'Contact' },
+  'th.phone': { ar: 'التليفون', en: 'Phone' },
+  'th.mobile': { ar: 'الموبايل', en: 'Mobile' },
+  'th.specialty': { ar: 'التخصص', en: 'Specialty' },
+  'th.workplace': { ar: 'مكان العمل', en: 'Workplace' },
+  'th.classification': { ar: 'التصنيف', en: 'Class' },
+  'th.address': { ar: 'العنوان', en: 'Address' },
+  'th.pharmacist': { ar: 'الصيدلي', en: 'Pharmacist' },
+  'th.code': { ar: 'الكود', en: 'Code' },
+  'th.lastVisit': { ar: 'آخر زيارة', en: 'Last Visit' },
+  'th.nextVisit': { ar: 'الزيارة القادمة', en: 'Next Visit' },
+  'th.status': { ar: 'الحالة', en: 'Status' },
+  'th.ourProducts': { ar: 'منتجاتنا', en: 'Our Products' },
+  'th.competitor': { ar: 'المنافس', en: 'Competitor' },
+  'th.notes': { ar: 'ملاحظات', en: 'Notes' },
+  'th.product': { ar: 'المنتج', en: 'Product' },
+  'th.month': { ar: 'الشهر', en: 'Month' },
+  'th.sales': { ar: 'المبيعات', en: 'Sales' },
+  'th.availability': { ar: 'التوافر', en: 'Availability' },
+  'th.presentedProducts': { ar: 'المنتجات المعروضة', en: 'Presented Products' },
+
+  // Empty States
+  'empty.noVisits': { ar: 'لا توجد زيارات مسجلة تطابق اختياراتك حاليًا', en: 'No recorded visits matching your current selection' },
+  'empty.noReps': { ar: 'لا توجد بيانات مندوبين مسجلة في النظام', en: 'No representatives registered in the system' },
+  'empty.noAvailability': { ar: 'لا توجد تقارير توافر منتجات مسجلة', en: 'No product availability records found' },
+
+  // Feedback Messages
+  'msg.visitSaved': { ar: 'تم تسجيل التقرير بنجاح ✓', en: 'Visit report saved successfully ✓' },
+  'msg.availabilitySaved': { ar: 'تم تحديث توافر المنتج بنجاح ✓', en: 'Product availability updated successfully ✓' },
+  'msg.loginSuccess': { ar: 'تم تسجيل الدخول بنجاح ✓', en: 'Logged in successfully ✓' },
+  'msg.lockedSuccess': { ar: 'تم قفل لوحة المدير', en: 'Manager dashboard locked' },
+  'msg.exportSuccess': { ar: 'تم تحميل ملف الإكسل الشامل بنجاح ✓', en: 'Excel report downloaded successfully ✓' },
+  'msg.exportError': { ar: 'حصل خطأ أثناء تصدير ملف الإكسل', en: 'Failed to generate Excel report' },
+  'msg.errorGeneric': { ar: 'حدث خطأ، يرجى المحاولة مرة أخرى', en: 'An error occurred, please try again' },
+  'msg.requiredRep': { ar: 'من فضلك اختار اسمك الأول من القائمة', en: 'Please select your representative name first' },
+};

@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { DOCTOR_CLASSES, PRODUCTS_LIST, VISIT_STATUS_OPTIONS } from '@/lib/constants';
+import { useTranslation } from '@/lib/i18nContext';
+import { Button } from '@/components/ui/Button';
 
 interface DoctorFormProps {
   selectedRep: string;
@@ -10,6 +12,7 @@ interface DoctorFormProps {
 }
 
 export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     code: '',
@@ -30,7 +33,9 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
     notes: '',
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
   };
@@ -38,11 +43,11 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedRep) {
-      onError('اختار اسمك الأول');
+      onError(t('msg.requiredRep'));
       return;
     }
     if (!formData.name.trim()) {
-      onError('اكتب اسم الدكتور');
+      onError(t('form.doctorName'));
       return;
     }
 
@@ -55,7 +60,7 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        onSuccess(data.message);
+        onSuccess(data.message || t('msg.visitSaved'));
         setFormData({
           code: '',
           name: '',
@@ -75,188 +80,242 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
           notes: '',
         });
       } else {
-        onError(data.message || 'حصل خطأ، جرب تاني');
+        onError(data.message || t('msg.errorGeneric'));
       }
     } catch {
-      onError('حصل خطأ أثناء الاتصال بالخادم');
+      onError(t('msg.errorGeneric'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 mb-4 shadow-xs">
-      <h2 className="text-base font-bold text-[var(--ink)] mb-3.5">بيانات زيارة الدكتور</h2>
+    <form
+      onSubmit={handleSubmit}
+      className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 md:p-6 mb-4 shadow-card animate-fade-in"
+    >
+      <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[var(--line)]">
+        <span className="text-xl">🩺</span>
+        <h2 className="text-base font-extrabold text-[var(--ink)]">
+          {t('activity.doctor')} — {t('nav.submit')}
+        </h2>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 mb-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
         <div>
-          <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1.5">كود الدكتور</label>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
+            {t('form.code')}
+          </label>
           <input
             id="code"
             value={formData.code}
             onChange={handleChange}
             placeholder="مثال: DR-0001"
-            className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-mono"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1.5">اسم الدكتور *</label>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
+            {t('form.doctorName')}
+          </label>
           <input
             id="name"
             value={formData.name}
             onChange={handleChange}
             placeholder="مثال: د. محمد عبد الرحمن"
             required
-            className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-medium"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1.5">التخصص</label>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
+            {t('form.specialty')}
+          </label>
           <input
             id="specialty"
             value={formData.specialty}
             onChange={handleChange}
-            className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+            placeholder="مثال: قلب / باطنة"
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-medium"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1.5">مكان العمل (عيادة/مستشفى)</label>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
+            {t('form.workplace')}
+          </label>
           <input
             id="workplace"
             value={formData.workplace}
             onChange={handleChange}
-            className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+            placeholder="عيادة خاصة / مستشفى"
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-medium"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1.5">المنطقة</label>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
+            {t('form.area')}
+          </label>
           <input
             id="area"
             value={formData.area}
             onChange={handleChange}
-            className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+            placeholder="مثال: مصر الجديدة"
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-medium"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1.5">رقم الموبايل</label>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
+            {t('form.mobile')}
+          </label>
           <input
             id="mobile"
             type="tel"
             value={formData.mobile}
             onChange={handleChange}
-            className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+            placeholder="01xxxxxxxxx"
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-mono"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1.5">التصنيف</label>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
+            {t('th.classification')}
+          </label>
           <select
             id="cls"
             value={formData.cls}
             onChange={handleChange}
-            className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-medium"
           >
-            {DOCTOR_CLASSES.map((c) => (
-              <option key={c} value={c}>{c}</option>
+            {DOCTOR_CLASSES.map((cls) => (
+              <option key={cls} value={cls}>
+                Class {cls}
+              </option>
             ))}
           </select>
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1.5">تاريخ الزيارة</label>
-          <input
-            id="visitDate"
-            type="date"
-            value={formData.visitDate}
-            onChange={handleChange}
-            className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1.5">دورة الزيارة (بالأيام)</label>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
+            {t('form.cycle')}
+          </label>
           <input
             id="cycle"
             type="number"
             min="0"
             value={formData.cycle || ''}
             onChange={handleChange}
-            className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-mono"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1.5">تاريخ الزيارة الجاية</label>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
+            {t('form.visitDate')}
+          </label>
+          <input
+            id="visitDate"
+            type="date"
+            value={formData.visitDate}
+            onChange={handleChange}
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-mono"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
+            {t('form.nextVisit')}
+          </label>
           <input
             id="nextVisit"
             type="date"
             value={formData.nextVisit}
             onChange={handleChange}
-            className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-mono"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1.5">الحالة</label>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
+            {t('th.status')}
+          </label>
           <select
             id="status"
             value={formData.status}
             onChange={handleChange}
-            className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-medium"
           >
             {VISIT_STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
             ))}
           </select>
         </div>
       </div>
 
-      <div className="border-t border-[var(--line)] pt-3.5 mb-3.5">
-        <p className="text-xs font-bold text-[var(--ink-soft)] mb-2.5">المنتجات المعروضة (حتى 4 منتجات)</p>
+      {/* Prioritized Products Section */}
+      <div className="bg-[var(--gold-tint)] border border-[var(--gold-border)] rounded-xl p-4 mb-4">
+        <p className="text-xs font-extrabold text-[var(--gold-deep)] mb-3 flex items-center gap-1.5">
+          <span>✨</span>
+          <span>{t('form.doctorProductsTitle')}</span>
+        </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
           <div>
-            <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1">منتج 1</label>
+            <label className="block text-[11px] font-bold text-[var(--ink-secondary)] mb-1">
+              {t('form.product1')}
+            </label>
             <input
               id="f1"
               value={formData.f1}
               onChange={handleChange}
               list="prodlist-doctor"
-              className="w-full px-3 py-1.5 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+              placeholder="المنتج الأساسي"
+              className="w-full px-3 py-2 text-xs bg-white border border-[var(--line)] rounded-lg font-medium"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1">منتج 2</label>
+            <label className="block text-[11px] font-bold text-[var(--ink-secondary)] mb-1">
+              {t('form.product2')}
+            </label>
             <input
               id="f2"
               value={formData.f2}
               onChange={handleChange}
               list="prodlist-doctor"
-              className="w-full px-3 py-1.5 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+              placeholder="المنتج الثانوي"
+              className="w-full px-3 py-2 text-xs bg-white border border-[var(--line)] rounded-lg font-medium"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1">منتج 3</label>
+            <label className="block text-[11px] font-bold text-[var(--ink-secondary)] mb-1">
+              {t('form.product3')}
+            </label>
             <input
               id="f3"
               value={formData.f3}
               onChange={handleChange}
               list="prodlist-doctor"
-              className="w-full px-3 py-1.5 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+              placeholder="المنتج الثالث"
+              className="w-full px-3 py-2 text-xs bg-white border border-[var(--line)] rounded-lg font-medium"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1">Reminder</label>
+            <label className="block text-[11px] font-bold text-[var(--ink-secondary)] mb-1">
+              {t('form.reminderProduct')}
+            </label>
             <input
               id="reminder"
               value={formData.reminder}
               onChange={handleChange}
               list="prodlist-doctor"
-              className="w-full px-3 py-1.5 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+              placeholder="التذكيري"
+              className="w-full px-3 py-2 text-xs bg-white border border-[var(--line)] rounded-lg font-medium"
             />
           </div>
         </div>
@@ -267,24 +326,23 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
         </datalist>
       </div>
 
-      <div className="mb-4">
-        <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1.5">ملاحظات</label>
+      <div className="mb-5">
+        <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
+          {t('form.notes')}
+        </label>
         <textarea
           id="notes"
           rows={2}
           value={formData.notes}
           onChange={handleChange}
-          className="w-full px-3 py-2 text-sm bg-white border border-[var(--line)] rounded-lg focus:outline-2 focus:outline-[var(--teal)]"
+          placeholder="أي تفاصيل أو تعليقات بخصوص الزيارة..."
+          className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] rounded-xl font-medium"
         />
       </div>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="px-6 py-2.5 rounded-lg text-sm font-bold bg-[var(--teal)] text-white hover:bg-[var(--teal-deep)] transition-all cursor-pointer disabled:opacity-50"
-      >
-        {loading ? 'جاري الإرسال...' : 'إرسال التقرير'}
-      </button>
+      <Button type="submit" variant="primary" size="md" isLoading={loading}>
+        {t('form.submit')}
+      </Button>
     </form>
   );
 }

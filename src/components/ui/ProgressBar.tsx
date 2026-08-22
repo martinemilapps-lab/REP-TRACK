@@ -6,22 +6,31 @@ interface ProgressBarProps {
   label: string;
   actual: number;
   assigned: number;
+  className?: string;
 }
 
-export function ProgressBar({ label, actual, assigned }: ProgressBarProps) {
-  const percentage = assigned > 0 ? Math.min(Math.round((actual / assigned) * 100), 100) : 0;
+export function ProgressBar({ label, actual, assigned, className = '' }: ProgressBarProps) {
+  const percentage = assigned > 0 ? Math.min(100, Math.round((actual / assigned) * 100)) : 0;
+  const isComplete = percentage >= 100;
 
   return (
-    <div className="flex items-center gap-2 mt-2 text-xs">
-      <div className="w-16 text-[var(--ink-soft)] shrink-0 font-medium">{label}</div>
-      <div className="flex-1 h-1.5 bg-[var(--line)] rounded-full overflow-hidden">
+    <div className={`mt-2 ${className}`}>
+      <div className="flex justify-between items-center text-[11px] mb-1">
+        <span className="font-semibold text-[var(--ink-secondary)]">{label}</span>
+        <span className="font-mono text-[var(--ink-soft)]">
+          <strong className="text-[var(--ink)] font-bold">{actual}</strong> / {assigned}
+          <span className="text-[10px] text-[var(--ink-muted)] ms-1">({percentage}%)</span>
+        </span>
+      </div>
+      <div className="w-full h-2 bg-[var(--surface-subtle)] border border-[var(--line)] rounded-full overflow-hidden">
         <div
-          className="h-full bg-[var(--teal)] rounded-full transition-all duration-300"
+          className={`h-full transition-all duration-500 rounded-full ${
+            isComplete
+              ? 'bg-gradient-to-r from-[var(--visited-color)] to-[#22C55E]'
+              : 'bg-gradient-to-r from-[var(--gold-dark)] to-[var(--gold-light)]'
+          }`}
           style={{ width: `${percentage}%` }}
         />
-      </div>
-      <div className="w-14 text-left font-mono text-[11px] text-[var(--ink-soft)] shrink-0">
-        {actual}/{assigned}
       </div>
     </div>
   );
