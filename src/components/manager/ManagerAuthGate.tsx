@@ -56,17 +56,15 @@ export function ManagerAuthGate({ onUnlock, onError }: ManagerAuthGateProps) {
     <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius-lg)] p-6 md:p-8 max-w-md mx-auto shadow-card animate-fade-in">
       {/* Branded Header */}
       <div className="flex flex-col items-center text-center mb-6">
-        <div className="relative w-36 h-14 mb-3">
+        <div className="relative w-56 h-28 md:w-64 md:h-32 mb-3 flex items-center justify-center">
           <Image
             src="/logo.png"
             alt="REP TRACK"
-            width={160}
-            height={60}
-            className="object-contain"
+            width={280}
+            height={140}
+            priority
+            className="w-full h-full object-contain drop-shadow-xs"
           />
-        </div>
-        <div className="w-10 h-10 rounded-full bg-[var(--gold-tint)] border border-[var(--gold-border)] flex items-center justify-center text-lg mb-2 text-[var(--gold-dark)] shadow-2xs">
-          🔒
         </div>
         <h2 className="text-base md:text-lg font-extrabold text-[var(--ink)]">
           {t('auth.title')}

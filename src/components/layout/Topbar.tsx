@@ -45,7 +45,7 @@ export function Topbar({
       <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-3 w-full sm:w-auto">
         <Link
           href="/"
-          className="relative w-40 h-14 md:w-44 md:h-14 flex items-center justify-center sm:justify-start shrink-0 cursor-pointer"
+          className="flex items-center justify-center sm:justify-start shrink-0 cursor-pointer"
         >
           <Image
             src="/logo.png"
@@ -53,7 +53,7 @@ export function Topbar({
             width={180}
             height={56}
             priority
-            className="object-contain drop-shadow-2xs"
+            className="h-12 md:h-14 w-auto object-contain drop-shadow-2xs"
           />
         </Link>
         <div className="hidden sm:block border-s border-[var(--line-strong)] ps-3">
