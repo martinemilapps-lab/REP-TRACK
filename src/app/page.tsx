@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Representative, ActivityType } from '@/types';
 import { Topbar, ViewType } from '@/components/layout/Topbar';
 import { Toast, ToastMessage } from '@/components/ui/Toast';
@@ -12,13 +13,14 @@ import { DoctorForm } from '@/components/reports/DoctorForm';
 import { BranchForm } from '@/components/reports/BranchForm';
 import { AvailabilityForm } from '@/components/reports/AvailabilityForm';
 import { MyReportsView } from '@/components/my-reports/MyReportsView';
-import { ManagerDashboardView } from '@/components/manager/ManagerDashboardView';
-import { ManagerAuthGate } from '@/components/manager/ManagerAuthGate';
 import { useTranslation } from '@/lib/i18nContext';
 
-export default function Home() {
+function HomePageContent() {
   const { t } = useTranslation();
-  const [activeView, setActiveView] = useState<ViewType>('submit');
+  const searchParams = useSearchParams();
+  const initialView = (searchParams.get('view') as ViewType) || 'submit';
+
+  const [activeView, setActiveView] = useState<ViewType>(initialView);
   const [reps, setReps] = useState<Representative[]>([]);
   const [selectedRep, setSelectedRep] = useState<string>('');
   const [selectedType, setSelectedType] = useState<ActivityType>('hospital');
@@ -32,6 +34,14 @@ export default function Home() {
       setToast(null);
     }, 3200);
   }, []);
+
+  // Sync view from query param if changed
+  useEffect(() => {
+    const viewParam = searchParams.get('view') as ViewType | null;
+    if (viewParam && (viewParam === 'submit' || viewParam === 'myreports')) {
+      setActiveView(viewParam);
+    }
+  }, [searchParams]);
 
   // Fetch representatives and check manager session on initial load
   useEffect(() => {
@@ -54,20 +64,14 @@ export default function Home() {
       } catch (err) {
         console.error('Failed to initialize app state:', err);
       } finally {
-        // Guarantee branded loading presentation
         setTimeout(() => {
           setInitialLoading(false);
-        }, 500);
+        }, 350);
       }
     }
 
     initApp();
   }, []);
-
-  const handleManagerUnlock = () => {
-    setIsManagerUnlocked(true);
-    showToast(t('msg.loginSuccess'));
-  };
 
   const handleManagerLock = async () => {
     try {
@@ -188,27 +192,16 @@ export default function Home() {
         />
       )}
 
-      {/* ============ VIEW 3: MANAGER DASHBOARD ============ */}
-      {activeView === 'dashboard' && (
-        <div>
-          {!isManagerUnlocked ? (
-            <ManagerAuthGate
-              onUnlock={handleManagerUnlock}
-              onError={(msg) => showToast(msg, true)}
-            />
-          ) : (
-            <ManagerDashboardView
-              reps={reps}
-              onLock={handleManagerLock}
-              onError={(msg) => showToast(msg, true)}
-              onSuccess={(msg) => showToast(msg)}
-            />
-          )}
-        </div>
-      )}
-
       {/* Toast Feedback */}
       <Toast toast={toast} onClose={() => setToast(null)} />
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <HomePageContent />
+    </Suspense>
   );
 }

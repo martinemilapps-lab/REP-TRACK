@@ -2,13 +2,15 @@
 
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
 import { useTranslation } from '@/lib/i18nContext';
 
 export type ViewType = 'submit' | 'myreports' | 'dashboard';
 
 interface TopbarProps {
-  activeView: ViewType;
-  onViewChange: (view: ViewType) => void;
+  activeView?: ViewType;
+  onViewChange?: (view: ViewType) => void;
   isManagerUnlocked?: boolean;
   onLockManager?: () => void;
 }
@@ -20,12 +22,32 @@ export function Topbar({
   onLockManager,
 }: TopbarProps) {
   const { t, language, toggleLanguage } = useTranslation();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const isDashboardActive = activeView === 'dashboard' || pathname === '/admin';
+  const isSubmitActive = activeView === 'submit' || (pathname === '/' && !activeView);
+  const isMyReportsActive = activeView === 'myreports';
+
+  const handleNavClick = (view: ViewType) => {
+    if (view === 'dashboard') {
+      if (pathname !== '/admin') {
+        router.push('/admin');
+      }
+    } else {
+      if (pathname !== '/') {
+        router.push(`/?view=${view}`);
+      } else if (onViewChange) {
+        onViewChange(view);
+      }
+    }
+  };
 
   return (
     <header className="flex items-center justify-between gap-4 flex-wrap pb-4 mb-6 border-b border-[var(--line)] bg-[var(--bg)]">
       {/* Brand Identity & Logo */}
       <div className="flex items-center gap-3">
-        <div className="relative w-36 h-12 md:w-44 md:h-14 flex items-center justify-start shrink-0">
+        <Link href="/" className="relative w-36 h-12 md:w-44 md:h-14 flex items-center justify-start shrink-0 cursor-pointer">
           <Image
             src="/logo.png"
             alt="REP TRACK - Sunny Medical Group"
@@ -34,7 +56,7 @@ export function Topbar({
             priority
             className="object-contain drop-shadow-2xs"
           />
-        </div>
+        </Link>
         <div className="hidden sm:block border-s border-[var(--line-strong)] ps-3">
           <p className="text-[11px] font-extrabold text-[var(--gold-dark)] tracking-wider uppercase">
             Sunny Medical Group
@@ -49,9 +71,9 @@ export function Topbar({
       <div className="flex items-center gap-2 flex-wrap">
         <nav className="flex gap-1 bg-[var(--surface)] p-1 rounded-xl border border-[var(--line)] shadow-card">
           <button
-            onClick={() => onViewChange('submit')}
+            onClick={() => handleNavClick('submit')}
             className={`px-3.5 py-2 rounded-lg text-xs md:text-sm font-bold transition-all duration-200 cursor-pointer select-none ${
-              activeView === 'submit'
+              isSubmitActive && !isDashboardActive
                 ? 'bg-gradient-to-r from-[var(--gold)] to-[var(--gold-light)] text-white shadow-xs font-extrabold'
                 : 'text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--surface-hover)]'
             }`}
@@ -59,9 +81,9 @@ export function Topbar({
             {t('nav.submit')}
           </button>
           <button
-            onClick={() => onViewChange('myreports')}
+            onClick={() => handleNavClick('myreports')}
             className={`px-3.5 py-2 rounded-lg text-xs md:text-sm font-bold transition-all duration-200 cursor-pointer select-none ${
-              activeView === 'myreports'
+              isMyReportsActive && !isDashboardActive
                 ? 'bg-gradient-to-r from-[var(--gold)] to-[var(--gold-light)] text-white shadow-xs font-extrabold'
                 : 'text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--surface-hover)]'
             }`}
@@ -69,9 +91,9 @@ export function Topbar({
             {t('nav.myReports')}
           </button>
           <button
-            onClick={() => onViewChange('dashboard')}
+            onClick={() => handleNavClick('dashboard')}
             className={`px-3.5 py-2 rounded-lg text-xs md:text-sm font-bold transition-all duration-200 cursor-pointer select-none flex items-center gap-1.5 ${
-              activeView === 'dashboard'
+              isDashboardActive
                 ? 'bg-gradient-to-r from-[var(--gold)] to-[var(--gold-light)] text-white shadow-xs font-extrabold'
                 : 'text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--surface-hover)]'
             }`}
