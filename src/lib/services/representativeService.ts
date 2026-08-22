@@ -1,16 +1,58 @@
 import { db, representatives, hospitalVisits, pharmacyVisits, doctorVisits } from '@/lib/db';
 import { eq, sql } from 'drizzle-orm';
 import { calculateCoverage, RepCoverageResult } from '@/lib/business/coverage';
+import { INITIAL_REPRESENTATIVES } from '@/lib/constants';
 
 /**
  * Retrieves all active representatives from Turso.
+ * If database is newly provisioned, automatically populates INITIAL_REPRESENTATIVES.
  */
 export async function getAllRepresentatives() {
-  return await db
-    .select()
-    .from(representatives)
-    .where(eq(representatives.isActive, true))
-    .all();
+  try {
+    const existing = await db
+      .select()
+      .from(representatives)
+      .where(eq(representatives.isActive, true))
+      .all();
+
+    if (existing && existing.length >= INITIAL_REPRESENTATIVES.length) {
+      return existing;
+    }
+
+    // Ensure all 19 initial representatives are inserted
+    for (const rep of INITIAL_REPRESENTATIVES) {
+      const found = existing?.find((r) => r.name.toLowerCase() === rep.name.toLowerCase());
+      if (!found) {
+        try {
+          await db
+            .insert(representatives)
+            .values({
+              id: rep.id,
+              name: rep.name,
+              area: rep.area,
+              assignedHospitals: rep.assignedHospitals,
+              assignedPharmacies: rep.assignedPharmacies,
+              assignedDrs: rep.assignedDrs,
+              isActive: true,
+            })
+            .onConflictDoNothing();
+        } catch {
+          // ignore conflict
+        }
+      }
+    }
+
+    const allReps = await db
+      .select()
+      .from(representatives)
+      .where(eq(representatives.isActive, true))
+      .all();
+
+    return allReps && allReps.length > 0 ? allReps : INITIAL_REPRESENTATIVES;
+  } catch (err) {
+    console.warn('Fallback to INITIAL_REPRESENTATIVES:', err);
+    return INITIAL_REPRESENTATIVES;
+  }
 }
 
 /**
