@@ -74,6 +74,7 @@ export async function upsertProductAvailability(
       .set({
         salesUnits: input.sales || 0,
         isAvailable: isAvail,
+        objective: input.objective || null,
         notes: input.notes || null,
         submittedAt: new Date(),
       })
@@ -88,6 +89,7 @@ export async function upsertProductAvailability(
         repId,
         hospitalId: hospital.id,
         productId: product.id,
+        objective: input.objective || null,
         month: cleanMonth,
         salesUnits: input.sales || 0,
         isAvailable: isAvail,
@@ -124,6 +126,7 @@ export async function getProductAvailabilityReports(
       hospital: hospitals.name,
       area: hospitals.area,
       product: products.name,
+      objective: productAvailabilities.objective,
       month: productAvailabilities.month,
       sales: productAvailabilities.salesUnits,
       isAvailable: productAvailabilities.isAvailable,
@@ -146,6 +149,7 @@ export async function getProductAvailabilityReports(
         hospital: hospitals.name,
         area: hospitals.area,
         product: products.name,
+        objective: productAvailabilities.objective,
         month: productAvailabilities.month,
         sales: productAvailabilities.salesUnits,
         isAvailable: productAvailabilities.isAvailable,

@@ -244,6 +244,7 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                       <thead>
                         <tr>
                           <th>{t('th.hospital')}</th>
+                          <th>{t('th.objective')}</th>
                           <th>{t('th.visitType')}</th>
                           <th>{t('th.area')}</th>
                           <th>{t('th.type')}</th>
@@ -263,6 +264,9 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                         {filteredHospitals.map((r) => (
                           <tr key={r.id}>
                             <td className="font-bold text-[var(--ink)] whitespace-nowrap">{r.name}</td>
+                            <td className="whitespace-nowrap max-w-[180px] truncate font-medium text-[var(--ink-secondary)]" title={r.objective || ''}>
+                              {r.objective || '—'}
+                            </td>
                             <td className="whitespace-nowrap">
                               <span
                                 className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md ${
@@ -314,6 +318,7 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                       <thead>
                         <tr>
                           <th>{t('th.pharmacy')}</th>
+                          <th>{t('th.objective')}</th>
                           <th>{t('th.visitType')}</th>
                           <th>{t('th.area')}</th>
                           <th>{t('th.address')}</th>
@@ -332,6 +337,9 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                         {filteredPharmacies.map((r) => (
                           <tr key={r.id}>
                             <td className="font-bold text-[var(--ink)] whitespace-nowrap">{r.name}</td>
+                            <td className="whitespace-nowrap max-w-[180px] truncate font-medium text-[var(--ink-secondary)]" title={r.objective || ''}>
+                              {r.objective || '—'}
+                            </td>
                             <td className="whitespace-nowrap">
                               <span
                                 className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md ${
@@ -376,6 +384,7 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                         <tr>
                           <th>{t('th.code')}</th>
                           <th>{t('th.doctor')}</th>
+                          <th>{t('th.objective')}</th>
                           <th>{t('th.visitType')}</th>
                           <th>{t('th.specialty')}</th>
                           <th>{t('th.workplace')}</th>
@@ -396,6 +405,9 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                             <tr key={r.id}>
                               <td className="font-mono whitespace-nowrap">{r.code}</td>
                               <td className="font-bold text-[var(--ink)] whitespace-nowrap">{r.name}</td>
+                              <td className="whitespace-nowrap max-w-[180px] truncate font-medium text-[var(--ink-secondary)]" title={r.objective || ''}>
+                                {r.objective || '—'}
+                              </td>
                               <td className="whitespace-nowrap">
                                 <span
                                   className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md ${
@@ -439,6 +451,7 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                       <thead>
                         <tr>
                           <th>{t('th.branch')}</th>
+                          <th>{t('th.objective')}</th>
                           <th>{t('th.visitType')}</th>
                           <th>{t('th.area')}</th>
                           <th>{t('th.contact')}</th>
@@ -452,6 +465,9 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                         {data.branches.map((r) => (
                           <tr key={r.id}>
                             <td className="font-bold text-[var(--ink)] whitespace-nowrap">{r.name}</td>
+                            <td className="whitespace-nowrap max-w-[180px] truncate font-medium text-[var(--ink-secondary)]" title={r.objective || ''}>
+                              {r.objective || '—'}
+                            </td>
                             <td className="whitespace-nowrap">
                               <span
                                 className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md ${
@@ -490,6 +506,7 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                       <thead>
                         <tr>
                           <th>{t('th.hospital')}</th>
+                          <th>{t('th.objective')}</th>
                           <th>{t('th.area')}</th>
                           <th>{t('th.product')}</th>
                           <th>{t('th.month')}</th>
@@ -502,6 +519,9 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                         {data.availabilities.map((r) => (
                           <tr key={r.id}>
                             <td className="font-bold text-[var(--ink)] whitespace-nowrap">{r.hospital}</td>
+                            <td className="whitespace-nowrap max-w-[180px] truncate font-medium text-[var(--ink-secondary)]" title={r.objective || ''}>
+                              {r.objective || '—'}
+                            </td>
                             <td className="whitespace-nowrap">{r.area}</td>
                             <td className="font-bold text-[var(--gold-dark)] whitespace-nowrap">{r.product}</td>
                             <td className="whitespace-nowrap">{r.month}</td>

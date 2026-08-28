@@ -54,6 +54,7 @@ export async function createDoctorVisit(
     .values({
       repId,
       doctorId: doctor.id,
+      objective: input.objective || null,
       visitDate: input.visitDate || null,
       cycleDays: input.cycle || 0,
       nextVisitDate: input.nextVisit || null,
@@ -102,6 +103,7 @@ export async function getDoctorReports(
       rep: representatives.name,
       code: doctors.code,
       name: doctors.name,
+      objective: doctorVisits.objective,
       specialty: doctors.specialty,
       workplace: doctors.workplace,
       area: doctors.area,
@@ -133,6 +135,7 @@ export async function getDoctorReports(
         rep: representatives.name,
         code: doctors.code,
         name: doctors.name,
+        objective: doctorVisits.objective,
         specialty: doctors.specialty,
         workplace: doctors.workplace,
         area: doctors.area,

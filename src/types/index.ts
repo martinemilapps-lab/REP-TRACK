@@ -23,6 +23,7 @@ export interface HospitalVisitRecord {
   name: string;
   area: string;
   type: string; // 'Private' | 'Government' | 'University' | 'Insurance' | 'Other'
+  objective?: string;
   dept?: string;
   drsVisited?: number;
   doctorNames?: string;
@@ -48,6 +49,7 @@ export interface PharmacyVisitRecord {
   name: string;
   area: string;
   address?: string;
+  objective?: string;
   pharmacist?: string;
   mobile?: string;
   cls: string; // 'A' | 'B' | 'C'
@@ -70,6 +72,7 @@ export interface DoctorVisitRecord {
   rep: string;
   code?: string;
   name: string;
+  objective?: string;
   specialty?: string;
   workplace?: string;
   area: string;
@@ -96,6 +99,7 @@ export interface BranchVisitRecord {
   rep: string;
   name: string;
   area: string;
+  objective?: string;
   contact?: string;
   phone?: string;
   products?: string;
@@ -181,6 +185,7 @@ export interface ProductAvailabilityRecord {
   hospital: string;
   area: string;
   product: string;
+  objective?: string;
   month: string;
   sales?: number;
   status: string; // 'Available' | 'Not Available'

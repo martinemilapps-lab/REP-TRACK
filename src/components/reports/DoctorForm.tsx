@@ -57,6 +57,7 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
   const initialNext = addDaysToDate(initialToday, 7);
 
   const [formData, setFormData] = useState({
+    objective: '',
     code: '',
     name: '',
     specialty: '',
@@ -244,6 +245,7 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
     }
     const today = getTodayString();
     setFormData({
+      objective: '',
       code: '',
       name: '',
       specialty: '',
@@ -305,6 +307,7 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
         }
         const today = getTodayString();
         setFormData({
+          objective: '',
           code: '',
           name: '',
           specialty: '',
@@ -367,7 +370,7 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
               <span>{language === 'ar' ? 'تم استرجاع المسودة' : 'Draft Restored'}</span>
             </span>
           )}
-          {(formData.name || formData.specialty || formData.workplace) && (
+          {(formData.name || formData.specialty || formData.workplace || formData.objective) && (
             <button
               type="button"
               onClick={handleClearDraft}
@@ -377,6 +380,23 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
             </button>
           )}
         </div>
+      </div>
+
+      {/* 1. Visit Objective (هدف الزيارة) - First Field */}
+      <div className="mb-4 bg-[var(--surface-subtle)]/70 p-3.5 md:p-4 rounded-xl border border-[var(--line)] shadow-2xs">
+        <label className="block text-xs font-extrabold text-[var(--ink)] mb-1.5 flex items-center justify-between">
+          <span className="flex items-center gap-1.5">
+            <span className="text-base">🎯</span>
+            <span>{t('form.objective')}</span>
+          </span>
+        </label>
+        <input
+          id="objective"
+          value={formData.objective}
+          onChange={handleChange}
+          placeholder={t('form.objectivePlaceholder')}
+          className="w-full px-3.5 py-2.5 text-xs md:text-sm bg-white border border-[var(--line)] focus:border-[var(--gold)] focus:ring-1 focus:ring-[var(--gold)] rounded-xl font-medium outline-none shadow-2xs transition-all"
+        />
       </div>
 
       {/* Visit Nature / Type (Single vs Double) */}

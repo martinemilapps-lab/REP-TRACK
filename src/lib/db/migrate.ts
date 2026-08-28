@@ -46,6 +46,13 @@ async function migrate() {
   await safeAddColumn('branch_visits', 'cycle_days', 'INTEGER DEFAULT 0');
   await safeAddColumn('branch_visits', 'next_visit_date', 'TEXT');
 
+  // objective columns for all 5 report sections
+  await safeAddColumn('hospital_visits', 'objective', 'TEXT');
+  await safeAddColumn('pharmacy_visits', 'objective', 'TEXT');
+  await safeAddColumn('doctor_visits', 'objective', 'TEXT');
+  await safeAddColumn('branch_visits', 'objective', 'TEXT');
+  await safeAddColumn('product_availabilities', 'objective', 'TEXT');
+
   console.log('✨ All migrations completed successfully!');
 }
 

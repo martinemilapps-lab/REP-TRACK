@@ -65,6 +65,7 @@ export async function createHospitalVisit(
     .values({
       repId,
       hospitalId: hospital.id,
+      objective: input.objective || null,
       dept: input.dept || null,
       drsVisited: input.drsVisited || 0,
       doctorNames: input.doctorNames || null,
@@ -113,6 +114,7 @@ export async function getHospitalReports(
       name: hospitals.name,
       area: hospitals.area,
       type: hospitals.type,
+      objective: hospitalVisits.objective,
       dept: hospitalVisits.dept,
       drsVisited: hospitalVisits.drsVisited,
       doctorNames: hospitalVisits.doctorNames,
@@ -143,6 +145,7 @@ export async function getHospitalReports(
         name: hospitals.name,
         area: hospitals.area,
         type: hospitals.type,
+        objective: hospitalVisits.objective,
         dept: hospitalVisits.dept,
         drsVisited: hospitalVisits.drsVisited,
         doctorNames: hospitalVisits.doctorNames,

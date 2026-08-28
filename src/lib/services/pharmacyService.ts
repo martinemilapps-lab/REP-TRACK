@@ -53,6 +53,7 @@ export async function createPharmacyVisit(
     .values({
       repId,
       pharmacyId: pharmacy.id,
+      objective: input.objective || null,
       cycleDays: input.cycle || 0,
       lastVisitDate: input.lastVisit || null,
       nextVisitDate: input.nextVisit || null,
@@ -99,6 +100,7 @@ export async function getPharmacyReports(
       name: pharmacies.name,
       area: pharmacies.area,
       address: pharmacies.address,
+      objective: pharmacyVisits.objective,
       pharmacist: pharmacies.pharmacist,
       mobile: pharmacies.mobile,
       cls: pharmacies.classification,
@@ -127,6 +129,7 @@ export async function getPharmacyReports(
         name: pharmacies.name,
         area: pharmacies.area,
         address: pharmacies.address,
+        objective: pharmacyVisits.objective,
         pharmacist: pharmacies.pharmacist,
         mobile: pharmacies.mobile,
         cls: pharmacies.classification,

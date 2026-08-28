@@ -51,6 +51,7 @@ export async function createBranchVisit(
     .values({
       repId,
       branchId: branch.id,
+      objective: input.objective || null,
       cycleDays: input.cycle || 0,
       lastVisitDate: input.lastVisit || null,
       nextVisitDate: input.nextVisit || null,
@@ -89,6 +90,7 @@ export async function getBranchReports(
       rep: representatives.name,
       name: distributionBranches.name,
       area: distributionBranches.coverageArea,
+      objective: branchVisits.objective,
       contact: distributionBranches.contact,
       phone: distributionBranches.phone,
       products: distributionBranches.distributedProducts,
@@ -114,6 +116,7 @@ export async function getBranchReports(
         rep: representatives.name,
         name: distributionBranches.name,
         area: distributionBranches.coverageArea,
+        objective: branchVisits.objective,
         contact: distributionBranches.contact,
         phone: distributionBranches.phone,
         products: distributionBranches.distributedProducts,

@@ -43,6 +43,7 @@ export function generateExcelWorkbook(data: ExportDataPayload): Uint8Array {
   const hospitalsSheet = data.hospitals.map((r) => ({
     'Assigned Rep': r.rep,
     'Hospital Name': r.name,
+    'Visit Objective': r.objective || '',
     'Area': r.area,
     'Hospital Type': r.type,
     'Target Department / Specialty': r.dept || '',
@@ -65,6 +66,7 @@ export function generateExcelWorkbook(data: ExportDataPayload): Uint8Array {
     'Assigned Rep': r.rep,
     'Area / District': r.area,
     'Pharmacy Name': r.name,
+    'Visit Objective': r.objective || '',
     'Full Address': r.address || '',
     'Responsible Pharmacist': r.pharmacist || '',
     'Mobile Number': r.mobile || '',
@@ -84,6 +86,7 @@ export function generateExcelWorkbook(data: ExportDataPayload): Uint8Array {
     'Assigned Rep': r.rep,
     'Doctor Code': r.code || '',
     'Doctor Name': r.name,
+    'Visit Objective': r.objective || '',
     'Specialty': r.specialty || '',
     'Workplace (Clinic/Hospital)': r.workplace || '',
     'Area': r.area,
@@ -105,6 +108,7 @@ export function generateExcelWorkbook(data: ExportDataPayload): Uint8Array {
   const branchesSheet = data.branches.map((r) => ({
     'Assigned Rep': r.rep,
     'Distributor / Branch Name': r.name,
+    'Visit Objective': r.objective || '',
     'Coverage Area': r.area,
     'Contact Person': r.contact || '',
     'Phone Number': r.phone || '',
@@ -118,6 +122,7 @@ export function generateExcelWorkbook(data: ExportDataPayload): Uint8Array {
   const availabilitySheet = data.availabilities.map((r) => ({
     'Assigned Rep': r.rep,
     'Hospital': r.hospital,
+    'Visit Objective': r.objective || '',
     'Area': r.area,
     'Product': r.product,
     'Month': r.month,

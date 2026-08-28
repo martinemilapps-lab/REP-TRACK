@@ -140,6 +140,7 @@ export const hospitalVisits = sqliteTable('hospital_visits', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   repId: text('rep_id').notNull().references(() => representatives.id, { onDelete: 'restrict' }),
   hospitalId: text('hospital_id').notNull().references(() => hospitals.id, { onDelete: 'restrict' }),
+  objective: text('objective'),
   dept: text('dept'),
   drsVisited: integer('drs_visited').default(0),
   doctorNames: text('doctor_names'),
@@ -162,6 +163,7 @@ export const pharmacyVisits = sqliteTable('pharmacy_visits', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   repId: text('rep_id').notNull().references(() => representatives.id, { onDelete: 'restrict' }),
   pharmacyId: text('pharmacy_id').notNull().references(() => pharmacies.id, { onDelete: 'restrict' }),
+  objective: text('objective'),
   cycleDays: integer('cycle_days').default(0),
   lastVisitDate: text('last_visit_date'), // YYYY-MM-DD
   nextVisitDate: text('next_visit_date'), // YYYY-MM-DD
@@ -180,6 +182,7 @@ export const doctorVisits = sqliteTable('doctor_visits', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   repId: text('rep_id').notNull().references(() => representatives.id, { onDelete: 'restrict' }),
   doctorId: text('doctor_id').notNull().references(() => doctors.id, { onDelete: 'restrict' }),
+  objective: text('objective'),
   visitDate: text('visit_date'), // YYYY-MM-DD
   cycleDays: integer('cycle_days').default(0),
   nextVisitDate: text('next_visit_date'), // YYYY-MM-DD
@@ -200,6 +203,7 @@ export const branchVisits = sqliteTable('branch_visits', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   repId: text('rep_id').notNull().references(() => representatives.id, { onDelete: 'restrict' }),
   branchId: text('branch_id').notNull().references(() => distributionBranches.id, { onDelete: 'restrict' }),
+  objective: text('objective'),
   lastVisitDate: text('last_visit_date'), // YYYY-MM-DD
   cycleDays: integer('cycle_days').default(0),
   nextVisitDate: text('next_visit_date'), // YYYY-MM-DD
@@ -220,6 +224,7 @@ export const productAvailabilities = sqliteTable('product_availabilities', {
   repId: text('rep_id').notNull().references(() => representatives.id, { onDelete: 'restrict' }),
   hospitalId: text('hospital_id').notNull().references(() => hospitals.id, { onDelete: 'restrict' }),
   productId: text('product_id').notNull().references(() => products.id, { onDelete: 'restrict' }),
+  objective: text('objective'),
   month: text('month').notNull(), // Format: YYYY-MM (e.g. 2026-08)
   salesUnits: integer('sales_units').notNull().default(0),
   isAvailable: integer('is_available', { mode: 'boolean' }).notNull().default(true),

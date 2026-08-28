@@ -154,6 +154,8 @@ export const translations: Record<string, { ar: string; en: string }> = {
   'day.friday': { ar: 'FRIDAY (الجمعة)', en: 'FRIDAY' },
 
   // Common Form Fields
+  'form.objective': { ar: 'هدف الزيارة *', en: 'Objective of the Visit *' },
+  'form.objectivePlaceholder': { ar: 'اكتب أو اختر هدف الزيارة (مثال: تقديم منتج جديد، متابعة توريد، مناقشة بروتوكول، فتح حساب، تحصيل...)...', en: 'Enter visit objective (e.g. introduce product, follow-up supply, protocol discussion...)...' },
   'form.hospitalName': { ar: 'اسم المستشفى *', en: 'Hospital Name *' },
   'form.pharmacyName': { ar: 'اسم الصيدلية *', en: 'Pharmacy Name *' },
   'form.doctorName': { ar: 'اسم الدكتور *', en: 'Doctor Name *' },
@@ -252,6 +254,7 @@ export const translations: Record<string, { ar: string; en: string }> = {
 
   // Table Headers
   'th.rep': { ar: 'المندوب', en: 'Representative' },
+  'th.objective': { ar: 'هدف الزيارة', en: 'Objective' },
   'th.hospital': { ar: 'المستشفى', en: 'Hospital' },
   'th.pharmacy': { ar: 'الصيدلية', en: 'Pharmacy' },
   'th.doctor': { ar: 'الدكتور', en: 'Doctor' },
