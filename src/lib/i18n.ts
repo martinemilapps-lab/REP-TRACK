@@ -18,6 +18,7 @@ export const translations: Record<string, { ar: string; en: string }> = {
   // Navigation
   'nav.submit': { ar: 'إرسال تقرير', en: 'Submit Visit' },
   'nav.myReports': { ar: 'تقاريري', en: 'My Reports' },
+  'nav.weeklyPlan': { ar: 'الخطة الأسبوعية', en: 'Weekly Plan' },
   'nav.managerDashboard': { ar: 'لوحة المدير', en: 'Manager Dashboard' },
   'nav.language': { ar: 'English', en: 'العربية' },
   'nav.lock': { ar: 'قفل اللوحة', en: 'Lock Dashboard' },
@@ -40,6 +41,47 @@ export const translations: Record<string, { ar: string; en: string }> = {
   'activity.doctor': { ar: 'دكتور عيادة', en: 'Doctor' },
   'activity.branch': { ar: 'فرع توزيع / موزّع', en: 'Distribution Branch' },
   'activity.availability': { ar: 'توافر المنتج شهريًا', en: 'Monthly Availability' },
+
+  // Visit Classification (Single vs Double)
+  'visit.type': { ar: 'طبيعة الزيارة', en: 'Visit Type' },
+  'visit.single': { ar: 'زيارة فردية', en: 'Single Visit' },
+  'visit.double': { ar: 'زيارة ثنائية', en: 'Double Visit' },
+  'visit.companion': { ar: 'المرافق / المشرف (في الزيارة الثنائية)', en: 'Companion / Supervisor (Double Visit)' },
+  'visit.companionPlaceholder': { ar: 'اسم المشرف أو الزميل المرافق...', en: 'Companion name or manager...' },
+
+  // Weekly Plan Module
+  'weekly.title': { ar: 'خطة العمل الأسبوعية (WEEKLY PLAN)', en: 'Weekly Activity Plan' },
+  'weekly.desc': { ar: 'تحديد وتوثيق خطة العمل الأسبوعية للفترتين الصباحية والمسائية من السبت إلى الجمعة', en: 'Plan and document your weekly AM & PM field schedules from Saturday to Friday' },
+  'weekly.selectWeek': { ar: 'أسبوع الخطة', en: 'Plan Week' },
+  'weekly.weekRange': { ar: 'فترة الأسبوع (من السبت إلى الجمعة)', en: 'Week Range (Sat to Fri)' },
+  'weekly.day': { ar: 'اليوم', en: 'Day' },
+  'weekly.am': { ar: 'الفترة الصباحية (AM)', en: 'Morning Shift (AM)' },
+  'weekly.pm': { ar: 'الفترة المسائية (PM)', en: 'Evening Shift (PM)' },
+  'weekly.savePlan': { ar: 'حفظ وإرسال الخطة', en: 'Save & Submit Plan' },
+  'weekly.saving': { ar: 'جاري حفظ الخطة...', en: 'Saving Plan...' },
+  'weekly.exportExcel': { ar: 'تصدير إكسل رسمي (.xlsx)', en: 'Export Official Excel (.xlsx)' },
+  'weekly.copyLastWeek': { ar: 'نسخ من الأسبوع السابق', en: 'Copy From Last Week' },
+  'weekly.history': { ar: 'سجل الخطط السابقة', en: 'Weekly Plans History' },
+  'weekly.status': { ar: 'حالة الخطة', en: 'Plan Status' },
+  'weekly.managerNotes': { ar: 'ملاحظات الإدارة', en: 'Manager Notes' },
+  'weekly.quickFill': { ar: 'نماذج سريعة للإدخال:', en: 'Quick Presets:' },
+  'weekly.chip.office': { ar: 'Office working', en: 'Office working' },
+  'weekly.chip.meetingLine1': { ar: 'Line 1 meeting then office working', en: 'Line 1 meeting then office working' },
+  'weekly.chip.meetingLine2': { ar: 'Line 2 meeting then office working', en: 'Line 2 meeting then office working' },
+  'weekly.chip.meetingLine3': { ar: 'Line 3 meeting then office working', en: 'Line 3 meeting then office working' },
+  'weekly.chip.singleAm': { ar: 'AM single visits in...', en: 'AM single visits in...' },
+  'weekly.chip.singlePm': { ar: 'PM single visits in...', en: 'PM single visits in...' },
+  'weekly.chip.doubleAm': { ar: 'AM double visit with...', en: 'AM double visit with...' },
+  'weekly.chip.doublePm': { ar: 'PM double visit with...', en: 'PM double visit with...' },
+
+  // Days of Week
+  'day.saturday': { ar: 'SATURDAY (السبت)', en: 'SATURDAY' },
+  'day.sunday': { ar: 'SUNDAY (الأحد)', en: 'SUNDAY' },
+  'day.monday': { ar: 'MONDAY (الاثنين)', en: 'MONDAY' },
+  'day.tuesday': { ar: 'TUESDAY (الثلاثاء)', en: 'TUESDAY' },
+  'day.wednesday': { ar: 'WEDNESDAY (الأربعاء)', en: 'WEDNESDAY' },
+  'day.thursday': { ar: 'THURSDAY (الخميس)', en: 'THURSDAY' },
+  'day.friday': { ar: 'FRIDAY (الجمعة)', en: 'FRIDAY' },
 
   // Common Form Fields
   'form.hospitalName': { ar: 'اسم المستشفى *', en: 'Hospital Name *' },
@@ -86,6 +128,9 @@ export const translations: Record<string, { ar: string; en: string }> = {
   'status.notAvailable': { ar: 'غير متوافر', en: 'Not Available' },
   'status.all': { ar: 'كل الحالات', en: 'All Statuses' },
   'status.filter': { ar: 'تصفية بالحالة:', en: 'Filter by status:' },
+  'status.submitted': { ar: 'تم الإرسال', en: 'Submitted' },
+  'status.approved': { ar: 'معتمدة من الإدارة', en: 'Approved' },
+  'status.draft': { ar: 'مسودة', en: 'Draft' },
 
   // Coverage & KPIs
   'kpi.overallCoverage': { ar: 'التغطية الكلية', en: 'Overall Coverage' },
@@ -99,6 +144,7 @@ export const translations: Record<string, { ar: string; en: string }> = {
   'kpi.repsCount': { ar: 'عدد المندوبين', en: 'Representatives' },
   'kpi.availabilityReports': { ar: 'تقارير التوافر', en: 'Availability Logs' },
   'kpi.branchVisits': { ar: 'زيارات الموزعين', en: 'Branch Visits' },
+  'kpi.weeklyPlansCount': { ar: 'الخطط الأسبوعية', en: 'Weekly Plans' },
   'kpi.target': { ar: 'التارجت', en: 'Target' },
   'kpi.actual': { ar: 'الفعلي', en: 'Actual' },
   'kpi.assigned': { ar: 'المعين', en: 'Assigned' },
@@ -119,7 +165,11 @@ export const translations: Record<string, { ar: string; en: string }> = {
   'manager.tab.doctors': { ar: 'سجل الأطباء', en: 'Doctors' },
   'manager.tab.branches': { ar: 'فروع التوزيع', en: 'Branches' },
   'manager.tab.availability': { ar: 'توافر المنتجات', en: 'Availability' },
+  'manager.tab.weeklyPlans': { ar: 'الخطط الأسبوعية', en: 'Weekly Plans' },
   'manager.tab.reps': { ar: 'المندوبين', en: 'Representatives' },
+  'manager.approvePlan': { ar: 'اعتماد الخطة', en: 'Approve Plan' },
+  'manager.approved': { ar: 'معتمدة ✓', en: 'Approved ✓' },
+  'manager.addNotes': { ar: 'إضافة ملاحظة', en: 'Add Note' },
 
   // Auth Gate
   'auth.title': { ar: 'تسجيل دخول الإدارة', en: 'Manager Authentication' },
@@ -151,6 +201,8 @@ export const translations: Record<string, { ar: string; en: string }> = {
   'th.lastVisit': { ar: 'آخر زيارة', en: 'Last Visit' },
   'th.nextVisit': { ar: 'الزيارة القادمة', en: 'Next Visit' },
   'th.status': { ar: 'الحالة', en: 'Status' },
+  'th.visitType': { ar: 'نوع الزيارة', en: 'Visit Type' },
+  'th.companion': { ar: 'المرافق / المشرف', en: 'Companion' },
   'th.ourProducts': { ar: 'منتجاتنا', en: 'Our Products' },
   'th.competitor': { ar: 'المنافس', en: 'Competitor' },
   'th.notes': { ar: 'ملاحظات', en: 'Notes' },
@@ -164,13 +216,16 @@ export const translations: Record<string, { ar: string; en: string }> = {
   'empty.noVisits': { ar: 'لا توجد زيارات مسجلة تطابق اختياراتك حاليًا', en: 'No recorded visits matching your current selection' },
   'empty.noReps': { ar: 'لا توجد بيانات مندوبين مسجلة في النظام', en: 'No representatives registered in the system' },
   'empty.noAvailability': { ar: 'لا توجد تقارير توافر منتجات مسجلة', en: 'No product availability records found' },
+  'empty.noPlans': { ar: 'لا توجد خطط أسبوعية مسجلة حتى الآن', en: 'No weekly plans recorded yet' },
 
   // Feedback Messages
   'msg.visitSaved': { ar: 'تم تسجيل التقرير بنجاح ✓', en: 'Visit report saved successfully ✓' },
+  'msg.planSaved': { ar: 'تم حفظ الخطة الأسبوعية بنجاح ✓', en: 'Weekly plan saved successfully ✓' },
   'msg.availabilitySaved': { ar: 'تم تحديث توافر المنتج بنجاح ✓', en: 'Product availability updated successfully ✓' },
   'msg.loginSuccess': { ar: 'تم تسجيل الدخول بنجاح ✓', en: 'Logged in successfully ✓' },
   'msg.lockedSuccess': { ar: 'تم قفل لوحة المدير', en: 'Manager dashboard locked' },
   'msg.exportSuccess': { ar: 'تم تحميل ملف الإكسل الشامل بنجاح ✓', en: 'Excel report downloaded successfully ✓' },
+  'msg.exportPlanSuccess': { ar: 'تم تحميل ملف الخطة الأسبوعية بنجاح ✓', en: 'Weekly plan Excel downloaded successfully ✓' },
   'msg.exportError': { ar: 'حصل خطأ أثناء تصدير ملف الإكسل', en: 'Failed to generate Excel report' },
   'msg.errorGeneric': { ar: 'حدث خطأ، يرجى المحاولة مرة أخرى', en: 'An error occurred, please try again' },
   'msg.requiredRep': { ar: 'من فضلك اختار اسمك الأول من القائمة', en: 'Please select your representative name first' },

@@ -52,6 +52,8 @@ export async function createBranchVisit(
       repId,
       branchId: branch.id,
       lastVisitDate: input.lastVisit || null,
+      visitType: input.visitType || 'Single',
+      companion: input.companion || null,
       notes: input.notes || null,
     })
     .returning();
@@ -87,6 +89,8 @@ export async function getBranchReports(
       phone: distributionBranches.phone,
       products: distributionBranches.distributedProducts,
       lastVisit: branchVisits.lastVisitDate,
+      visitType: branchVisits.visitType,
+      companion: branchVisits.companion,
       notes: branchVisits.notes,
       submittedAt: branchVisits.submittedAt,
     })
@@ -108,6 +112,8 @@ export async function getBranchReports(
         phone: distributionBranches.phone,
         products: distributionBranches.distributedProducts,
         lastVisit: branchVisits.lastVisitDate,
+        visitType: branchVisits.visitType,
+        companion: branchVisits.companion,
         notes: branchVisits.notes,
         submittedAt: branchVisits.submittedAt,
       })

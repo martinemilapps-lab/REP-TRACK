@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTranslation } from '@/lib/i18nContext';
 
-export type ViewType = 'submit' | 'myreports';
+export type ViewType = 'submit' | 'myreports' | 'weeklyplan';
 
 interface TopbarProps {
   activeView?: ViewType;
@@ -30,6 +30,7 @@ export function Topbar({
   const isCurrentAdmin = isAdminPage || pathname === '/admin';
   const isSubmitActive = activeView === 'submit' || (pathname === '/' && !activeView);
   const isMyReportsActive = activeView === 'myreports';
+  const isWeeklyPlanActive = activeView === 'weeklyplan';
 
   const handleNavClick = (view: ViewType) => {
     if (pathname !== '/') {
@@ -73,11 +74,11 @@ export function Topbar({
       {/* Navigation Controls & Language Switcher */}
       <div className="flex items-center justify-center gap-2.5 flex-wrap w-full lg:w-auto shrink-0">
         {!isCurrentAdmin ? (
-          /* Normal User Navigation (ONLY Submit and My Reports) */
+          /* Normal User Navigation: Submit, My Reports, Weekly Plan */
           <nav className="flex gap-1.5 bg-[var(--surface)] p-1.5 rounded-xl border border-[var(--line)] shadow-card">
             <button
               onClick={() => handleNavClick('submit')}
-              className={`px-4 py-2.5 rounded-lg text-sm md:text-base font-bold transition-all duration-200 cursor-pointer select-none ${
+              className={`px-3.5 md:px-4 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-bold transition-all duration-200 cursor-pointer select-none ${
                 isSubmitActive
                   ? 'bg-gradient-to-r from-[var(--gold)] to-[var(--gold-light)] text-white shadow-xs font-extrabold'
                   : 'text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--surface-hover)]'
@@ -87,13 +88,24 @@ export function Topbar({
             </button>
             <button
               onClick={() => handleNavClick('myreports')}
-              className={`px-4 py-2.5 rounded-lg text-sm md:text-base font-bold transition-all duration-200 cursor-pointer select-none ${
+              className={`px-3.5 md:px-4 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-bold transition-all duration-200 cursor-pointer select-none ${
                 isMyReportsActive
                   ? 'bg-gradient-to-r from-[var(--gold)] to-[var(--gold-light)] text-white shadow-xs font-extrabold'
                   : 'text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--surface-hover)]'
               }`}
             >
               {t('nav.myReports')}
+            </button>
+            <button
+              onClick={() => handleNavClick('weeklyplan')}
+              className={`px-3.5 md:px-4 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-bold transition-all duration-200 cursor-pointer select-none flex items-center gap-1.5 ${
+                isWeeklyPlanActive
+                  ? 'bg-gradient-to-r from-[var(--gold)] to-[var(--gold-light)] text-white shadow-xs font-extrabold'
+                  : 'text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--surface-hover)]'
+              }`}
+            >
+              <span>📅</span>
+              <span>{t('nav.weeklyPlan')}</span>
             </button>
           </nav>
         ) : (

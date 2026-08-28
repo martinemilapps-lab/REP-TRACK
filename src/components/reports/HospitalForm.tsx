@@ -27,6 +27,8 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
     lastVisit: '',
     nextVisit: '',
     status: 'Visited',
+    visitType: 'Single',
+    companion: '',
     ourProducts: '',
     competitor: '',
     notes: '',
@@ -76,6 +78,8 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
           lastVisit: '',
           nextVisit: '',
           status: 'Visited',
+          visitType: 'Single',
+          companion: '',
           ourProducts: '',
           competitor: '',
           notes: '',
@@ -100,6 +104,54 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
         <h2 className="text-base font-extrabold text-[var(--ink)]">
           {t('activity.hospital')} — {t('nav.submit')}
         </h2>
+      </div>
+
+      {/* Visit Nature / Type (Single vs Double) */}
+      <div className="bg-[var(--surface-subtle)]/70 p-4 rounded-xl border border-[var(--line)] mb-5">
+        <label className="block text-xs font-bold text-[var(--ink)] mb-2">
+          {t('visit.type')} *
+        </label>
+        <div className="grid grid-cols-2 gap-3 max-w-sm">
+          <button
+            type="button"
+            onClick={() => setFormData((prev) => ({ ...prev, visitType: 'Single', companion: '' }))}
+            className={`py-2.5 px-3 rounded-xl text-xs md:text-sm font-extrabold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+              formData.visitType === 'Single'
+                ? 'bg-[var(--surface)] text-[var(--gold-dark)] border-[var(--gold)] shadow-sm'
+                : 'bg-transparent text-[var(--ink-soft)] border-transparent hover:bg-[var(--surface-hover)]'
+            }`}
+          >
+            <span>👤</span>
+            <span>{t('visit.single')}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setFormData((prev) => ({ ...prev, visitType: 'Double' }))}
+            className={`py-2.5 px-3 rounded-xl text-xs md:text-sm font-extrabold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+              formData.visitType === 'Double'
+                ? 'bg-gradient-to-r from-[var(--gold)] to-[var(--gold-light)] text-white border-[var(--gold-dark)] shadow-sm'
+                : 'bg-transparent text-[var(--ink-soft)] border-transparent hover:bg-[var(--surface-hover)]'
+            }`}
+          >
+            <span>👥</span>
+            <span>{t('visit.double')}</span>
+          </button>
+        </div>
+        {formData.visitType === 'Double' && (
+          <div className="mt-3.5 pt-3 border-t border-[var(--line)] animate-fade-in">
+            <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1">
+              {t('visit.companion')}
+            </label>
+            <input
+              type="text"
+              id="companion"
+              value={formData.companion}
+              onChange={handleChange}
+              placeholder={t('visit.companionPlaceholder')}
+              className="w-full text-xs md:text-sm bg-[var(--surface)] border border-[var(--line)] rounded-lg p-2.5"
+            />
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">

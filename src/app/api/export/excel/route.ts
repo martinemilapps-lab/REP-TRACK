@@ -13,6 +13,7 @@ import {
   doctorVisits,
   branchVisits,
   productAvailabilities,
+  weeklyPlans,
 } from '@/lib/db';
 import { generateExcelWorkbook } from '@/lib/excel';
 import { eq, desc } from 'drizzle-orm';
@@ -32,7 +33,7 @@ export async function GET() {
     // 2. Fetch all datasets from Turso
     const allReps = await db.select().from(representatives).all();
 
-    const [allHospVisits, allPharmVisits, allDrVisits, allBranchVisits, allAvails] =
+    const [allHospVisits, allPharmVisits, allDrVisits, allBranchVisits, allAvails, allWeeklyPlans] =
       await Promise.all([
         db
           .select({
@@ -49,6 +50,8 @@ export async function GET() {
             cycle: hospitalVisits.cycleDays,
             lastVisit: hospitalVisits.lastVisitDate,
             nextVisit: hospitalVisits.nextVisitDate,
+            visitType: hospitalVisits.visitType,
+            companion: hospitalVisits.companion,
             ourProducts: hospitalVisits.ourProducts,
             competitor: hospitalVisits.competitor,
             notes: hospitalVisits.notes,
@@ -74,6 +77,8 @@ export async function GET() {
             cycle: pharmacyVisits.cycleDays,
             lastVisit: pharmacyVisits.lastVisitDate,
             nextVisit: pharmacyVisits.nextVisitDate,
+            visitType: pharmacyVisits.visitType,
+            companion: pharmacyVisits.companion,
             ourProducts: pharmacyVisits.ourProducts,
             competitor: pharmacyVisits.competitor,
             notes: pharmacyVisits.notes,
@@ -100,6 +105,8 @@ export async function GET() {
             visitDate: doctorVisits.visitDate,
             cycle: doctorVisits.cycleDays,
             nextVisit: doctorVisits.nextVisitDate,
+            visitType: doctorVisits.visitType,
+            companion: doctorVisits.companion,
             f1: doctorVisits.product1,
             f2: doctorVisits.product2,
             f3: doctorVisits.product3,
@@ -124,6 +131,8 @@ export async function GET() {
             phone: distributionBranches.phone,
             products: distributionBranches.distributedProducts,
             lastVisit: branchVisits.lastVisitDate,
+            visitType: branchVisits.visitType,
+            companion: branchVisits.companion,
             notes: branchVisits.notes,
             submittedAt: branchVisits.submittedAt,
           })
@@ -153,6 +162,38 @@ export async function GET() {
           .innerJoin(representatives, eq(productAvailabilities.repId, representatives.id))
           .orderBy(desc(productAvailabilities.submittedAt))
           .all(),
+
+        db
+          .select({
+            id: weeklyPlans.id,
+            repId: weeklyPlans.repId,
+            rep: representatives.name,
+            startDate: weeklyPlans.startDate,
+            endDate: weeklyPlans.endDate,
+            weekLabel: weeklyPlans.weekLabel,
+            saturdayAm: weeklyPlans.saturdayAm,
+            saturdayPm: weeklyPlans.saturdayPm,
+            sundayAm: weeklyPlans.sundayAm,
+            sundayPm: weeklyPlans.sundayPm,
+            mondayAm: weeklyPlans.mondayAm,
+            mondayPm: weeklyPlans.mondayPm,
+            tuesdayAm: weeklyPlans.tuesdayAm,
+            tuesdayPm: weeklyPlans.tuesdayPm,
+            wednesdayAm: weeklyPlans.wednesdayAm,
+            wednesdayPm: weeklyPlans.wednesdayPm,
+            thursdayAm: weeklyPlans.thursdayAm,
+            thursdayPm: weeklyPlans.thursdayPm,
+            fridayAm: weeklyPlans.fridayAm,
+            fridayPm: weeklyPlans.fridayPm,
+            status: weeklyPlans.status,
+            managerNotes: weeklyPlans.managerNotes,
+            submittedAt: weeklyPlans.submittedAt,
+            updatedAt: weeklyPlans.updatedAt,
+          })
+          .from(weeklyPlans)
+          .innerJoin(representatives, eq(weeklyPlans.repId, representatives.id))
+          .orderBy(desc(weeklyPlans.submittedAt))
+          .all(),
       ]);
 
     const buffer = generateExcelWorkbook({
@@ -167,6 +208,8 @@ export async function GET() {
         cycle: h.cycle ?? undefined,
         lastVisit: h.lastVisit ?? undefined,
         nextVisit: h.nextVisit ?? undefined,
+        visitType: h.visitType ?? 'Single',
+        companion: h.companion ?? undefined,
         ourProducts: h.ourProducts ?? undefined,
         competitor: h.competitor ?? undefined,
         notes: h.notes ?? undefined,
@@ -181,6 +224,8 @@ export async function GET() {
         cycle: p.cycle ?? undefined,
         lastVisit: p.lastVisit ?? undefined,
         nextVisit: p.nextVisit ?? undefined,
+        visitType: p.visitType ?? 'Single',
+        companion: p.companion ?? undefined,
         ourProducts: p.ourProducts ?? undefined,
         competitor: p.competitor ?? undefined,
         notes: p.notes ?? undefined,
@@ -196,6 +241,8 @@ export async function GET() {
         visitDate: d.visitDate ?? undefined,
         cycle: d.cycle ?? undefined,
         nextVisit: d.nextVisit ?? undefined,
+        visitType: d.visitType ?? 'Single',
+        companion: d.companion ?? undefined,
         f1: d.f1 ?? undefined,
         f2: d.f2 ?? undefined,
         f3: d.f3 ?? undefined,
@@ -210,6 +257,8 @@ export async function GET() {
         phone: b.phone ?? undefined,
         products: b.products ?? undefined,
         lastVisit: b.lastVisit ?? undefined,
+        visitType: b.visitType ?? 'Single',
+        companion: b.companion ?? undefined,
         notes: b.notes ?? undefined,
         submittedAt: b.submittedAt ? new Date(b.submittedAt).toISOString() : undefined,
       })),
@@ -219,6 +268,27 @@ export async function GET() {
         sales: a.sales ?? undefined,
         notes: a.notes ?? undefined,
         submittedAt: a.submittedAt ? new Date(a.submittedAt).toISOString() : undefined,
+      })),
+      weeklyPlans: allWeeklyPlans.map((wp) => ({
+        ...wp,
+        saturdayAm: wp.saturdayAm ?? undefined,
+        saturdayPm: wp.saturdayPm ?? undefined,
+        sundayAm: wp.sundayAm ?? undefined,
+        sundayPm: wp.sundayPm ?? undefined,
+        mondayAm: wp.mondayAm ?? undefined,
+        mondayPm: wp.mondayPm ?? undefined,
+        tuesdayAm: wp.tuesdayAm ?? undefined,
+        tuesdayPm: wp.tuesdayPm ?? undefined,
+        wednesdayAm: wp.wednesdayAm ?? undefined,
+        wednesdayPm: wp.wednesdayPm ?? undefined,
+        thursdayAm: wp.thursdayAm ?? undefined,
+        thursdayPm: wp.thursdayPm ?? undefined,
+        fridayAm: wp.fridayAm ?? undefined,
+        fridayPm: wp.fridayPm ?? undefined,
+        weekLabel: wp.weekLabel ?? undefined,
+        managerNotes: wp.managerNotes ?? undefined,
+        submittedAt: wp.submittedAt ? new Date(wp.submittedAt).toISOString() : undefined,
+        updatedAt: wp.updatedAt ? new Date(wp.updatedAt).toISOString() : undefined,
       })),
     });
 

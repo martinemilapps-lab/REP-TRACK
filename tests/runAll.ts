@@ -1,20 +1,28 @@
 import { runStatusTests } from './status.test';
 import { runCoverageTests } from './coverage.test';
 import { runIntegrationTests } from './integration.test';
+import { runWeeklyPlanTests } from './weeklyPlan.test';
 
 async function main() {
   console.log('====================================================');
-  console.log('🚀 REP TRACK Phase 2: Comprehensive Test Suite');
+  console.log('🚀 REP TRACK: Comprehensive Test Suite');
   console.log('====================================================\n');
 
   const statusResults = runStatusTests();
   const coverageResults = runCoverageTests();
   const integrationResults = await runIntegrationTests();
+  const weeklyPlanResults = await runWeeklyPlanTests();
 
   const totalPassed =
-    statusResults.passed + coverageResults.passed + integrationResults.passed;
+    statusResults.passed +
+    coverageResults.passed +
+    integrationResults.passed +
+    weeklyPlanResults.passed;
   const totalFailed =
-    statusResults.failed + coverageResults.failed + integrationResults.failed;
+    statusResults.failed +
+    coverageResults.failed +
+    integrationResults.failed +
+    weeklyPlanResults.failed;
 
   console.log('\n====================================================');
   console.log(`📊 Test Summary: ${totalPassed} Passed, ${totalFailed} Failed`);
@@ -23,7 +31,7 @@ async function main() {
   if (totalFailed > 0) {
     process.exit(1);
   } else {
-    console.log('🎉 All Phase 2 tests PASSED successfully!');
+    console.log('🎉 All tests PASSED successfully!');
     process.exit(0);
   }
 }

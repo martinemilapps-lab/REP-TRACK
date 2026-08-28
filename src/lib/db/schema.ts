@@ -117,6 +117,7 @@ export const products = sqliteTable('products', {
 });
 
 // ----------------------------------------------------
+// ----------------------------------------------------
 // 3. ACTIVITY LOGS / VISIT HISTORY (FACTS)
 // ----------------------------------------------------
 export const hospitalVisits = sqliteTable('hospital_visits', {
@@ -128,6 +129,8 @@ export const hospitalVisits = sqliteTable('hospital_visits', {
   cycleDays: integer('cycle_days').default(0),
   lastVisitDate: text('last_visit_date'), // YYYY-MM-DD
   nextVisitDate: text('next_visit_date'), // YYYY-MM-DD
+  visitType: text('visit_type').notNull().default('Single'), // 'Single' | 'Double'
+  companion: text('companion'),
   ourProducts: text('our_products'),
   competitor: text('competitor'),
   notes: text('notes'),
@@ -145,6 +148,8 @@ export const pharmacyVisits = sqliteTable('pharmacy_visits', {
   cycleDays: integer('cycle_days').default(0),
   lastVisitDate: text('last_visit_date'), // YYYY-MM-DD
   nextVisitDate: text('next_visit_date'), // YYYY-MM-DD
+  visitType: text('visit_type').notNull().default('Single'), // 'Single' | 'Double'
+  companion: text('companion'),
   ourProducts: text('our_products'),
   competitor: text('competitor'),
   notes: text('notes'),
@@ -161,6 +166,8 @@ export const doctorVisits = sqliteTable('doctor_visits', {
   visitDate: text('visit_date'), // YYYY-MM-DD
   cycleDays: integer('cycle_days').default(0),
   nextVisitDate: text('next_visit_date'), // YYYY-MM-DD
+  visitType: text('visit_type').notNull().default('Single'), // 'Single' | 'Double'
+  companion: text('companion'),
   product1: text('product_1'),
   product2: text('product_2'),
   product3: text('product_3'),
@@ -177,6 +184,8 @@ export const branchVisits = sqliteTable('branch_visits', {
   repId: text('rep_id').notNull().references(() => representatives.id, { onDelete: 'restrict' }),
   branchId: text('branch_id').notNull().references(() => distributionBranches.id, { onDelete: 'restrict' }),
   lastVisitDate: text('last_visit_date'), // YYYY-MM-DD
+  visitType: text('visit_type').notNull().default('Single'), // 'Single' | 'Double'
+  companion: text('companion'),
   notes: text('notes'),
   submittedAt: integer('submitted_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
 }, (table) => [
@@ -201,6 +210,38 @@ export const productAvailabilities = sqliteTable('product_availabilities', {
   uniqueIndex('idx_prod_avail_unique').on(table.repId, table.hospitalId, table.productId, table.month),
   index('idx_prod_avail_rep').on(table.repId),
   index('idx_prod_avail_month').on(table.month),
+]);
+
+// ----------------------------------------------------
+// 5. WEEKLY PLANS (SATURDAY TO FRIDAY)
+// ----------------------------------------------------
+export const weeklyPlans = sqliteTable('weekly_plans', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  repId: text('rep_id').notNull().references(() => representatives.id, { onDelete: 'cascade' }),
+  startDate: text('start_date').notNull(), // YYYY-MM-DD or DD-MM-YYYY (e.g. 22-8-2026)
+  endDate: text('end_date').notNull(), // YYYY-MM-DD or DD-MM-YYYY (e.g. 27-8-2026 or 28-8-2026)
+  weekLabel: text('week_label'), // e.g. "22-8-2026 to 27-8-2026"
+  saturdayAm: text('saturday_am').default(''),
+  saturdayPm: text('saturday_pm').default(''),
+  sundayAm: text('sunday_am').default(''),
+  sundayPm: text('sunday_pm').default(''),
+  mondayAm: text('monday_am').default(''),
+  mondayPm: text('monday_pm').default(''),
+  tuesdayAm: text('tuesday_am').default(''),
+  tuesdayPm: text('tuesday_pm').default(''),
+  wednesdayAm: text('wednesday_am').default(''),
+  wednesdayPm: text('wednesday_pm').default(''),
+  thursdayAm: text('thursday_am').default(''),
+  thursdayPm: text('thursday_pm').default(''),
+  fridayAm: text('friday_am').default(''),
+  fridayPm: text('friday_pm').default(''),
+  status: text('status', { enum: ['Draft', 'Submitted', 'Approved'] }).notNull().default('Submitted'),
+  managerNotes: text('manager_notes'),
+  submittedAt: integer('submitted_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
+}, (table) => [
+  index('idx_weekly_plans_rep').on(table.repId),
+  index('idx_weekly_plans_dates').on(table.startDate, table.endDate),
 ]);
 
 // ----------------------------------------------------
@@ -231,6 +272,14 @@ export const representativesRelations = relations(representatives, ({ one, many 
   doctorVisits: many(doctorVisits),
   branchVisits: many(branchVisits),
   productAvailabilities: many(productAvailabilities),
+  weeklyPlans: many(weeklyPlans),
+}));
+
+export const weeklyPlansRelations = relations(weeklyPlans, ({ one }) => ({
+  representative: one(representatives, {
+    fields: [weeklyPlans.repId],
+    references: [representatives.id],
+  }),
 }));
 
 export const hospitalsRelations = relations(hospitals, ({ many }) => ({

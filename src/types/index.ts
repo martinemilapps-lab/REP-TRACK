@@ -14,6 +14,8 @@ export interface Representative {
   isActive?: boolean;
 }
 
+export type VisitType = 'Single' | 'Double';
+
 export interface HospitalVisitRecord {
   id: string;
   repId?: string;
@@ -29,6 +31,8 @@ export interface HospitalVisitRecord {
   lastVisit?: string;
   nextVisit?: string;
   status: string; // 'Visited' | 'Overdue' | 'Not visited yet'
+  visitType?: VisitType | string;
+  companion?: string;
   ourProducts?: string;
   competitor?: string;
   notes?: string;
@@ -50,6 +54,8 @@ export interface PharmacyVisitRecord {
   lastVisit?: string;
   nextVisit?: string;
   status: string;
+  visitType?: VisitType | string;
+  companion?: string;
   ourProducts?: string;
   competitor?: string;
   notes?: string;
@@ -72,6 +78,8 @@ export interface DoctorVisitRecord {
   cycle?: number;
   nextVisit?: string;
   status: string;
+  visitType?: VisitType | string;
+  companion?: string;
   f1?: string;
   f2?: string;
   f3?: string;
@@ -92,6 +100,8 @@ export interface BranchVisitRecord {
   products?: string;
   lastVisit?: string;
   status?: string;
+  visitType?: VisitType | string;
+  companion?: string;
   notes?: string;
   createdAt?: string;
   submittedAt?: string;
@@ -110,6 +120,33 @@ export interface ProductAvailabilityRecord {
   notes?: string;
   createdAt?: string;
   submittedAt?: string;
+}
+
+export interface WeeklyPlanRecord {
+  id: string;
+  repId: string;
+  rep: string;
+  startDate: string; // YYYY-MM-DD or DD-MM-YYYY
+  endDate: string; // YYYY-MM-DD or DD-MM-YYYY
+  weekLabel?: string; // e.g. "22-8-2026 to 27-8-2026"
+  saturdayAm?: string;
+  saturdayPm?: string;
+  sundayAm?: string;
+  sundayPm?: string;
+  mondayAm?: string;
+  mondayPm?: string;
+  tuesdayAm?: string;
+  tuesdayPm?: string;
+  wednesdayAm?: string;
+  wednesdayPm?: string;
+  thursdayAm?: string;
+  thursdayPm?: string;
+  fridayAm?: string;
+  fridayPm?: string;
+  status: 'Draft' | 'Submitted' | 'Approved' | string;
+  managerNotes?: string;
+  submittedAt?: string;
+  updatedAt?: string;
 }
 
 export interface RepCoverageSummary {
@@ -133,6 +170,7 @@ export interface ManagerOverviewStats {
   totalDoctorVisits: number;
   totalBranchVisits: number;
   totalAvailabilityReports: number;
+  totalWeeklyPlans?: number;
   totalReps: number;
 }
 

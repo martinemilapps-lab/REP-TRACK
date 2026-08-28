@@ -5,7 +5,8 @@ import {
   PharmacyVisitRecord,
   DoctorVisitRecord,
   BranchVisitRecord,
-  ProductAvailabilityRecord
+  ProductAvailabilityRecord,
+  WeeklyPlanRecord
 } from '@/types';
 
 export interface ExportDataPayload {
@@ -15,6 +16,7 @@ export interface ExportDataPayload {
   doctors: DoctorVisitRecord[];
   branches: BranchVisitRecord[];
   availabilities: ProductAvailabilityRecord[];
+  weeklyPlans?: WeeklyPlanRecord[];
 }
 
 export function generateExcelWorkbook(data: ExportDataPayload): Uint8Array {
@@ -47,6 +49,8 @@ export function generateExcelWorkbook(data: ExportDataPayload): Uint8Array {
     'Drs Visited': r.drsVisited ?? '',
     'Contact Person': r.contact || '',
     'Phone Number': r.phone || '',
+    'Visit Type': r.visitType || 'Single',
+    'Companion (Co-Rep / Manager)': r.companion || '',
     'Visit Cycle (Days)': r.cycle ?? '',
     'Last Visit Date': r.lastVisit || '',
     'Next Visit Date': r.nextVisit || '',
@@ -64,6 +68,8 @@ export function generateExcelWorkbook(data: ExportDataPayload): Uint8Array {
     'Responsible Pharmacist': r.pharmacist || '',
     'Mobile Number': r.mobile || '',
     'Class (A/B/C)': r.cls || 'A',
+    'Visit Type': r.visitType || 'Single',
+    'Companion (Co-Rep / Manager)': r.companion || '',
     'Visit Cycle (Days)': r.cycle ?? '',
     'Last Visit Date': r.lastVisit || '',
     'Next Visit Date': r.nextVisit || '',
@@ -83,6 +89,8 @@ export function generateExcelWorkbook(data: ExportDataPayload): Uint8Array {
     'Mobile Number': r.mobile || '',
     'Class (A/B)': r.cls || 'A',
     'Date visited': r.visitDate || '',
+    'Visit Type': r.visitType || 'Single',
+    'Companion (Co-Rep / Manager)': r.companion || '',
     'Products Presented F1': r.f1 || '',
     'Products Presented F2': r.f2 || '',
     'Products Presented F3': r.f3 || '',
@@ -99,6 +107,8 @@ export function generateExcelWorkbook(data: ExportDataPayload): Uint8Array {
     'Coverage Area': r.area,
     'Contact Person': r.contact || '',
     'Phone Number': r.phone || '',
+    'Visit Type': r.visitType || 'Single',
+    'Companion (Co-Rep / Manager)': r.companion || '',
     'Distributed Products': r.products || '',
     'Last Visit Date': r.lastVisit || '',
     'Notes': r.notes || ''
@@ -115,6 +125,27 @@ export function generateExcelWorkbook(data: ExportDataPayload): Uint8Array {
     'Notes': r.notes || ''
   }));
 
+  const weeklyPlansSheet = (data.weeklyPlans || []).map((p) => ({
+    'Representative': p.rep,
+    'Week Range': p.weekLabel || `${p.startDate} to ${p.endDate}`,
+    'Status': p.status || 'Submitted',
+    'Saturday AM': p.saturdayAm || '',
+    'Saturday PM': p.saturdayPm || '',
+    'Sunday AM': p.sundayAm || '',
+    'Sunday PM': p.sundayPm || '',
+    'Monday AM': p.mondayAm || '',
+    'Monday PM': p.mondayPm || '',
+    'Tuesday AM': p.tuesdayAm || '',
+    'Tuesday PM': p.tuesdayPm || '',
+    'Wednesday AM': p.wednesdayAm || '',
+    'Wednesday PM': p.wednesdayPm || '',
+    'Thursday AM': p.thursdayAm || '',
+    'Thursday PM': p.thursdayPm || '',
+    'Friday AM': p.fridayAm || '',
+    'Friday PM': p.fridayPm || '',
+    'Manager Notes': p.managerNotes || '',
+  }));
+
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(repsSheet.length ? repsSheet : [{}]), 'Reps');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(hospitalsSheet.length ? hospitalsSheet : [{}]), 'Hospitals');
@@ -122,6 +153,48 @@ export function generateExcelWorkbook(data: ExportDataPayload): Uint8Array {
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(doctorsSheet.length ? doctorsSheet : [{}]), 'Doctors');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(branchesSheet.length ? branchesSheet : [{}]), 'Distribution Branches');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(availabilitySheet.length ? availabilitySheet : [{}]), 'Product Availability');
+  if (weeklyPlansSheet.length > 0) {
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(weeklyPlansSheet), 'Weekly Plans');
+  }
+
+  const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  return new Uint8Array(buf);
+}
+
+/**
+ * Generates an Excel workbook for a single Weekly Plan matching the exact template layout.
+ */
+export function generateWeeklyPlanWorkbook(plan: WeeklyPlanRecord): Uint8Array {
+  const wsData = [
+    ['', 'WEEKLY PLAN', ''],
+    [`NAME :-  ${plan.rep || ''}`, '', `DATE:- ${plan.startDate || ''} to ${plan.endDate || ''}`],
+    ['DAY', 'AM', 'PM'],
+    ['SATURDAY', plan.saturdayAm || '', plan.saturdayPm || ''],
+    ['SUNDAY', plan.sundayAm || '', plan.sundayPm || ''],
+    ['MONDAY', plan.mondayAm || '', plan.mondayPm || ''],
+    ['TUESDAY', plan.tuesdayAm || '', plan.tuesdayPm || ''],
+    ['WEDNESDAY', plan.wednesdayAm || '', plan.wednesdayPm || ''],
+    ['THURSDAY', plan.thursdayAm || '', plan.thursdayPm || ''],
+    ['FRIDAY', plan.fridayAm || '', plan.fridayPm || ''],
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // Merges matching the official template
+  ws['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } }, // Row 1: A1:C1 "WEEKLY PLAN"
+    { s: { r: 1, c: 0 }, e: { r: 1, c: 1 } }, // Row 2: A2:B2 "NAME :- Mario Nader"
+  ];
+
+  // Column widths
+  ws['!cols'] = [
+    { wch: 18 }, // DAY
+    { wch: 48 }, // AM
+    { wch: 48 }, // PM
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'WEEKLY PLAN');
 
   const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
   return new Uint8Array(buf);

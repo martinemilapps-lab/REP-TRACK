@@ -222,6 +222,7 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                       <thead>
                         <tr>
                           <th>{t('th.hospital')}</th>
+                          <th>{t('th.visitType')}</th>
                           <th>{t('th.area')}</th>
                           <th>{t('th.type')}</th>
                           <th>{t('th.dept')}</th>
@@ -240,6 +241,22 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                         {filteredHospitals.map((r) => (
                           <tr key={r.id}>
                             <td className="font-bold text-[var(--ink)] whitespace-nowrap">{r.name}</td>
+                            <td className="whitespace-nowrap">
+                              <span
+                                className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                                  r.visitType === 'Double'
+                                    ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                    : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                }`}
+                              >
+                                <span>{r.visitType === 'Double' ? '👥' : '👤'}</span>
+                                <span>
+                                  {r.visitType === 'Double'
+                                    ? `${t('visit.double')}${r.companion ? ` (${r.companion})` : ''}`
+                                    : t('visit.single')}
+                                </span>
+                              </span>
+                            </td>
                             <td className="whitespace-nowrap">{r.area}</td>
                             <td className="whitespace-nowrap">{r.type}</td>
                             <td className="whitespace-nowrap">{r.dept}</td>
@@ -268,6 +285,7 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                       <thead>
                         <tr>
                           <th>{t('th.pharmacy')}</th>
+                          <th>{t('th.visitType')}</th>
                           <th>{t('th.area')}</th>
                           <th>{t('th.address')}</th>
                           <th>{t('th.pharmacist')}</th>
@@ -285,6 +303,22 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                         {filteredPharmacies.map((r) => (
                           <tr key={r.id}>
                             <td className="font-bold text-[var(--ink)] whitespace-nowrap">{r.name}</td>
+                            <td className="whitespace-nowrap">
+                              <span
+                                className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                                  r.visitType === 'Double'
+                                    ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                    : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                }`}
+                              >
+                                <span>{r.visitType === 'Double' ? '👥' : '👤'}</span>
+                                <span>
+                                  {r.visitType === 'Double'
+                                    ? `${t('visit.double')}${r.companion ? ` (${r.companion})` : ''}`
+                                    : t('visit.single')}
+                                </span>
+                              </span>
+                            </td>
                             <td className="whitespace-nowrap">{r.area}</td>
                             <td className="whitespace-nowrap">{r.address}</td>
                             <td className="whitespace-nowrap">{r.pharmacist}</td>
@@ -313,6 +347,7 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                         <tr>
                           <th>{t('th.code')}</th>
                           <th>{t('th.doctor')}</th>
+                          <th>{t('th.visitType')}</th>
                           <th>{t('th.specialty')}</th>
                           <th>{t('th.workplace')}</th>
                           <th>{t('th.area')}</th>
@@ -332,6 +367,22 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                             <tr key={r.id}>
                               <td className="font-mono whitespace-nowrap">{r.code}</td>
                               <td className="font-bold text-[var(--ink)] whitespace-nowrap">{r.name}</td>
+                              <td className="whitespace-nowrap">
+                                <span
+                                  className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                                    r.visitType === 'Double'
+                                      ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                      : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                  }`}
+                                >
+                                  <span>{r.visitType === 'Double' ? '👥' : '👤'}</span>
+                                  <span>
+                                    {r.visitType === 'Double'
+                                      ? `${t('visit.double')}${r.companion ? ` (${r.companion})` : ''}`
+                                      : t('visit.single')}
+                                  </span>
+                                </span>
+                              </td>
                               <td className="whitespace-nowrap">{r.specialty}</td>
                               <td className="whitespace-nowrap">{r.workplace}</td>
                               <td className="whitespace-nowrap">{r.area}</td>
@@ -359,6 +410,7 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                       <thead>
                         <tr>
                           <th>{t('th.branch')}</th>
+                          <th>{t('th.visitType')}</th>
                           <th>{t('th.area')}</th>
                           <th>{t('th.contact')}</th>
                           <th>{t('th.phone')}</th>
@@ -371,6 +423,22 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                         {data.branches.map((r) => (
                           <tr key={r.id}>
                             <td className="font-bold text-[var(--ink)] whitespace-nowrap">{r.name}</td>
+                            <td className="whitespace-nowrap">
+                              <span
+                                className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                                  r.visitType === 'Double'
+                                    ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                    : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                }`}
+                              >
+                                <span>{r.visitType === 'Double' ? '👥' : '👤'}</span>
+                                <span>
+                                  {r.visitType === 'Double'
+                                    ? `${t('visit.double')}${r.companion ? ` (${r.companion})` : ''}`
+                                    : t('visit.single')}
+                                </span>
+                              </span>
+                            </td>
                             <td className="whitespace-nowrap">{r.area}</td>
                             <td className="whitespace-nowrap">{r.contact}</td>
                             <td className="font-mono whitespace-nowrap">{r.phone}</td>
