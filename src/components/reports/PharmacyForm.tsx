@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/Button';
 import { CustomSelect, SelectOption } from '@/components/ui/CustomSelect';
 import { MultiProductSelect } from '@/components/ui/MultiProductSelect';
 import { MasterPharmacy } from '@/types';
-import { loadBrowserLists } from '@/lib/masterListStorage';
 
 interface PharmacyFormProps {
   selectedRep: string;
@@ -76,26 +75,15 @@ export function PharmacyForm({ selectedRep, onSuccess, onError }: PharmacyFormPr
 
   const draftKey = `rep_track_pharmacy_draft_${selectedRep || 'guest'}`;
 
-  // Fetch saved master pharmacies (instant from browser save, then synced with API)
+  // Fetch saved master pharmacies for representative
   useEffect(() => {
-    const localPharmacies = loadBrowserLists(selectedRep).pharmacies;
-    if (localPharmacies.length > 0) {
-      setSavedPharmacies(localPharmacies);
-    }
-
     async function fetchMasterPharmacies() {
       try {
         const url = selectedRep ? `/api/lists?rep=${encodeURIComponent(selectedRep)}` : '/api/lists';
         const res = await fetch(url);
         const data = await res.json();
         if (res.ok && data.success && data.data?.pharmacies) {
-          const combined = [...localPharmacies];
-          for (const item of data.data.pharmacies) {
-            if (!combined.some((c) => c.name.trim().toLowerCase() === item.name.trim().toLowerCase())) {
-              combined.push(item);
-            }
-          }
-          setSavedPharmacies(combined);
+          setSavedPharmacies(data.data.pharmacies);
         }
       } catch {
         // ignore

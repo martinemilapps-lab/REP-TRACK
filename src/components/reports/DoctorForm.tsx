@@ -6,7 +6,6 @@ import { useTranslation } from '@/lib/i18nContext';
 import { Button } from '@/components/ui/Button';
 import { CustomSelect, SelectOption } from '@/components/ui/CustomSelect';
 import { MasterDoctor } from '@/types';
-import { loadBrowserLists } from '@/lib/masterListStorage';
 
 interface DoctorFormProps {
   selectedRep: string;
@@ -78,26 +77,15 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
 
   const draftKey = `rep_track_doctor_draft_${selectedRep || 'guest'}`;
 
-  // Fetch saved master doctors (instant from browser save, then synced with API)
+  // Fetch saved master doctors for representative
   useEffect(() => {
-    const localDoctors = loadBrowserLists(selectedRep).doctors;
-    if (localDoctors.length > 0) {
-      setSavedDoctors(localDoctors);
-    }
-
     async function fetchMasterDoctors() {
       try {
         const url = selectedRep ? `/api/lists?rep=${encodeURIComponent(selectedRep)}` : '/api/lists';
         const res = await fetch(url);
         const data = await res.json();
         if (res.ok && data.success && data.data?.doctors) {
-          const combined = [...localDoctors];
-          for (const item of data.data.doctors) {
-            if (!combined.some((c) => c.name.trim().toLowerCase() === item.name.trim().toLowerCase())) {
-              combined.push(item);
-            }
-          }
-          setSavedDoctors(combined);
+          setSavedDoctors(data.data.doctors);
         }
       } catch {
         // ignore

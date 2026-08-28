@@ -7,13 +7,6 @@ import { CustomSelect, SelectOption } from '@/components/ui/CustomSelect';
 import { Button } from '@/components/ui/Button';
 import { MultiProductSelect } from '@/components/ui/MultiProductSelect';
 import { HOSPITAL_TYPES, PHARMACY_CLASSES, DOCTOR_CLASSES } from '@/lib/constants';
-import {
-  loadBrowserLists,
-  saveBrowserLists,
-  addOrUpdateBrowserItem,
-  deleteBrowserItem,
-  getSampleDemoLists,
-} from '@/lib/masterListStorage';
 
 interface MyListsViewProps {
   reps: Representative[];
@@ -56,41 +49,19 @@ export function MyListsView({
     }));
   }, [reps]);
 
-  // Load lists from browser localStorage first (instant), then sync with API
   const loadLists = useCallback(async (repName?: string) => {
-    // 1. Instant load from browser save system
-    const localData = loadBrowserLists(repName);
-    if (
-      localData.hospitals.length > 0 ||
-      localData.pharmacies.length > 0 ||
-      localData.doctors.length > 0 ||
-      localData.branches.length > 0
-    ) {
-      setListsData(localData);
-    }
-
-    // 2. Background sync with database API
-    setLoading(false);
+    setLoading(true);
     try {
       const url = repName ? `/api/lists?rep=${encodeURIComponent(repName)}` : '/api/lists';
       const res = await fetch(url);
       const data = await res.json();
       if (res.ok && data.success && data.data) {
-        // Merge API data with local data ensuring no loss
-        const serverData: MasterListsPayload = data.data;
-        const merged: MasterListsPayload = {
-          hospitals: mergeByIdOrName(localData.hospitals, serverData.hospitals),
-          pharmacies: mergeByIdOrName(localData.pharmacies, serverData.pharmacies),
-          doctors: mergeByIdOrName(localData.doctors, serverData.doctors),
-          branches: mergeByIdOrName(localData.branches, serverData.branches),
-        };
-        setListsData(merged);
-        if (repName) {
-          saveBrowserLists(repName, merged);
-        }
+        setListsData(data.data);
       }
-    } catch {
-      // Offline or network error: localData is already loaded
+    } catch (e) {
+      console.error('Failed to load lists:', e);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -101,35 +72,6 @@ export function MyListsView({
   const showNotification = (text: string, isError = false) => {
     setStatusMsg({ text, isError });
     setTimeout(() => setStatusMsg(null), 3500);
-  };
-
-  // One-Click Demo Data Population for Quick Testing
-  const handleLoadDemoData = () => {
-    const demo = getSampleDemoLists(selectedRep);
-    saveBrowserLists(selectedRep, demo);
-    setListsData(demo);
-    showNotification(
-      language === 'ar'
-        ? 'تم تحميل وتخزين بيانات تجريبية بنجاح في المتصفح ✓'
-        : 'Demo test customer data loaded into browser successfully ✓'
-    );
-  };
-
-  // Clear all lists for this rep
-  const handleClearAllLists = () => {
-    if (
-      !window.confirm(
-        language === 'ar'
-          ? 'هل تريد مسح جميع العملاء المسجلين في المتصفح لهذا المندوب؟'
-          : 'Clear all saved customers in browser for this representative?'
-      )
-    ) {
-      return;
-    }
-    const empty: MasterListsPayload = { hospitals: [], pharmacies: [], doctors: [], branches: [] };
-    saveBrowserLists(selectedRep, empty);
-    setListsData(empty);
-    showNotification(language === 'ar' ? 'تم مسح القائمة من المتصفح' : 'Browser lists reset');
   };
 
   // Open modal for Create
@@ -191,7 +133,7 @@ export function MyListsView({
     setIsModalOpen(true);
   };
 
-  // Save Item (Create / Update) - Browser Instant Save + API Sync
+  // Save Item (Create / Update)
   const handleSaveModal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!modalFormData.name?.trim()) {
@@ -201,42 +143,29 @@ export function MyListsView({
 
     setSaving(true);
     try {
-      const itemToSave = {
-        ...modalFormData,
-        id: editingItem?.id || undefined,
+      const payload = {
+        category: activeCategory,
+        rep: selectedRep,
+        item: {
+          ...modalFormData,
+          id: editingItem?.id || undefined,
+        },
       };
 
-      // 1. Instant Browser Storage Save
-      const updatedLocal = addOrUpdateBrowserItem(selectedRep, activeCategory, itemToSave);
-      setListsData(updatedLocal);
+      const res = await fetch('/api/lists', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-      // 2. Sync to Backend API
-      try {
-        const payload = {
-          category: activeCategory,
-          rep: selectedRep,
-          item: itemToSave,
-        };
-
-        const res = await fetch('/api/lists', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-
-        if (res.ok) {
-          const resData = await res.json();
-          if (resData.data) {
-            const syncedLocal = addOrUpdateBrowserItem(selectedRep, activeCategory, resData.data);
-            setListsData(syncedLocal);
-          }
-        }
-      } catch {
-        // Backend sync failed or offline; browser storage is already updated!
+      const resData = await res.json();
+      if (res.ok && resData.success) {
+        showNotification(t('lists.savedSuccess'));
+        setIsModalOpen(false);
+        await loadLists(selectedRep);
+      } else {
+        showNotification(resData.message || t('msg.errorGeneric'), true);
       }
-
-      showNotification(t('lists.savedSuccess'));
-      setIsModalOpen(false);
     } catch {
       showNotification(t('msg.errorGeneric'), true);
     } finally {
@@ -244,25 +173,21 @@ export function MyListsView({
     }
   };
 
-  // Delete Item - Browser Instant Delete + API Sync
+  // Delete Item
   const handleDeleteItem = async (id: string, name: string) => {
     if (!window.confirm(`${t('lists.deleteConfirm')} (${name})`)) return;
 
     try {
-      // 1. Instant Browser Storage Delete
-      const updatedLocal = deleteBrowserItem(selectedRep, activeCategory, id);
-      setListsData(updatedLocal);
-
-      // 2. Sync Delete to API
-      try {
-        await fetch(`/api/lists?category=${activeCategory}&id=${encodeURIComponent(id)}`, {
-          method: 'DELETE',
-        });
-      } catch {
-        // ignore
+      const res = await fetch(`/api/lists?category=${activeCategory}&id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+      const resData = await res.json();
+      if (res.ok && resData.success) {
+        showNotification(t('lists.deletedSuccess'));
+        await loadLists(selectedRep);
+      } else {
+        showNotification(resData.message || t('msg.errorGeneric'), true);
       }
-
-      showNotification(t('lists.deletedSuccess'));
     } catch {
       showNotification(t('msg.errorGeneric'), true);
     }
@@ -286,21 +211,13 @@ export function MyListsView({
     });
   }, [currentList, search]);
 
-  const totalSavedCount =
-    listsData.hospitals.length +
-    listsData.pharmacies.length +
-    listsData.doctors.length +
-    listsData.branches.length;
-
   return (
-    <div className="animate-fade-in space-y-4">
+    <div className="animate-fade-in space-y-5">
       {/* Toast Banner */}
       {statusMsg && (
         <div
           className={`p-3 rounded-xl text-xs font-bold shadow-md flex items-center justify-between animate-in fade-in zoom-in-95 ${
-            statusMsg.isError
-              ? 'bg-red-50 text-red-900 border border-red-200'
-              : 'bg-emerald-50 text-emerald-900 border border-emerald-200'
+            statusMsg.isError ? 'bg-red-50 text-red-900 border border-red-200' : 'bg-emerald-50 text-emerald-900 border border-emerald-200'
           }`}
         >
           <span>{statusMsg.text}</span>
@@ -310,54 +227,18 @@ export function MyListsView({
         </div>
       )}
 
-      {/* Header Banner & Testing Tools */}
-      <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 shadow-card space-y-3">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">📋</span>
-            <div>
-              <h2 className="text-base md:text-lg font-black text-[var(--ink)]">
-                {t('lists.title')}
-              </h2>
-              <p className="text-xs text-[var(--ink-soft)] leading-relaxed">
-                {t('lists.desc')}
-              </p>
-            </div>
-          </div>
-
-          {/* Browser Save System Status & Quick Actions */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[11px] font-bold px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-full flex items-center gap-1.5 shadow-2xs">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>💾 {language === 'ar' ? 'نظام الحفظ الفوري بالمتصفح نشط' : 'Browser Storage Active'}</span>
-            </span>
-
-            <button
-              type="button"
-              onClick={handleLoadDemoData}
-              className="text-xs font-extrabold px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
-            >
-              <span>🧪</span>
-              <span>{language === 'ar' ? 'تحميل بيانات تجريبية' : 'Load Demo Test Data'}</span>
-            </button>
-
-            {totalSavedCount > 0 && (
-              <button
-                type="button"
-                onClick={handleClearAllLists}
-                className="text-xs font-bold px-2.5 py-1.5 text-gray-500 hover:text-red-700 bg-gray-100 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
-              >
-                🗑️ {language === 'ar' ? 'مسح' : 'Clear'}
-              </button>
-            )}
-          </div>
+      {/* Identity Selector Card */}
+      <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 shadow-card">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-xl">📋</span>
+          <h2 className="text-base font-extrabold text-[var(--ink)]">
+            {t('lists.title')}
+          </h2>
         </div>
-
-        {/* Representative Selector */}
-        <div className="pt-2 border-t border-[var(--line)] max-w-xs md:max-w-sm">
-          <label className="block text-[11px] font-bold text-[var(--ink-secondary)] mb-1">
-            {t('rep.selector.title')}
-          </label>
+        <p className="text-xs text-[var(--ink-soft)] mb-3.5 leading-relaxed">
+          {t('lists.desc')}
+        </p>
+        <div className="max-w-xs md:max-w-sm">
           <CustomSelect
             options={repOptions}
             value={selectedRep}
@@ -374,7 +255,7 @@ export function MyListsView({
           onClick={() => setActiveCategory('hospitals')}
           className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
             activeCategory === 'hospitals'
-              ? 'bg-amber-50/90 border-amber-400 shadow-sm ring-1 ring-amber-300'
+              ? 'bg-amber-50/80 border-amber-300 shadow-sm ring-1 ring-amber-300'
               : 'bg-white border-[var(--line)] hover:bg-gray-50'
           }`}
         >
@@ -391,7 +272,7 @@ export function MyListsView({
           onClick={() => setActiveCategory('pharmacies')}
           className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
             activeCategory === 'pharmacies'
-              ? 'bg-amber-50/90 border-amber-400 shadow-sm ring-1 ring-amber-300'
+              ? 'bg-amber-50/80 border-amber-300 shadow-sm ring-1 ring-amber-300'
               : 'bg-white border-[var(--line)] hover:bg-gray-50'
           }`}
         >
@@ -408,7 +289,7 @@ export function MyListsView({
           onClick={() => setActiveCategory('doctors')}
           className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
             activeCategory === 'doctors'
-              ? 'bg-amber-50/90 border-amber-400 shadow-sm ring-1 ring-amber-300'
+              ? 'bg-amber-50/80 border-amber-300 shadow-sm ring-1 ring-amber-300'
               : 'bg-white border-[var(--line)] hover:bg-gray-50'
           }`}
         >
@@ -425,7 +306,7 @@ export function MyListsView({
           onClick={() => setActiveCategory('branches')}
           className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
             activeCategory === 'branches'
-              ? 'bg-amber-50/90 border-amber-400 shadow-sm ring-1 ring-amber-300'
+              ? 'bg-amber-50/80 border-amber-300 shadow-sm ring-1 ring-amber-300'
               : 'bg-white border-[var(--line)] hover:bg-gray-50'
           }`}
         >
@@ -439,10 +320,11 @@ export function MyListsView({
         </div>
       </div>
 
-      {/* Main List Table Container */}
+      {/* Main List Management Container */}
       <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 shadow-card space-y-4">
-        {/* Sub-tabs and Search */}
+        {/* Header with Search and Add Action */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 flex-wrap">
+          {/* Sub-tabs */}
           <div className="flex items-center gap-1.5 p-1 bg-gray-100 rounded-xl w-full sm:w-auto overflow-x-auto">
             <button
               onClick={() => setActiveCategory('hospitals')}
@@ -513,15 +395,8 @@ export function MyListsView({
             <div>{t('app.loading')}</div>
           </div>
         ) : filteredList.length === 0 ? (
-          <div className="py-12 text-center text-xs text-[var(--ink-muted)] bg-gray-50/50 rounded-xl border border-dashed border-gray-200 space-y-3">
-            <p>{t('lists.emptyCategory')}</p>
-            <button
-              type="button"
-              onClick={handleLoadDemoData}
-              className="px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-xl font-extrabold text-xs cursor-pointer transition-colors shadow-2xs"
-            >
-              🧪 {language === 'ar' ? 'تحميل بيانات تجريبية جاهزة للاختبار' : 'Load Sample Test Customers'}
-            </button>
+          <div className="py-12 text-center text-xs text-[var(--ink-muted)] bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+            {t('lists.emptyCategory')}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -987,7 +862,7 @@ export function MyListsView({
                 </button>
                 <Button type="submit" variant="primary" size="md" isLoading={saving} className="font-extrabold px-6">
                   <span>💾</span>
-                  <span>{editingItem ? 'تحديث وحفظ' : 'حفظ في القائمة'}</span>
+                  <span>{editingItem ? 'تحديث البيانات' : 'حفظ في القائمة'}</span>
                 </Button>
               </div>
             </form>
@@ -996,20 +871,4 @@ export function MyListsView({
       )}
     </div>
   );
-}
-
-function mergeByIdOrName<T extends { id?: string; name?: string; area?: string; coverageArea?: string }>(
-  localList: T[],
-  serverList: T[]
-): T[] {
-  const map = new Map<string, T>();
-  for (const item of serverList) {
-    const key = item.id || `${item.name?.trim().toLowerCase()}_${item.area || item.coverageArea}`;
-    map.set(key, item);
-  }
-  for (const item of localList) {
-    const key = item.id || `${item.name?.trim().toLowerCase()}_${item.area || item.coverageArea}`;
-    map.set(key, item);
-  }
-  return Array.from(map.values());
 }

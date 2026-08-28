@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/Button';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { MultiProductSelect } from '@/components/ui/MultiProductSelect';
 import { MasterHospital } from '@/types';
-import { loadBrowserLists, addOrUpdateBrowserItem } from '@/lib/masterListStorage';
 
 interface HospitalFormProps {
   selectedRep: string;
@@ -78,26 +77,15 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
 
   const draftKey = `rep_track_hospital_draft_${selectedRep || 'guest'}`;
 
-  // Fetch saved master hospitals (instant from browser save, then synced with API)
+  // Fetch saved master hospitals for representative from API
   useEffect(() => {
-    const localHospitals = loadBrowserLists(selectedRep).hospitals;
-    if (localHospitals.length > 0) {
-      setSavedHospitals(localHospitals);
-    }
-
     async function fetchMasterHospitals() {
       try {
         const url = selectedRep ? `/api/lists?rep=${encodeURIComponent(selectedRep)}` : '/api/lists';
         const res = await fetch(url);
         const data = await res.json();
         if (res.ok && data.success && data.data?.hospitals) {
-          const combined = [...localHospitals];
-          for (const item of data.data.hospitals) {
-            if (!combined.some((c) => c.name.trim().toLowerCase() === item.name.trim().toLowerCase())) {
-              combined.push(item);
-            }
-          }
-          setSavedHospitals(combined);
+          setSavedHospitals(data.data.hospitals);
         }
       } catch {
         // ignore
