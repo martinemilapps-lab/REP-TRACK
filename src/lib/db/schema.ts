@@ -126,6 +126,7 @@ export const hospitalVisits = sqliteTable('hospital_visits', {
   hospitalId: text('hospital_id').notNull().references(() => hospitals.id, { onDelete: 'restrict' }),
   dept: text('dept'),
   drsVisited: integer('drs_visited').default(0),
+  doctorNames: text('doctor_names'),
   cycleDays: integer('cycle_days').default(0),
   lastVisitDate: text('last_visit_date'), // YYYY-MM-DD
   nextVisitDate: text('next_visit_date'), // YYYY-MM-DD

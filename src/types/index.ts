@@ -25,6 +25,7 @@ export interface HospitalVisitRecord {
   type: string; // 'Private' | 'Government' | 'University' | 'Insurance' | 'Other'
   dept?: string;
   drsVisited?: number;
+  doctorNames?: string;
   contact?: string;
   phone?: string;
   cycle?: number;

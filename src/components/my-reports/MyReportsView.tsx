@@ -260,7 +260,14 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                             <td className="whitespace-nowrap">{r.area}</td>
                             <td className="whitespace-nowrap">{r.type}</td>
                             <td className="whitespace-nowrap">{r.dept}</td>
-                            <td className="font-mono whitespace-nowrap">{r.drsVisited}</td>
+                            <td className="whitespace-nowrap">
+                              <span className="font-mono font-bold">{r.drsVisited ?? 0}</span>
+                              {r.doctorNames && (
+                                <div className="text-[10px] text-[var(--ink-muted)] font-normal max-w-[140px] truncate" title={r.doctorNames}>
+                                  🩺 {r.doctorNames}
+                                </div>
+                              )}
+                            </td>
                             <td className="whitespace-nowrap">{r.contact}</td>
                             <td className="font-mono whitespace-nowrap">{r.phone}</td>
                             <td className="font-mono whitespace-nowrap">{r.lastVisit}</td>

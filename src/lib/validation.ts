@@ -15,6 +15,7 @@ export const HospitalVisitSchema = z.object({
   type: z.string().optional().default('Private'),
   dept: z.string().optional().default(''),
   drsVisited: z.coerce.number().min(0).optional().default(0),
+  doctorNames: z.string().optional().default(''),
   contact: z.string().optional().default(''),
   phone: z.string().optional().default(''),
   cycle: z.coerce.number().min(0).optional().default(0),

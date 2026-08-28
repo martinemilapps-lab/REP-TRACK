@@ -192,18 +192,23 @@ export async function runIntegrationTests() {
         area: 'Zamalek',
         dept: 'Cardiology',
         drsVisited: 3,
+        doctorNames: 'د. أحمد سامي، د. شريف عادل',
+        contact: 'د. سارة (مسؤول الصيدلية والمشتريات)',
         cycle: 14,
         lastVisit: '2026-08-20',
         nextVisit: '2026-09-03',
-        ourProducts: 'Nitrong',
+        ourProducts: 'Nitrong 5 mg, 10 mg ( Patch), Sugammadex 200 mg/ 2 ml Vial',
         competitor: 'None',
         notes: 'Integration test visit',
       });
       assert(visit.status === 'Visited', 'Visit created with derived "Visited" status');
 
       const repReports = await getHospitalReports(repSession);
-      const hasOwnVisit = repReports.some((r) => r.id === visit.id);
-      assert(hasOwnVisit, 'Representative can read own hospital visit log');
+      const matchedReport = repReports.find((r) => r.id === visit.id);
+      assert(
+        !!matchedReport && matchedReport.doctorNames === 'د. أحمد سامي، د. شريف عادل',
+        'Representative can read own hospital visit log with doctorNames'
+      );
     }
   } catch (error) {
     console.error('Integration test exception:', error);

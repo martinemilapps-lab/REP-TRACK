@@ -1,0 +1,1 @@
+ALTER TABLE `hospital_visits` ADD `doctor_names` text;
