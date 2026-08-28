@@ -73,6 +73,14 @@ export const translations: Record<string, { ar: string; en: string }> = {
   'weekly.chip.singlePm': { ar: 'PM single visits in...', en: 'PM single visits in...' },
   'weekly.chip.doubleAm': { ar: 'AM double visit with...', en: 'AM double visit with...' },
   'weekly.chip.doublePm': { ar: 'PM double visit with...', en: 'PM double visit with...' },
+  'weekly.chip.training': { ar: 'Training (تدريب)', en: 'Training' },
+  'weekly.chip.others': { ar: 'Others (أخرى)...', en: 'Others...' },
+  'weekly.othersModalTitle': { ar: 'تحديد نشاط إضافي (أخرى / Others)', en: 'Specify Other Activity (Others)' },
+  'weekly.othersModalDesc': { ar: 'يرجى كتابة وتحديد تفاصيل النشاط المراد إدراجه في الخطة الأسبوعية:', en: 'Please specify the details of the activity to add to the weekly plan:' },
+  'weekly.othersPlaceholder': { ar: 'اكتب تفاصيل النشاط هنا (مثال: مؤتمر طبي، متابعة مناقصات، إجازة رسمية...)...', en: 'Type activity details here (e.g. Medical conference, tender follow-up, official leave...)...' },
+  'weekly.targetShift': { ar: 'اليوم والفترة المستهدفة:', en: 'Target Day & Shift:' },
+  'weekly.insertActivity': { ar: 'إضافة للخطة', en: 'Add to Plan' },
+  'weekly.activeCellHint': { ar: 'الخلية النشطة:', en: 'Active Cell:' },
 
   // Days of Week
   'day.saturday': { ar: 'SATURDAY (السبت)', en: 'SATURDAY' },

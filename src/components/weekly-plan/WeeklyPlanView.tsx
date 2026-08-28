@@ -100,6 +100,10 @@ export function WeeklyPlanView({
   const [weekLabel, setWeekLabel] = useState(initialRange.label);
   const [managerNotes, setManagerNotes] = useState('');
   const [planStatus, setPlanStatus] = useState('Submitted');
+  const [focusedCell, setFocusedCell] = useState<keyof WeeklyPlanFormState>('saturdayAm');
+  const [showOthersModal, setShowOthersModal] = useState(false);
+  const [othersCustomText, setOthersCustomText] = useState('');
+  const [othersTargetCell, setOthersTargetCell] = useState<keyof WeeklyPlanFormState>('saturdayAm');
 
   const [formData, setFormData] = useState<WeeklyPlanFormState>({
     saturdayAm: 'Line 1 meeting then office working',
@@ -193,7 +197,7 @@ export function WeeklyPlanView({
 
   const handleApplyPreset = (key: keyof WeeklyPlanFormState, text: string) => {
     setFormData((prev) => {
-      const current = prev[key].trim();
+      const current = (prev[key] || '').trim();
       const next = current ? `${current} | ${text}` : text;
       return { ...prev, [key]: next };
     });
@@ -413,52 +417,77 @@ export function WeeklyPlanView({
             </div>
 
             {/* Quick Fill Presets Bar */}
-            <div className="bg-white px-5 py-3 border-b border-[var(--line)] flex items-center gap-2 overflow-x-auto">
-              <span className="text-xs font-bold text-[var(--ink-secondary)] shrink-0 flex items-center gap-1">
+            <div className="bg-white px-4 md:px-5 py-3 border-b border-[var(--line)] flex flex-wrap items-center gap-2">
+              <span className="text-xs font-bold text-[var(--ink-secondary)] shrink-0 flex items-center gap-1.5 me-1">
                 <span>⚡</span>
                 <span>{t('weekly.quickFill')}</span>
               </span>
+
               <button
                 type="button"
-                onClick={() => handleApplyPreset('saturdayAm', 'Line 1 meeting then office working')}
+                onClick={() => handleApplyPreset(focusedCell, 'Line 1 meeting then office working')}
                 className="text-[11px] font-bold px-2.5 py-1 bg-[var(--surface-subtle)] hover:bg-[var(--gold-tint)] border border-[var(--line)] hover:border-[var(--gold)] rounded-lg transition-colors whitespace-nowrap cursor-pointer"
               >
                 Line 1 meeting
               </button>
               <button
                 type="button"
-                onClick={() => handleApplyPreset('sundayAm', 'Line 2 meeting then Am double visit with...')}
+                onClick={() => handleApplyPreset(focusedCell, 'Line 2 meeting then Am double visit with...')}
                 className="text-[11px] font-bold px-2.5 py-1 bg-[var(--surface-subtle)] hover:bg-[var(--gold-tint)] border border-[var(--line)] hover:border-[var(--gold)] rounded-lg transition-colors whitespace-nowrap cursor-pointer"
               >
                 Line 2 meeting
               </button>
               <button
                 type="button"
-                onClick={() => handleApplyPreset('mondayAm', 'Line 3 meeting then office working')}
+                onClick={() => handleApplyPreset(focusedCell, 'Line 3 meeting then office working')}
                 className="text-[11px] font-bold px-2.5 py-1 bg-[var(--surface-subtle)] hover:bg-[var(--gold-tint)] border border-[var(--line)] hover:border-[var(--gold)] rounded-lg transition-colors whitespace-nowrap cursor-pointer"
               >
                 Line 3 meeting
               </button>
               <button
                 type="button"
-                onClick={() => handleApplyPreset('saturdayPm', 'Office working')}
+                onClick={() => handleApplyPreset(focusedCell, 'Office working')}
                 className="text-[11px] font-bold px-2.5 py-1 bg-[var(--surface-subtle)] hover:bg-[var(--gold-tint)] border border-[var(--line)] hover:border-[var(--gold)] rounded-lg transition-colors whitespace-nowrap cursor-pointer"
               >
                 Office working
               </button>
               <button
                 type="button"
-                onClick={() => handleApplyPreset('mondayPm', 'Pm single visits in...')}
+                onClick={() => handleApplyPreset(focusedCell, 'Single visits')}
                 className="text-[11px] font-bold px-2.5 py-1 bg-[var(--surface-subtle)] hover:bg-[var(--gold-tint)] border border-[var(--line)] hover:border-[var(--gold)] rounded-lg transition-colors whitespace-nowrap cursor-pointer"
               >
                 Single visits
               </button>
               <button
                 type="button"
-                onClick={() => handleApplyPreset('tuesdayAm', 'Am double visit with...')}
+                onClick={() => handleApplyPreset(focusedCell, 'Double visit with...')}
                 className="text-[11px] font-bold px-2.5 py-1 bg-[var(--surface-subtle)] hover:bg-[var(--gold-tint)] border border-[var(--line)] hover:border-[var(--gold)] rounded-lg transition-colors whitespace-nowrap cursor-pointer"
               >
                 Double visit
+              </button>
+
+              {/* Training Preset Chip */}
+              <button
+                type="button"
+                onClick={() => handleApplyPreset(focusedCell, 'Training')}
+                className="text-[11px] font-extrabold px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 hover:border-amber-500 rounded-lg transition-all whitespace-nowrap cursor-pointer shadow-2xs flex items-center gap-1"
+              >
+                <span>🎓</span>
+                <span>Training (تدريب)</span>
+              </button>
+
+              {/* Others... Preset Chip */}
+              <button
+                type="button"
+                onClick={() => {
+                  setOthersTargetCell(focusedCell);
+                  setOthersCustomText('');
+                  setShowOthersModal(true);
+                }}
+                className="text-[11px] font-extrabold px-3 py-1 bg-gradient-to-r from-[var(--gold)] to-[var(--gold-light)] text-white hover:from-[var(--gold-dark)] hover:to-[var(--gold)] border border-[rgba(0,0,0,0.06)] rounded-lg transition-all whitespace-nowrap cursor-pointer shadow-xs flex items-center gap-1"
+              >
+                <span>✨</span>
+                <span>Others (أخرى)...</span>
               </button>
             </div>
 
@@ -481,6 +510,9 @@ export function WeeklyPlanView({
                 <tbody className="divide-y divide-[var(--line)] bg-white text-xs md:text-sm">
                   {DAYS.map((dayItem, idx) => {
                     const isEven = idx % 2 === 0;
+                    const isAmFocused = focusedCell === dayItem.amKey;
+                    const isPmFocused = focusedCell === dayItem.pmKey;
+
                     return (
                       <tr
                         key={dayItem.dayKey}
@@ -505,9 +537,14 @@ export function WeeklyPlanView({
                           <textarea
                             rows={2}
                             value={formData[dayItem.amKey]}
+                            onFocus={() => setFocusedCell(dayItem.amKey)}
                             onChange={(e) => handleDayChange(dayItem.amKey, e.target.value)}
                             placeholder={`e.g. Line 1 meeting then Am single visits in...`}
-                            className="w-full text-xs md:text-sm p-2 bg-transparent border border-transparent hover:border-[var(--line)] focus:border-[var(--gold)] focus:bg-white rounded-lg resize-none transition-all outline-none leading-relaxed"
+                            className={`w-full text-xs md:text-sm p-2 bg-transparent rounded-lg resize-none transition-all outline-none leading-relaxed ${
+                              isAmFocused
+                                ? 'border border-[var(--gold)] ring-1 ring-[var(--gold-tint)] bg-amber-50/20'
+                                : 'border border-transparent hover:border-[var(--line)] focus:border-[var(--gold)] focus:bg-white'
+                            }`}
                           />
                         </td>
 
@@ -516,9 +553,14 @@ export function WeeklyPlanView({
                           <textarea
                             rows={2}
                             value={formData[dayItem.pmKey]}
+                            onFocus={() => setFocusedCell(dayItem.pmKey)}
                             onChange={(e) => handleDayChange(dayItem.pmKey, e.target.value)}
                             placeholder={`e.g. Pm double visit with... or Office working`}
-                            className="w-full text-xs md:text-sm p-2 bg-transparent border border-transparent hover:border-[var(--line)] focus:border-[var(--gold)] focus:bg-white rounded-lg resize-none transition-all outline-none leading-relaxed"
+                            className={`w-full text-xs md:text-sm p-2 bg-transparent rounded-lg resize-none transition-all outline-none leading-relaxed ${
+                              isPmFocused
+                                ? 'border border-[var(--gold)] ring-1 ring-[var(--gold-tint)] bg-amber-50/20'
+                                : 'border border-transparent hover:border-[var(--line)] focus:border-[var(--gold)] focus:bg-white'
+                            }`}
                           />
                         </td>
                       </tr>
@@ -650,6 +692,154 @@ export function WeeklyPlanView({
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {/* Others Activity Modal */}
+          {showOthersModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-150">
+              <div
+                className="bg-white rounded-2xl border border-[var(--line)] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Modal Header */}
+                <div className="bg-gradient-to-r from-[#EFE9DA] to-[#F7F4EB] px-5 py-3.5 border-b border-[#E0D7C4] flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">✨</span>
+                    <h3 className="font-extrabold text-xs md:text-sm text-[#4A3B18]">
+                      {t('weekly.othersModalTitle')}
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowOthersModal(false);
+                      setOthersCustomText('');
+                    }}
+                    className="text-gray-400 hover:text-gray-700 w-7 h-7 rounded-full flex items-center justify-center hover:bg-black/5 transition-colors cursor-pointer text-base font-bold"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Modal Body */}
+                <div className="p-5 space-y-3.5">
+                  <p className="text-[11px] text-[var(--ink-secondary)] leading-relaxed">
+                    {t('weekly.othersModalDesc')}
+                  </p>
+
+                  {/* Target Shift Selector */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-[var(--ink)] mb-1">
+                      {t('weekly.targetShift')}
+                    </label>
+                    <select
+                      value={othersTargetCell}
+                      onChange={(e) => setOthersTargetCell(e.target.value as keyof WeeklyPlanFormState)}
+                      className="w-full text-xs font-semibold px-3 py-2 bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl outline-none transition-colors"
+                    >
+                      {DAYS.map((d) => (
+                        <React.Fragment key={d.dayKey}>
+                          <option value={d.amKey}>
+                            {d.dayNameEn} ({d.dayNameAr}) — AM (الفترة الصباحية)
+                          </option>
+                          <option value={d.pmKey}>
+                            {d.dayNameEn} ({d.dayNameAr}) — PM (الفترة المسائية)
+                          </option>
+                        </React.Fragment>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Activity Details Input */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-[var(--ink)] mb-1">
+                      {language === 'ar' ? 'تفاصيل النشاط (أخرى) *' : 'Other Activity Details *'}
+                    </label>
+                    <textarea
+                      rows={3}
+                      autoFocus
+                      value={othersCustomText}
+                      onChange={(e) => setOthersCustomText(e.target.value)}
+                      placeholder={t('weekly.othersPlaceholder')}
+                      className="w-full text-xs p-2.5 bg-[var(--surface-subtle)] border border-[var(--line)] focus:border-[var(--gold)] focus:bg-white rounded-xl outline-none transition-all leading-relaxed"
+                    />
+                  </div>
+
+                  {/* Quick Suggestion Chips */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                    <span className="text-[10px] font-bold text-[var(--ink-muted)] me-1">
+                      {language === 'ar' ? 'اقتراحات سريعة:' : 'Suggestions:'}
+                    </span>
+                    {[
+                      { ar: 'مؤتمر طبي', en: 'Medical Conference' },
+                      { ar: 'متابعة مناقصات', en: 'Tenders Follow-up' },
+                      { ar: 'جرد مستودع / صيدليات', en: 'Stock Inventory' },
+                      { ar: 'إجازة رسمية / سنوية', en: 'Official / Annual Leave' },
+                      { ar: 'اجتماع داخلي خاص', en: 'Special Internal Meeting' },
+                    ].map((item, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setOthersCustomText(language === 'ar' ? item.ar : item.en)}
+                        className="text-[10px] font-medium px-2 py-0.5 bg-gray-100 hover:bg-[var(--gold-tint)] border border-gray-200 hover:border-[var(--gold)] rounded-md transition-colors cursor-pointer"
+                      >
+                        {language === 'ar' ? item.ar : item.en}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Live Preview */}
+                  {othersCustomText.trim() && (
+                    <div className="p-2.5 bg-amber-50/70 border border-amber-200 rounded-xl text-[11px] flex items-start gap-2">
+                      <span className="text-amber-600 font-bold shrink-0">👁️</span>
+                      <div>
+                        <span className="font-bold text-amber-900 block mb-0.5">
+                          {language === 'ar' ? 'معاينة النص في الخطة:' : 'Plan Output Preview:'}
+                        </span>
+                        <code className="font-mono text-[11px] text-amber-950 bg-white/90 px-1.5 py-0.5 rounded border border-amber-200 inline-block">
+                          Others: {othersCustomText.trim()}
+                        </code>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Modal Actions */}
+                <div className="bg-[#FAF7F0] px-5 py-3 border-t border-[#E8E2D2] flex items-center justify-end gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setShowOthersModal(false);
+                      setOthersCustomText('');
+                    }}
+                  >
+                    {t('action.cancel')}
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => {
+                      const trimmed = othersCustomText.trim();
+                      if (!trimmed) {
+                        onError?.(language === 'ar' ? 'يرجى كتابة تفاصيل النشاط' : 'Please specify activity details');
+                        return;
+                      }
+                      const finalVal = `Others: ${trimmed}`;
+                      handleApplyPreset(othersTargetCell, finalVal);
+                      setShowOthersModal(false);
+                      setOthersCustomText('');
+                      onSuccess?.(language === 'ar' ? 'تمت إضافة النشاط للخطة بنجاح' : 'Activity added to plan successfully');
+                    }}
+                    disabled={!othersCustomText.trim()}
+                    className="font-bold px-4 text-xs"
+                  >
+                    <span>✓</span>
+                    <span>{t('weekly.insertActivity')}</span>
+                  </Button>
+                </div>
               </div>
             </div>
           )}
