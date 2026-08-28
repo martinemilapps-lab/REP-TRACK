@@ -351,75 +351,83 @@ export function BranchForm({ selectedRep, onSuccess, onError }: BranchFormProps)
         />
       </div>
 
-      {/* Visit Nature / Type (Single vs Double) */}
-      <div className="bg-[var(--surface-subtle)]/70 p-4 rounded-xl border border-[var(--line)] mb-5">
-        <label className="block text-xs font-bold text-[var(--ink)] mb-2">
-          {t('visit.type')} *
-        </label>
-        <div className="grid grid-cols-2 gap-3 max-w-sm">
-          <button
-            type="button"
-            onClick={() => {
-              setFormData((prev) => {
-                const next = { ...prev, visitType: 'Single', companion: '' };
-                saveDraft(next);
-                return next;
-              });
-            }}
-            className={`py-2.5 px-3 rounded-xl text-xs md:text-sm font-extrabold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
-              formData.visitType === 'Single'
-                ? 'bg-[var(--surface)] text-[var(--gold-dark)] border-[var(--gold)] shadow-sm'
-                : 'bg-transparent text-[var(--ink-soft)] border-transparent hover:bg-[var(--surface-hover)]'
-            }`}
-          >
-            <span>👤</span>
-            <span>{t('visit.single')}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setFormData((prev) => {
-                const next = { ...prev, visitType: 'Double' };
-                saveDraft(next);
-                return next;
-              });
-            }}
-            className={`py-2.5 px-3 rounded-xl text-xs md:text-sm font-extrabold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
-              formData.visitType === 'Double'
-                ? 'bg-gradient-to-r from-[var(--gold)] to-[var(--gold-light)] text-white border-[var(--gold-dark)] shadow-sm'
-                : 'bg-transparent text-[var(--ink-soft)] border-transparent hover:bg-[var(--surface-hover)]'
-            }`}
-          >
-            <span>👥</span>
-            <span>{t('visit.double')}</span>
-          </button>
-        </div>
-        {formData.visitType === 'Double' && (
-          <div className="mt-3.5 pt-3 border-t border-[var(--line)] animate-fade-in">
-            <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1">
-              {t('visit.companion')}
+      {/* Visit Settings Strip: Visit Type (Single/Double) + Master Customer Picker (My Lists) */}
+      <div className="bg-[var(--surface-subtle)]/70 p-4 md:p-5 rounded-2xl border border-[var(--line)] mb-5 shadow-2xs">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-5 items-start">
+          {/* Column 1: Visit Nature / Type (Single vs Double) */}
+          <div className="lg:col-span-4 space-y-2.5">
+            <label className="block text-xs font-extrabold text-[var(--ink)]">
+              {t('visit.type')} *
             </label>
-            <input
-              type="text"
-              id="companion"
-              value={formData.companion}
-              onChange={handleChange}
-              placeholder={t('visit.companionPlaceholder')}
-              className="w-full text-xs md:text-sm bg-[var(--surface)] border border-[var(--line)] rounded-lg p-2.5"
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData((prev) => {
+                    const next = { ...prev, visitType: 'Single', companion: '' };
+                    saveDraft(next);
+                    return next;
+                  });
+                }}
+                className={`py-2 px-2.5 rounded-xl text-xs md:text-sm font-extrabold flex items-center justify-center gap-1.5 border transition-all cursor-pointer ${
+                  formData.visitType === 'Single'
+                    ? 'bg-white text-[var(--gold-dark)] border-[var(--gold)] shadow-sm'
+                    : 'bg-transparent text-[var(--ink-soft)] border-[var(--line)] hover:bg-white/60'
+                }`}
+              >
+                <span>👤</span>
+                <span>{t('visit.single')}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData((prev) => {
+                    const next = { ...prev, visitType: 'Double' };
+                    saveDraft(next);
+                    return next;
+                  });
+                }}
+                className={`py-2 px-2.5 rounded-xl text-xs md:text-sm font-extrabold flex items-center justify-center gap-1.5 border transition-all cursor-pointer ${
+                  formData.visitType === 'Double'
+                    ? 'bg-gradient-to-r from-[var(--gold)] to-[var(--gold-light)] text-white border-[var(--gold-dark)] shadow-sm'
+                    : 'bg-transparent text-[var(--ink-soft)] border-[var(--line)] hover:bg-white/60'
+                }`}
+              >
+                <span>👥</span>
+                <span>{t('visit.double')}</span>
+              </button>
+            </div>
+            {formData.visitType === 'Double' && (
+              <div className="pt-2 border-t border-[var(--line)] animate-fade-in">
+                <label className="block text-[11px] font-bold text-[var(--ink-secondary)] mb-1">
+                  {t('visit.companion')}
+                </label>
+                <input
+                  type="text"
+                  id="companion"
+                  value={formData.companion}
+                  onChange={handleChange}
+                  placeholder={t('visit.companionPlaceholder')}
+                  className="w-full text-xs bg-white border border-[var(--line)] rounded-xl p-2 font-medium"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Column 2: Master Customer Picker from My Lists (Contained in the upper stripe) */}
+          <div className="lg:col-span-8 lg:border-s lg:border-[var(--line)] lg:ps-5">
+            <MasterCustomerPicker
+              category="branches"
+              items={savedBranches}
+              selectedId={selectedMasterId}
+              onSelect={handleSelectMasterBranch}
+              onClear={handleClearMasterBranch}
+              selectedRep={selectedRep}
+              embedded={true}
             />
           </div>
-        )}
+        </div>
       </div>
-
-      {/* Master Branch Selector (My Lists) */}
-      <MasterCustomerPicker
-        category="branches"
-        items={savedBranches}
-        selectedId={selectedMasterId}
-        onSelect={handleSelectMasterBranch}
-        onClear={handleClearMasterBranch}
-        selectedRep={selectedRep}
-      />
 
       {/* Main Grid Fields */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">

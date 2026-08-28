@@ -14,6 +14,7 @@ interface MasterCustomerPickerProps {
   onSelect: (item: any) => void;
   onClear: () => void;
   selectedRep: string;
+  embedded?: boolean;
 }
 
 export function MasterCustomerPicker({
@@ -23,6 +24,7 @@ export function MasterCustomerPicker({
   onSelect,
   onClear,
   selectedRep,
+  embedded = false,
 }: MasterCustomerPickerProps) {
   const { t, language } = useTranslation();
 
@@ -127,23 +129,29 @@ export function MasterCustomerPicker({
   };
 
   return (
-    <div className="bg-gradient-to-r from-amber-50/90 via-amber-50/50 to-orange-50/80 border-2 border-amber-300/80 rounded-2xl p-4 md:p-5 mb-5 shadow-sm space-y-3 animate-fade-in">
+    <div
+      className={`rounded-2xl space-y-2.5 transition-all animate-fade-in ${
+        embedded
+          ? 'bg-gradient-to-r from-amber-50/80 to-amber-50/40 border border-amber-300/80 p-3.5 md:p-4 shadow-2xs'
+          : 'bg-gradient-to-r from-amber-50/90 via-amber-50/50 to-orange-50/80 border-2 border-amber-300/80 p-4 md:p-5 mb-5 shadow-sm'
+      }`}
+    >
       {/* Header with Title & Badge Count */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
-          <span className="text-xl">{getCategoryIcon()}</span>
+          <span className="text-lg">{getCategoryIcon()}</span>
           <div>
             <h3 className="text-xs md:text-sm font-black text-amber-950 flex items-center gap-1.5">
               <span>{t('lists.pickerTitle')}</span>
             </h3>
-            <p className="text-[11px] text-amber-900/80 leading-relaxed">
+            <p className="text-[10px] md:text-[11px] text-amber-900/80 leading-tight">
               {t('lists.pickerSubtitle')}
             </p>
           </div>
         </div>
 
         {items.length > 0 && (
-          <span className="text-[11px] font-extrabold px-2.5 py-1 bg-amber-200/80 text-amber-900 border border-amber-400/60 rounded-full flex items-center gap-1 shadow-2xs">
+          <span className="text-[10px] md:text-[11px] font-extrabold px-2 py-0.5 bg-amber-200/80 text-amber-900 border border-amber-400/60 rounded-full flex items-center gap-1 shadow-2xs">
             <span>📋</span>
             <span>{items.length} {t('lists.registeredCustomersCount')}</span>
           </span>
@@ -152,30 +160,30 @@ export function MasterCustomerPicker({
 
       {/* Selector Control */}
       {items.length > 0 ? (
-        <div className="space-y-2.5">
-          <div className="max-w-xl">
+        <div className="space-y-2">
+          <div className="w-full">
             <CustomSelect
               options={options}
               value={selectedId || '__manual__'}
               onChange={handleChange}
               placeholder={getPlaceholder()}
               searchable={true}
-              className="shadow-xs"
+              className="shadow-2xs bg-white"
             />
           </div>
 
           {/* Auto-filled Success Confirmation Card */}
           {selectedItem && (
-            <div className="p-3 bg-white/95 border border-emerald-300 rounded-xl flex items-center justify-between gap-3 shadow-2xs animate-fade-in flex-wrap">
+            <div className="p-2.5 bg-white/95 border border-emerald-300 rounded-xl flex items-center justify-between gap-2 shadow-2xs animate-fade-in flex-wrap">
               <div className="flex items-center gap-2 text-xs text-emerald-900 font-bold">
-                <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-xs shrink-0">
+                <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-[10px] shrink-0">
                   ✓
                 </span>
                 <div>
                   <span className="font-extrabold text-emerald-950">
                     {selectedItem.name}
                   </span>
-                  <span className="text-[11px] text-emerald-700 font-medium ms-1">
+                  <span className="text-[10px] md:text-[11px] text-emerald-700 font-medium ms-1">
                     — {t('lists.autoFilledNotice')}
                   </span>
                 </div>
@@ -184,7 +192,7 @@ export function MasterCustomerPicker({
               <button
                 type="button"
                 onClick={onClear}
-                className="text-[11px] font-bold text-gray-500 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+                className="text-[10px] md:text-[11px] font-bold text-gray-500 hover:text-red-700 hover:bg-red-50 px-2 py-0.5 rounded-lg transition-colors cursor-pointer"
               >
                 ✕ {t('lists.changeCustomer')}
               </button>
@@ -192,7 +200,7 @@ export function MasterCustomerPicker({
           )}
         </div>
       ) : (
-        <div className="p-3 bg-white/80 border border-amber-200 rounded-xl text-xs text-amber-900/90 leading-relaxed flex items-center gap-2">
+        <div className="p-2.5 bg-white/80 border border-amber-200 rounded-xl text-[11px] text-amber-900/90 leading-relaxed flex items-center gap-2">
           <span>💡</span>
           <span>{t('lists.noSavedCustomersHint')}</span>
         </div>
