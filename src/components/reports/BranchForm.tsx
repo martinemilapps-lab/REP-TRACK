@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from '@/lib/i18nContext';
 import { Button } from '@/components/ui/Button';
+import { MasterCustomerPicker } from '@/components/reports/MasterCustomerPicker';
 import { MasterBranch } from '@/types';
 
 interface BranchFormProps {
@@ -47,6 +48,7 @@ export function BranchForm({ selectedRep, onSuccess, onError }: BranchFormProps)
   const [draftRestored, setDraftRestored] = useState(false);
   const [showKnownList, setShowKnownList] = useState(false);
   const [savedBranches, setSavedBranches] = useState<MasterBranch[]>([]);
+  const [selectedMasterId, setSelectedMasterId] = useState<string>('');
   const branchInputRef = useRef<HTMLDivElement>(null);
 
   const initialToday = getTodayString();
@@ -181,8 +183,12 @@ export function BranchForm({ selectedRep, onSuccess, onError }: BranchFormProps)
 
   // Auto-fill from selected master branch
   const handleSelectMasterBranch = (b: MasterBranch) => {
+    setSelectedMasterId(b.id);
     setFormData((prev) => {
-      const nextCycle = b.defaultCycle !== undefined ? b.defaultCycle : prev.cycle;
+      const nextCycle =
+        b.defaultCycle !== undefined && !isNaN(Number(b.defaultCycle)) && Number(b.defaultCycle) > 0
+          ? Number(b.defaultCycle)
+          : prev.cycle;
       const next = {
         ...prev,
         name: b.name,
@@ -191,7 +197,9 @@ export function BranchForm({ selectedRep, onSuccess, onError }: BranchFormProps)
         phone: b.phone || prev.phone,
         products: b.distributedProducts || prev.products,
         cycle: nextCycle,
-        nextVisit: prev.lastVisit ? addDaysToDate(prev.lastVisit, nextCycle) : prev.nextVisit,
+        nextVisit: prev.lastVisit
+          ? addDaysToDate(prev.lastVisit, nextCycle)
+          : addDaysToDate(initialToday, nextCycle),
       };
       saveDraft(next);
       return next;
@@ -199,7 +207,12 @@ export function BranchForm({ selectedRep, onSuccess, onError }: BranchFormProps)
     setShowKnownList(false);
   };
 
+  const handleClearMasterBranch = () => {
+    setSelectedMasterId('');
+  };
+
   const handleClearDraft = () => {
+    setSelectedMasterId('');
     try {
       localStorage.removeItem(draftKey);
     } catch {
@@ -243,6 +256,7 @@ export function BranchForm({ selectedRep, onSuccess, onError }: BranchFormProps)
       const data = await res.json();
       if (res.ok && data.success) {
         onSuccess(data.message || t('msg.visitSaved'));
+        setSelectedMasterId('');
         try {
           localStorage.removeItem(draftKey);
         } catch {
@@ -376,6 +390,16 @@ export function BranchForm({ selectedRep, onSuccess, onError }: BranchFormProps)
           </div>
         )}
       </div>
+
+      {/* Master Branch Selector (My Lists) */}
+      <MasterCustomerPicker
+        category="branches"
+        items={savedBranches}
+        selectedId={selectedMasterId}
+        onSelect={handleSelectMasterBranch}
+        onClear={handleClearMasterBranch}
+        selectedRep={selectedRep}
+      />
 
       {/* Main Grid Fields */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">

@@ -6,6 +6,7 @@ import { useTranslation } from '@/lib/i18nContext';
 import { Button } from '@/components/ui/Button';
 import { CustomSelect, SelectOption } from '@/components/ui/CustomSelect';
 import { MultiProductSelect } from '@/components/ui/MultiProductSelect';
+import { MasterCustomerPicker } from '@/components/reports/MasterCustomerPicker';
 import { MasterPharmacy } from '@/types';
 
 interface PharmacyFormProps {
@@ -50,6 +51,7 @@ export function PharmacyForm({ selectedRep, onSuccess, onError }: PharmacyFormPr
   const [draftRestored, setDraftRestored] = useState(false);
   const [showKnownList, setShowKnownList] = useState(false);
   const [savedPharmacies, setSavedPharmacies] = useState<MasterPharmacy[]>([]);
+  const [selectedMasterId, setSelectedMasterId] = useState<string>('');
   const pharmacyInputRef = useRef<HTMLDivElement>(null);
 
   const initialToday = getTodayString();
@@ -196,8 +198,12 @@ export function PharmacyForm({ selectedRep, onSuccess, onError }: PharmacyFormPr
 
   // Auto-fill from selected master pharmacy
   const handleSelectMasterPharmacy = (p: MasterPharmacy) => {
+    setSelectedMasterId(p.id);
     setFormData((prev) => {
-      const nextCycle = p.defaultCycle !== undefined ? p.defaultCycle : prev.cycle;
+      const nextCycle =
+        p.defaultCycle !== undefined && !isNaN(Number(p.defaultCycle)) && Number(p.defaultCycle) > 0
+          ? Number(p.defaultCycle)
+          : prev.cycle;
       const next = {
         ...prev,
         name: p.name,
@@ -207,7 +213,9 @@ export function PharmacyForm({ selectedRep, onSuccess, onError }: PharmacyFormPr
         mobile: p.mobile || prev.mobile,
         cls: p.classification || prev.cls,
         cycle: nextCycle,
-        nextVisit: prev.lastVisit ? addDaysToDate(prev.lastVisit, nextCycle) : prev.nextVisit,
+        nextVisit: prev.lastVisit
+          ? addDaysToDate(prev.lastVisit, nextCycle)
+          : addDaysToDate(initialToday, nextCycle),
         ourProducts: p.targetProducts || prev.ourProducts,
       };
       saveDraft(next);
@@ -216,7 +224,12 @@ export function PharmacyForm({ selectedRep, onSuccess, onError }: PharmacyFormPr
     setShowKnownList(false);
   };
 
+  const handleClearMasterPharmacy = () => {
+    setSelectedMasterId('');
+  };
+
   const handleClearDraft = () => {
+    setSelectedMasterId('');
     try {
       localStorage.removeItem(draftKey);
     } catch {
@@ -269,6 +282,7 @@ export function PharmacyForm({ selectedRep, onSuccess, onError }: PharmacyFormPr
       const data = await res.json();
       if (res.ok && data.success) {
         onSuccess(data.message || t('msg.visitSaved'));
+        setSelectedMasterId('');
         try {
           localStorage.removeItem(draftKey);
         } catch {
@@ -406,6 +420,16 @@ export function PharmacyForm({ selectedRep, onSuccess, onError }: PharmacyFormPr
           </div>
         )}
       </div>
+
+      {/* Master Pharmacy Selector (My Lists) */}
+      <MasterCustomerPicker
+        category="pharmacies"
+        items={savedPharmacies}
+        selectedId={selectedMasterId}
+        onSelect={handleSelectMasterPharmacy}
+        onClear={handleClearMasterPharmacy}
+        selectedRep={selectedRep}
+      />
 
       {/* Main Grid Fields */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">

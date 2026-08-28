@@ -6,6 +6,7 @@ import { useTranslation } from '@/lib/i18nContext';
 import { Button } from '@/components/ui/Button';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { MultiProductSelect } from '@/components/ui/MultiProductSelect';
+import { MasterCustomerPicker } from '@/components/reports/MasterCustomerPicker';
 import { MasterHospital } from '@/types';
 
 interface HospitalFormProps {
@@ -50,6 +51,7 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
   const [draftRestored, setDraftRestored] = useState(false);
   const [showKnownList, setShowKnownList] = useState(false);
   const [savedHospitals, setSavedHospitals] = useState<MasterHospital[]>([]);
+  const [selectedMasterId, setSelectedMasterId] = useState<string>('');
   const hospitalInputRef = useRef<HTMLDivElement>(null);
 
   const initialToday = getTodayString();
@@ -198,8 +200,12 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
 
   // Auto-fill remembered hospital details from My Lists
   const handleSelectMasterHospital = (h: MasterHospital) => {
+    setSelectedMasterId(h.id);
     setFormData((prev) => {
-      const nextCycle = h.defaultCycle !== undefined ? h.defaultCycle : prev.cycle;
+      const nextCycle =
+        h.defaultCycle !== undefined && !isNaN(Number(h.defaultCycle)) && Number(h.defaultCycle) > 0
+          ? Number(h.defaultCycle)
+          : prev.cycle;
       const next = {
         ...prev,
         name: h.name,
@@ -210,7 +216,9 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
         phone: h.phone || prev.phone,
         doctorNames: h.doctorNames || prev.doctorNames,
         cycle: nextCycle,
-        nextVisit: prev.lastVisit ? addDaysToDate(prev.lastVisit, nextCycle) : prev.nextVisit,
+        nextVisit: prev.lastVisit
+          ? addDaysToDate(prev.lastVisit, nextCycle)
+          : addDaysToDate(initialToday, nextCycle),
         ourProducts: h.targetProducts || prev.ourProducts,
       };
       saveDraft(next);
@@ -219,7 +227,12 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
     setShowKnownList(false);
   };
 
+  const handleClearMasterHospital = () => {
+    setSelectedMasterId('');
+  };
+
   const handleClearDraft = () => {
+    setSelectedMasterId('');
     try {
       localStorage.removeItem(draftKey);
     } catch {
@@ -269,6 +282,7 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
       const data = await res.json();
       if (res.ok && data.success) {
         onSuccess(data.message || t('msg.visitSaved'));
+        setSelectedMasterId('');
         try {
           localStorage.removeItem(draftKey);
         } catch {
@@ -408,6 +422,16 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
           </div>
         )}
       </div>
+
+      {/* Master Hospital Selector (My Lists) */}
+      <MasterCustomerPicker
+        category="hospitals"
+        items={savedHospitals}
+        selectedId={selectedMasterId}
+        onSelect={handleSelectMasterHospital}
+        onClear={handleClearMasterHospital}
+        selectedRep={selectedRep}
+      />
 
       {/* Main Grid Fields */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">

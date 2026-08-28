@@ -89,7 +89,8 @@ export function CustomSelect({
     const term = searchTerm.toLowerCase();
     return (
       opt.label.toLowerCase().includes(term) ||
-      (opt.sublabel && opt.sublabel.toLowerCase().includes(term))
+      (opt.sublabel && opt.sublabel.toLowerCase().includes(term)) ||
+      (opt.badge && opt.badge.toLowerCase().includes(term))
     );
   });
 
@@ -124,8 +125,13 @@ export function CustomSelect({
       >
         <span className="truncate flex-1 text-start">
           {selectedOption ? (
-            <span className="flex items-center gap-2">
+            <span className="flex items-center gap-2 flex-wrap">
               <span className="truncate">{selectedOption.label}</span>
+              {selectedOption.badge && (
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-200 shrink-0">
+                  {selectedOption.badge}
+                </span>
+              )}
               {selectedOption.sublabel && (
                 <span className="text-xs font-normal text-[var(--gold-deep)] opacity-90 truncate">
                   — {selectedOption.sublabel}
@@ -204,12 +210,19 @@ export function CustomSelect({
                     `}
                   >
                     <div className="flex flex-col min-w-0 flex-1 text-start">
-                      <span className="truncate">{opt.label}</span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="truncate">{opt.label}</span>
+                        {opt.badge && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100/90 text-amber-900 border border-amber-200 shrink-0">
+                            {opt.badge}
+                          </span>
+                        )}
+                      </div>
                       {opt.sublabel && (
                         <span
-                          className={`text-[11px] truncate ${
+                          className={`text-[11px] truncate mt-0.5 ${
                             isSelected
-                              ? 'text-[var(--gold-deep)] opacity-90'
+                              ? 'text-[var(--gold-deep)] opacity-90 font-medium'
                               : 'text-[var(--ink-soft)]'
                           }`}
                         >

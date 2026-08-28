@@ -49,6 +49,17 @@ export const translations: Record<string, { ar: string; en: string }> = {
   'lists.defaultCycle': { ar: 'دورة الزيارة الافتراضية (أيام)', en: 'Default Visit Cycle (Days)' },
   'lists.targetProducts': { ar: 'المنتجات المستهدفة', en: 'Target Products' },
   'lists.totalSaved': { ar: 'إجمالي المسجلين في القائمة', en: 'Total In My List' },
+  'lists.pickerTitle': { ar: '⚡ اختيار العميل من قائمة عملائك (قوائمي) — تعبئة فورية', en: '⚡ Select Customer from My Lists — Instant Auto-fill' },
+  'lists.pickerSubtitle': { ar: 'اختر العميل ليتم استرجاع كافة بياناته المسجلة مسبقاً تلقائياً وتحديث دورة وموعد الزيارة', en: 'Choose a customer to auto-fill all previously saved details and set visit cycle' },
+  'lists.chooseHospital': { ar: '🔍 اختر المستشفى من قائمتك المسجلة...', en: '🔍 Select hospital from your list...' },
+  'lists.choosePharmacy': { ar: '🔍 اختر الصيدلية من قائمتك المسجلة...', en: '🔍 Select pharmacy from your list...' },
+  'lists.chooseDoctor': { ar: '🔍 اختر الطبيب من قائمتك المسجلة...', en: '🔍 Select doctor from your list...' },
+  'lists.chooseBranch': { ar: '🔍 اختر فرع التوزيع من قائمتك المسجلة...', en: '🔍 Select distribution branch from your list...' },
+  'lists.manualCustomerOption': { ar: '✏️ إدخال عميل جديد يدوياً (غير مسجل بالقائمة)', en: '✏️ Manual entry for a new customer (not in list)' },
+  'lists.autoFilledNotice': { ar: '✓ تم تعبئة واسترجاع بيانات العميل تلقائياً من قوائمك المسجلة', en: '✓ Customer details auto-filled from your registered list' },
+  'lists.noSavedCustomersHint': { ar: 'لم تقم بتسجيل عملاء في قائمتك لهذه الفئة بعد. يمكنك ملء التقرير يدوياً أدناه، أو تسجيل عملائك في قسم "قوائمي".', en: 'No saved customers in this category yet. You can fill details manually below, or register customers under "My Lists".' },
+  'lists.changeCustomer': { ar: 'تغيير العميل', en: 'Change Customer' },
+  'lists.registeredCustomersCount': { ar: 'عميل مسجل بقائمتك', en: 'customers in your list' },
 
   // Identity / Rep Selection
   'rep.selector.title': { ar: 'مين اللي بيبعت؟', en: 'Representative Identity' },

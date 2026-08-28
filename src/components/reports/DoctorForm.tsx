@@ -5,6 +5,7 @@ import { DOCTOR_CLASSES, PRODUCTS_LIST, VISIT_STATUS_OPTIONS } from '@/lib/const
 import { useTranslation } from '@/lib/i18nContext';
 import { Button } from '@/components/ui/Button';
 import { CustomSelect, SelectOption } from '@/components/ui/CustomSelect';
+import { MasterCustomerPicker } from '@/components/reports/MasterCustomerPicker';
 import { MasterDoctor } from '@/types';
 
 interface DoctorFormProps {
@@ -49,6 +50,7 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
   const [draftRestored, setDraftRestored] = useState(false);
   const [showKnownList, setShowKnownList] = useState(false);
   const [savedDoctors, setSavedDoctors] = useState<MasterDoctor[]>([]);
+  const [selectedMasterId, setSelectedMasterId] = useState<string>('');
   const doctorInputRef = useRef<HTMLDivElement>(null);
 
   const initialToday = getTodayString();
@@ -198,9 +200,13 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
 
   // Auto-fill from selected master doctor
   const handleSelectMasterDoctor = (doc: MasterDoctor) => {
+    setSelectedMasterId(doc.id);
+    const products = doc.targetProducts ? doc.targetProducts.split(',').map((p) => p.trim()) : [];
     setFormData((prev) => {
-      const nextCycle = doc.defaultCycle !== undefined ? doc.defaultCycle : prev.cycle;
-      const products = doc.targetProducts ? doc.targetProducts.split(',').map((p) => p.trim()) : [];
+      const nextCycle =
+        doc.defaultCycle !== undefined && !isNaN(Number(doc.defaultCycle)) && Number(doc.defaultCycle) > 0
+          ? Number(doc.defaultCycle)
+          : prev.cycle;
       const next = {
         ...prev,
         name: doc.name,
@@ -211,7 +217,9 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
         mobile: doc.mobile || prev.mobile,
         cls: doc.classification || prev.cls,
         cycle: nextCycle,
-        nextVisit: prev.visitDate ? addDaysToDate(prev.visitDate, nextCycle) : prev.nextVisit,
+        nextVisit: prev.visitDate
+          ? addDaysToDate(prev.visitDate, nextCycle)
+          : addDaysToDate(initialToday, nextCycle),
         f1: products[0] || prev.f1,
         f2: products[1] || prev.f2,
         f3: products[2] || prev.f3,
@@ -223,7 +231,12 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
     setShowKnownList(false);
   };
 
+  const handleClearMasterDoctor = () => {
+    setSelectedMasterId('');
+  };
+
   const handleClearDraft = () => {
+    setSelectedMasterId('');
     try {
       localStorage.removeItem(draftKey);
     } catch {
@@ -284,6 +297,7 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
       const data = await res.json();
       if (res.ok && data.success) {
         onSuccess(data.message || t('msg.visitSaved'));
+        setSelectedMasterId('');
         try {
           localStorage.removeItem(draftKey);
         } catch {
@@ -424,6 +438,16 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
           </div>
         )}
       </div>
+
+      {/* Master Doctor Selector (My Lists) */}
+      <MasterCustomerPicker
+        category="doctors"
+        items={savedDoctors}
+        selectedId={selectedMasterId}
+        onSelect={handleSelectMasterDoctor}
+        onClear={handleClearMasterDoctor}
+        selectedRep={selectedRep}
+      />
 
       {/* Main Grid Fields */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
