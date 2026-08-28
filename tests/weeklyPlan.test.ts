@@ -82,22 +82,22 @@ export async function runWeeklyPlanTests() {
       startDate: '2026-08-22',
       endDate: '2026-08-28',
       weekLabel: '22-8-2026 to 28-8-2026',
-      saturdayAm: 'Line 1 meeting then office working',
+      saturdayAm: 'Line 1 meeting then office working | Training: Product Knowledge',
       saturdayPm: 'Office working',
-      sundayAm: 'Line 2 meeting then Am double visit with sara Adel',
-      sundayPm: 'Pm double visit with sara Adel',
-      mondayAm: 'Line 3 meeting then Am single visits in Mohandseen',
-      mondayPm: 'Pm single visits in Mohandsen',
-      tuesdayAm: 'Line 1 meeting then Am double visit with fawzy nasser',
-      tuesdayPm: 'Pm double visit with fawzy nasser',
-      wednesdayAm: 'Line 2 meeting then office working',
+      sundayAm: 'Line 2 meeting then Am double visit with د. فوزي ناصر (Line Manager)',
+      sundayPm: 'Pm double visit with سارة عادل (Product Specialist) in Dokki',
+      mondayAm: 'Line 3 meeting then Am single visits in المهندسين (Mohandseen)',
+      mondayPm: 'Pm single visits in مدينة نصر (Nasr City)',
+      tuesdayAm: 'Training: Sales & Negotiation Skills Training - Workshop',
+      tuesdayPm: 'Others: Medical Conference (Annual Cardiology Congress)',
+      wednesdayAm: 'Line 2 meeting then office working | Others: Tenders Follow-up',
       wednesdayPm: 'Office working',
       thursdayAm: 'Line 3 meeting then office working',
       thursdayPm: 'Office working',
       fridayAm: 'Field visits / Follow-up',
       fridayPm: 'Off / Weekly summary',
     });
-    assert(validPlan.success === true, 'Valid weekly plan successfully parsed by WeeklyPlanSchema');
+    assert(validPlan.success === true, 'Valid weekly plan with rich structured items successfully parsed by WeeklyPlanSchema');
 
     const invalidPlan = WeeklyPlanSchema.safeParse({
       // missing rep and dates
