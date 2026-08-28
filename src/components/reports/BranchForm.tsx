@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from '@/lib/i18nContext';
 import { Button } from '@/components/ui/Button';
 import { MasterBranch } from '@/types';
+import { loadBrowserLists } from '@/lib/masterListStorage';
 
 interface BranchFormProps {
   selectedRep: string;
@@ -68,15 +69,26 @@ export function BranchForm({ selectedRep, onSuccess, onError }: BranchFormProps)
 
   const draftKey = `rep_track_branch_draft_${selectedRep || 'guest'}`;
 
-  // Fetch saved master branches for representative
+  // Fetch saved master branches (instant from browser save, then synced with API)
   useEffect(() => {
+    const localBranches = loadBrowserLists(selectedRep).branches;
+    if (localBranches.length > 0) {
+      setSavedBranches(localBranches);
+    }
+
     async function fetchMasterBranches() {
       try {
         const url = selectedRep ? `/api/lists?rep=${encodeURIComponent(selectedRep)}` : '/api/lists';
         const res = await fetch(url);
         const data = await res.json();
         if (res.ok && data.success && data.data?.branches) {
-          setSavedBranches(data.data.branches);
+          const combined = [...localBranches];
+          for (const item of data.data.branches) {
+            if (!combined.some((c) => c.name.trim().toLowerCase() === item.name.trim().toLowerCase())) {
+              combined.push(item);
+            }
+          }
+          setSavedBranches(combined);
         }
       } catch {
         // ignore
