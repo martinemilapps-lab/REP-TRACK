@@ -112,7 +112,6 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
         setFormData((prev) => ({
           ...prev,
           ...parsed,
-          // ensure dates and cycle remain valid
           lastVisit: parsed.lastVisit || initialToday,
           cycle: parsed.cycle !== undefined ? parsed.cycle : 7,
           nextVisit:
@@ -344,7 +343,7 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 md:p-6 mb-4 shadow-card animate-fade-in"
+      className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 md:p-6 mb-6 shadow-card animate-fade-in"
     >
       {/* Header Banner & Auto-Save Pill */}
       <div className="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-[var(--line)] flex-wrap">
@@ -452,7 +451,7 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
               <button
                 type="button"
                 onClick={() => setShowKnownList(true)}
-                className="text-[10px] text-[var(--gold-deep)] hover:underline font-bold"
+                className="text-[10px] text-[var(--gold-deep)] hover:underline font-bold cursor-pointer"
               >
                 {language === 'ar' ? 'سجل المستشفيات' : 'History'}
               </button>
