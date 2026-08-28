@@ -2,6 +2,7 @@ import { runStatusTests } from './status.test';
 import { runCoverageTests } from './coverage.test';
 import { runIntegrationTests } from './integration.test';
 import { runWeeklyPlanTests } from './weeklyPlan.test';
+import { runMyListsTests } from './myLists.test';
 
 async function main() {
   console.log('====================================================');
@@ -12,17 +13,20 @@ async function main() {
   const coverageResults = runCoverageTests();
   const integrationResults = await runIntegrationTests();
   const weeklyPlanResults = await runWeeklyPlanTests();
+  const myListsResults = await runMyListsTests();
 
   const totalPassed =
     statusResults.passed +
     coverageResults.passed +
     integrationResults.passed +
-    weeklyPlanResults.passed;
+    weeklyPlanResults.passed +
+    myListsResults.passed;
   const totalFailed =
     statusResults.failed +
     coverageResults.failed +
     integrationResults.failed +
-    weeklyPlanResults.failed;
+    weeklyPlanResults.failed +
+    myListsResults.failed;
 
   console.log('\n====================================================');
   console.log(`📊 Test Summary: ${totalPassed} Passed, ${totalFailed} Failed`);

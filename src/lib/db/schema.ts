@@ -49,36 +49,46 @@ export const representatives = sqliteTable('representatives', {
 // ----------------------------------------------------
 export const hospitals = sqliteTable('hospitals', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  repId: text('rep_id').references(() => representatives.id, { onDelete: 'set null' }),
   name: text('name').notNull(),
   area: text('area').notNull(),
   type: text('type').notNull().default('Private'), // Private, Government, University, Insurance, Other
   dept: text('dept'),
   contact: text('contact'),
   phone: text('phone'),
+  doctorNames: text('doctor_names'),
+  defaultCycle: integer('default_cycle').default(7),
+  targetProducts: text('target_products'),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
 }, (table) => [
-  uniqueIndex('idx_hospitals_name_area').on(table.name, table.area),
+  index('idx_hospitals_rep').on(table.repId),
+  index('idx_hospitals_name_area').on(table.name, table.area),
 ]);
 
 export const pharmacies = sqliteTable('pharmacies', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  repId: text('rep_id').references(() => representatives.id, { onDelete: 'set null' }),
   name: text('name').notNull(),
   area: text('area').notNull(),
   address: text('address'),
   pharmacist: text('pharmacist'),
   mobile: text('mobile'),
   classification: text('classification').notNull().default('A'), // A, B, C
+  defaultCycle: integer('default_cycle').default(7),
+  targetProducts: text('target_products'),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
 }, (table) => [
-  uniqueIndex('idx_pharmacies_name_area').on(table.name, table.area),
+  index('idx_pharmacies_rep').on(table.repId),
+  index('idx_pharmacies_name_area').on(table.name, table.area),
 ]);
 
 export const doctors = sqliteTable('doctors', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  repId: text('rep_id').references(() => representatives.id, { onDelete: 'set null' }),
   code: text('code'),
   name: text('name').notNull(),
   specialty: text('specialty'),
@@ -86,25 +96,32 @@ export const doctors = sqliteTable('doctors', {
   area: text('area').notNull(),
   mobile: text('mobile'),
   classification: text('classification').notNull().default('A'), // A, B
+  bestTime: text('best_time'),
+  defaultCycle: integer('default_cycle').default(7),
+  targetProducts: text('target_products'),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
 }, (table) => [
-  uniqueIndex('idx_doctors_name_area').on(table.name, table.area),
+  index('idx_doctors_rep').on(table.repId),
+  index('idx_doctors_name_area').on(table.name, table.area),
 ]);
 
 export const distributionBranches = sqliteTable('distribution_branches', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  repId: text('rep_id').references(() => representatives.id, { onDelete: 'set null' }),
   name: text('name').notNull(),
   coverageArea: text('coverage_area').notNull(),
   contact: text('contact'),
   phone: text('phone'),
   distributedProducts: text('distributed_products'),
+  defaultCycle: integer('default_cycle').default(7),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
 }, (table) => [
-  uniqueIndex('idx_dist_branches_name_area').on(table.name, table.coverageArea),
+  index('idx_dist_branches_rep').on(table.repId),
+  index('idx_dist_branches_name_area').on(table.name, table.coverageArea),
 ]);
 
 export const products = sqliteTable('products', {
@@ -116,7 +133,6 @@ export const products = sqliteTable('products', {
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
 });
 
-// ----------------------------------------------------
 // ----------------------------------------------------
 // 3. ACTIVITY LOGS / VISIT HISTORY (FACTS)
 // ----------------------------------------------------
@@ -185,6 +201,8 @@ export const branchVisits = sqliteTable('branch_visits', {
   repId: text('rep_id').notNull().references(() => representatives.id, { onDelete: 'restrict' }),
   branchId: text('branch_id').notNull().references(() => distributionBranches.id, { onDelete: 'restrict' }),
   lastVisitDate: text('last_visit_date'), // YYYY-MM-DD
+  cycleDays: integer('cycle_days').default(0),
+  nextVisitDate: text('next_visit_date'), // YYYY-MM-DD
   visitType: text('visit_type').notNull().default('Single'), // 'Single' | 'Double'
   companion: text('companion'),
   notes: text('notes'),

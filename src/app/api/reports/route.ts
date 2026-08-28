@@ -3,6 +3,7 @@ import { getServerSession } from '@/lib/auth';
 import { db, representatives } from '@/lib/db';
 import { eq } from 'drizzle-orm';
 import { getUnifiedReports } from '@/lib/services/reportService';
+import { getMasterListsForRep } from '@/lib/services/masterListService';
 import { handleApiError } from '@/lib/errors';
 
 export async function GET(req: NextRequest) {
@@ -38,6 +39,7 @@ export async function GET(req: NextRequest) {
     });
 
     const allReps = await db.select().from(representatives).all();
+    const masterLists = await getMasterListsForRep(targetRepId || filterRepName || undefined);
 
     return NextResponse.json({
       reps: allReps,
@@ -46,6 +48,7 @@ export async function GET(req: NextRequest) {
       doctors: reportsData.doctors,
       branches: reportsData.branches,
       availabilities: reportsData.availabilities,
+      masterLists,
       totalVisits: reportsData.totalVisits,
     });
   } catch (error) {

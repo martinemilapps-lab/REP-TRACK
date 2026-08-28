@@ -99,13 +99,79 @@ export interface BranchVisitRecord {
   contact?: string;
   phone?: string;
   products?: string;
+  cycle?: number;
   lastVisit?: string;
+  nextVisit?: string;
   status?: string;
   visitType?: VisitType | string;
   companion?: string;
   notes?: string;
   createdAt?: string;
   submittedAt?: string;
+}
+
+export interface MasterHospital {
+  id: string;
+  repId?: string;
+  name: string;
+  area: string;
+  type: string;
+  dept?: string;
+  contact?: string;
+  phone?: string;
+  doctorNames?: string;
+  defaultCycle?: number;
+  targetProducts?: string;
+  createdAt?: string;
+}
+
+export interface MasterPharmacy {
+  id: string;
+  repId?: string;
+  name: string;
+  area: string;
+  address?: string;
+  pharmacist?: string;
+  mobile?: string;
+  classification: string;
+  defaultCycle?: number;
+  targetProducts?: string;
+  createdAt?: string;
+}
+
+export interface MasterDoctor {
+  id: string;
+  repId?: string;
+  code?: string;
+  name: string;
+  specialty?: string;
+  workplace?: string;
+  area: string;
+  mobile?: string;
+  classification: string;
+  bestTime?: string;
+  defaultCycle?: number;
+  targetProducts?: string;
+  createdAt?: string;
+}
+
+export interface MasterBranch {
+  id: string;
+  repId?: string;
+  name: string;
+  coverageArea: string;
+  contact?: string;
+  phone?: string;
+  distributedProducts?: string;
+  defaultCycle?: number;
+  createdAt?: string;
+}
+
+export interface MasterListsPayload {
+  hospitals: MasterHospital[];
+  pharmacies: MasterPharmacy[];
+  doctors: MasterDoctor[];
+  branches: MasterBranch[];
 }
 
 export interface ProductAvailabilityRecord {

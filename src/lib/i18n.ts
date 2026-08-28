@@ -17,6 +17,7 @@ export const translations: Record<string, { ar: string; en: string }> = {
 
   // Navigation
   'nav.submit': { ar: 'إرسال تقرير', en: 'Submit Visit' },
+  'nav.myLists': { ar: 'قوائمي', en: 'My Lists' },
   'nav.myReports': { ar: 'تقاريري', en: 'My Reports' },
   'nav.weeklyPlan': { ar: 'الخطة الأسبوعية', en: 'Weekly Plan' },
   'nav.managerDashboard': { ar: 'لوحة المدير', en: 'Manager Dashboard' },
@@ -24,6 +25,30 @@ export const translations: Record<string, { ar: string; en: string }> = {
   'nav.lock': { ar: 'قفل اللوحة', en: 'Lock Dashboard' },
   'nav.unlock': { ar: 'دخول الإدارة', en: 'Manager Access' },
   'nav.logout': { ar: 'تسجيل خروج', en: 'Sign Out' },
+
+  // Master Customer Lists (My Lists)
+  'lists.title': { ar: 'قوائم العملاء والمراكز الطبية (MY LISTS)', en: 'My Master Customer Lists' },
+  'lists.desc': { ar: 'إدخال وحفظ بيانات المستشفيات، الصيدليات، الأطباء، ومخازن التوزيع لاسترجاعها وتعبئتها تلقائياً عند تسجيل الزيارات', en: 'Manage master details for Hospitals, Pharmacies, Doctors, and Branches with instant form auto-fill' },
+  'lists.hospitals': { ar: 'المستشفيات', en: 'Hospitals' },
+  'lists.pharmacies': { ar: 'الصيدليات', en: 'Pharmacies' },
+  'lists.doctors': { ar: 'الأطباء', en: 'Doctors' },
+  'lists.branches': { ar: 'فروع ومخازن التوزيع', en: 'Distribution Branches' },
+  'lists.addHospital': { ar: '+ إضافة مستشفى جديدة', en: '+ Add Hospital' },
+  'lists.addPharmacy': { ar: '+ إضافة صيدلية جديدة', en: '+ Add Pharmacy' },
+  'lists.addDoctor': { ar: '+ إضافة دكتور جديد', en: '+ Add Doctor' },
+  'lists.addBranch': { ar: '+ إضافة فرع / موزع', en: '+ Add Branch' },
+  'lists.edit': { ar: 'تعديل', en: 'Edit' },
+  'lists.delete': { ar: 'حذف', en: 'Delete' },
+  'lists.deleteConfirm': { ar: 'هل أنت متأكد من حذف هذا العميل من قائمتك؟', en: 'Are you sure you want to delete this customer from your list?' },
+  'lists.savedSuccess': { ar: 'تم حفظ العميل في القائمة بنجاح ✓', en: 'Customer saved to list successfully ✓' },
+  'lists.deletedSuccess': { ar: 'تم حذف العميل من القائمة', en: 'Customer removed from list' },
+  'lists.selectFromList': { ar: '⚡ اختر من قائمتي المحفوظة (استرجاع فوري):', en: '⚡ Select from My Saved List (Auto-Fill):' },
+  'lists.quickAutoFill': { ar: 'تعبئة تلقائية من القائمة', en: 'Auto-fill from List' },
+  'lists.emptyCategory': { ar: 'لا توجد عناصر مسجلة في هذه القائمة بعد. اضغط + إضافة لتسجيل عميل جديد.', en: 'No customers in this category yet. Click + Add to record one.' },
+  'lists.bestTime': { ar: 'أفضل موعد للزيارة', en: 'Best Time to Visit' },
+  'lists.defaultCycle': { ar: 'دورة الزيارة الافتراضية (أيام)', en: 'Default Visit Cycle (Days)' },
+  'lists.targetProducts': { ar: 'المنتجات المستهدفة', en: 'Target Products' },
+  'lists.totalSaved': { ar: 'إجمالي المسجلين في القائمة', en: 'Total In My List' },
 
   // Identity / Rep Selection
   'rep.selector.title': { ar: 'مين اللي بيبعت؟', en: 'Representative Identity' },

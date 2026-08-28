@@ -38,6 +38,12 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
     doctors: DoctorVisitRecord[];
     branches: BranchVisitRecord[];
     availabilities: ProductAvailabilityRecord[];
+    masterLists?: {
+      hospitals: any[];
+      pharmacies: any[];
+      doctors: any[];
+      branches: any[];
+    };
   }>({
     hospitals: [],
     pharmacies: [],
@@ -70,13 +76,29 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
 
   const coverage = useMemo(() => {
     if (!repObj) return null;
+    const effectiveRep: Representative = {
+      ...repObj,
+      assignedHospitals:
+        data.masterLists?.hospitals && data.masterLists.hospitals.length > 0
+          ? data.masterLists.hospitals.length
+          : repObj.assignedHospitals,
+      assignedPharmacies:
+        data.masterLists?.pharmacies && data.masterLists.pharmacies.length > 0
+          ? data.masterLists.pharmacies.length
+          : repObj.assignedPharmacies,
+      assignedDrs:
+        data.masterLists?.doctors && data.masterLists.doctors.length > 0
+          ? data.masterLists.doctors.length
+          : repObj.assignedDrs,
+    };
+
     return calculateRepCoverage(
-      repObj,
+      effectiveRep,
       data.hospitals.length,
       data.pharmacies.length,
       data.doctors.length
     );
-  }, [repObj, data.hospitals.length, data.pharmacies.length, data.doctors.length]);
+  }, [repObj, data.masterLists, data.hospitals.length, data.pharmacies.length, data.doctors.length]);
 
   const stats = useMemo(() => {
     const allVisits = [...data.hospitals, ...data.pharmacies, ...data.doctors, ...data.branches];

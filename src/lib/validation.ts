@@ -77,10 +77,65 @@ export const BranchVisitSchema = z.object({
   contact: z.string().optional().default(''),
   phone: z.string().optional().default(''),
   products: z.string().optional().default(''),
+  cycle: z.coerce.number().min(0).optional().default(0),
   lastVisit: z.string().optional().default(''),
+  nextVisit: z.string().optional().default(''),
   visitType: z.string().optional().default('Single'),
   companion: z.string().optional().default(''),
   notes: z.string().optional().default(''),
+  rep: z.string().optional(),
+});
+
+export const MasterHospitalSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, 'اسم المستشفى مطلوب').trim(),
+  area: z.string().optional().default('').transform((v) => v.trim()),
+  type: z.string().optional().default('Private'),
+  dept: z.string().optional().default(''),
+  contact: z.string().optional().default(''),
+  phone: z.string().optional().default(''),
+  doctorNames: z.string().optional().default(''),
+  defaultCycle: z.coerce.number().min(0).optional().default(7),
+  targetProducts: z.string().optional().default(''),
+  rep: z.string().optional(),
+});
+
+export const MasterPharmacySchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, 'اسم الصيدلية مطلوب').trim(),
+  area: z.string().optional().default('').transform((v) => v.trim()),
+  address: z.string().optional().default(''),
+  pharmacist: z.string().optional().default(''),
+  mobile: z.string().optional().default(''),
+  classification: z.string().optional().default('A'),
+  defaultCycle: z.coerce.number().min(0).optional().default(7),
+  targetProducts: z.string().optional().default(''),
+  rep: z.string().optional(),
+});
+
+export const MasterDoctorSchema = z.object({
+  id: z.string().optional(),
+  code: z.string().optional().default(''),
+  name: z.string().min(1, 'اسم الطبيب مطلوب').trim(),
+  specialty: z.string().optional().default(''),
+  workplace: z.string().optional().default(''),
+  area: z.string().optional().default('').transform((v) => v.trim()),
+  mobile: z.string().optional().default(''),
+  classification: z.string().optional().default('A'),
+  bestTime: z.string().optional().default(''),
+  defaultCycle: z.coerce.number().min(0).optional().default(7),
+  targetProducts: z.string().optional().default(''),
+  rep: z.string().optional(),
+});
+
+export const MasterBranchSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, 'اسم الفرع / الموزع مطلوب').trim(),
+  coverageArea: z.string().optional().default('').transform((v) => v.trim()),
+  contact: z.string().optional().default(''),
+  phone: z.string().optional().default(''),
+  distributedProducts: z.string().optional().default(''),
+  defaultCycle: z.coerce.number().min(0).optional().default(7),
   rep: z.string().optional(),
 });
 

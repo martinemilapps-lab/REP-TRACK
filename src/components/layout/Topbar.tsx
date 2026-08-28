@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTranslation } from '@/lib/i18nContext';
 
-export type ViewType = 'submit' | 'myreports' | 'weeklyplan';
+export type ViewType = 'submit' | 'mylists' | 'myreports' | 'weeklyplan';
 
 interface TopbarProps {
   activeView?: ViewType;
@@ -29,6 +29,7 @@ export function Topbar({
 
   const isCurrentAdmin = isAdminPage || pathname === '/admin';
   const isSubmitActive = activeView === 'submit' || (pathname === '/' && !activeView);
+  const isMyListsActive = activeView === 'mylists';
   const isMyReportsActive = activeView === 'myreports';
   const isWeeklyPlanActive = activeView === 'weeklyplan';
 
@@ -74,8 +75,8 @@ export function Topbar({
       {/* Navigation Controls & Language Switcher */}
       <div className="flex items-center justify-center gap-2.5 flex-wrap w-full lg:w-auto shrink-0">
         {!isCurrentAdmin ? (
-          /* Normal User Navigation: Submit, My Reports, Weekly Plan */
-          <nav className="flex gap-1.5 bg-[var(--surface)] p-1.5 rounded-xl border border-[var(--line)] shadow-card">
+          /* Normal User Navigation: Submit, My Lists, My Reports, Weekly Plan */
+          <nav className="flex gap-1.5 bg-[var(--surface)] p-1.5 rounded-xl border border-[var(--line)] shadow-card flex-wrap justify-center">
             <button
               onClick={() => handleNavClick('submit')}
               className={`px-3.5 md:px-4 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-bold transition-all duration-200 cursor-pointer select-none ${
@@ -85,6 +86,17 @@ export function Topbar({
               }`}
             >
               {t('nav.submit')}
+            </button>
+            <button
+              onClick={() => handleNavClick('mylists')}
+              className={`px-3.5 md:px-4 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-bold transition-all duration-200 cursor-pointer select-none flex items-center gap-1.5 ${
+                isMyListsActive
+                  ? 'bg-gradient-to-r from-[var(--gold)] to-[var(--gold-light)] text-white shadow-xs font-extrabold'
+                  : 'text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--surface-hover)]'
+              }`}
+            >
+              <span>📋</span>
+              <span>{t('nav.myLists')}</span>
             </button>
             <button
               onClick={() => handleNavClick('myreports')}

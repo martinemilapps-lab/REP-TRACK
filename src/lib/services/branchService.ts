@@ -51,7 +51,9 @@ export async function createBranchVisit(
     .values({
       repId,
       branchId: branch.id,
+      cycleDays: input.cycle || 0,
       lastVisitDate: input.lastVisit || null,
+      nextVisitDate: input.nextVisit || null,
       visitType: input.visitType || 'Single',
       companion: input.companion || null,
       notes: input.notes || null,
@@ -65,6 +67,8 @@ export async function createBranchVisit(
     contact: branch.contact,
     phone: branch.phone,
     products: branch.distributedProducts,
+    cycle: input.cycle || 0,
+    nextVisit: input.nextVisit || null,
     status: 'Visited',
   };
 }
@@ -88,7 +92,9 @@ export async function getBranchReports(
       contact: distributionBranches.contact,
       phone: distributionBranches.phone,
       products: distributionBranches.distributedProducts,
+      cycle: branchVisits.cycleDays,
       lastVisit: branchVisits.lastVisitDate,
+      nextVisit: branchVisits.nextVisitDate,
       visitType: branchVisits.visitType,
       companion: branchVisits.companion,
       notes: branchVisits.notes,
@@ -111,7 +117,9 @@ export async function getBranchReports(
         contact: distributionBranches.contact,
         phone: distributionBranches.phone,
         products: distributionBranches.distributedProducts,
+        cycle: branchVisits.cycleDays,
         lastVisit: branchVisits.lastVisitDate,
+        nextVisit: branchVisits.nextVisitDate,
         visitType: branchVisits.visitType,
         companion: branchVisits.companion,
         notes: branchVisits.notes,

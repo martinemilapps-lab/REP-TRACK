@@ -6,23 +6,12 @@ import { useTranslation } from '@/lib/i18nContext';
 import { Button } from '@/components/ui/Button';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { MultiProductSelect } from '@/components/ui/MultiProductSelect';
+import { MasterHospital } from '@/types';
 
 interface HospitalFormProps {
   selectedRep: string;
   onSuccess: (msg: string) => void;
   onError: (msg: string) => void;
-}
-
-interface KnownHospitalRecord {
-  name: string;
-  area?: string;
-  type?: string;
-  dept?: string;
-  contact?: string;
-  phone?: string;
-  doctorNames?: string;
-  cycle?: number;
-  ourProducts?: string;
 }
 
 function getTodayString(): string {
@@ -60,7 +49,7 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
   const [loading, setLoading] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
   const [showKnownList, setShowKnownList] = useState(false);
-  const [knownHospitals, setKnownHospitals] = useState<KnownHospitalRecord[]>([]);
+  const [savedHospitals, setSavedHospitals] = useState<MasterHospital[]>([]);
   const hospitalInputRef = useRef<HTMLDivElement>(null);
 
   const initialToday = getTodayString();
@@ -86,23 +75,26 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
     notes: '',
   });
 
-  // Storage keys per representative
   const draftKey = `rep_track_hospital_draft_${selectedRep || 'guest'}`;
-  const knownKey = `rep_track_known_hospitals_${selectedRep || 'guest'}`;
 
-  // Load known hospitals for this representative
+  // Fetch saved master hospitals for representative from API
   useEffect(() => {
-    try {
-      const storedKnown = localStorage.getItem(knownKey);
-      if (storedKnown) {
-        setKnownHospitals(JSON.parse(storedKnown));
+    async function fetchMasterHospitals() {
+      try {
+        const url = selectedRep ? `/api/lists?rep=${encodeURIComponent(selectedRep)}` : '/api/lists';
+        const res = await fetch(url);
+        const data = await res.json();
+        if (res.ok && data.success && data.data?.hospitals) {
+          setSavedHospitals(data.data.hospitals);
+        }
+      } catch {
+        // ignore
       }
-    } catch {
-      // ignore
     }
-  }, [knownKey]);
+    fetchMasterHospitals();
+  }, [selectedRep]);
 
-  // Load draft for this representative on mount or rep switch
+  // Load draft from localStorage
   useEffect(() => {
     if (!selectedRep) return;
     try {
@@ -137,7 +129,6 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Auto-save form draft to localStorage
   const saveDraft = useCallback(
     (data: typeof formData) => {
       if (!selectedRep) return;
@@ -205,22 +196,22 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
     });
   };
 
-  // Auto-fill remembered hospital details
-  const handleSelectKnownHospital = (item: KnownHospitalRecord) => {
+  // Auto-fill remembered hospital details from My Lists
+  const handleSelectMasterHospital = (h: MasterHospital) => {
     setFormData((prev) => {
-      const nextCycle = item.cycle !== undefined ? item.cycle : prev.cycle;
+      const nextCycle = h.defaultCycle !== undefined ? h.defaultCycle : prev.cycle;
       const next = {
         ...prev,
-        name: item.name,
-        area: item.area || prev.area,
-        type: item.type || prev.type,
-        dept: item.dept || prev.dept,
-        contact: item.contact || prev.contact,
-        phone: item.phone || prev.phone,
-        doctorNames: item.doctorNames || prev.doctorNames,
+        name: h.name,
+        area: h.area || prev.area,
+        type: h.type || prev.type,
+        dept: h.dept || prev.dept,
+        contact: h.contact || prev.contact,
+        phone: h.phone || prev.phone,
+        doctorNames: h.doctorNames || prev.doctorNames,
         cycle: nextCycle,
         nextVisit: prev.lastVisit ? addDaysToDate(prev.lastVisit, nextCycle) : prev.nextVisit,
-        ourProducts: item.ourProducts || prev.ourProducts,
+        ourProducts: h.targetProducts || prev.ourProducts,
       };
       saveDraft(next);
       return next;
@@ -228,7 +219,6 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
     setShowKnownList(false);
   };
 
-  // Clear current draft
   const handleClearDraft = () => {
     try {
       localStorage.removeItem(draftKey);
@@ -279,32 +269,11 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
       const data = await res.json();
       if (res.ok && data.success) {
         onSuccess(data.message || t('msg.visitSaved'));
-
-        // Save into remembered known hospitals for this rep
         try {
-          const newKnown: KnownHospitalRecord = {
-            name: formData.name.trim(),
-            area: formData.area.trim(),
-            type: formData.type,
-            dept: formData.dept.trim(),
-            contact: formData.contact.trim(),
-            phone: formData.phone.trim(),
-            doctorNames: formData.doctorNames.trim(),
-            cycle: formData.cycle,
-            ourProducts: formData.ourProducts.trim(),
-          };
-          const updatedKnown = [
-            newKnown,
-            ...knownHospitals.filter((k) => k.name.toLowerCase() !== newKnown.name.toLowerCase()),
-          ].slice(0, 50);
-          setKnownHospitals(updatedKnown);
-          localStorage.setItem(knownKey, JSON.stringify(updatedKnown));
           localStorage.removeItem(draftKey);
         } catch {
           // ignore
         }
-
-        // Reset form to clean slate
         const today = getTodayString();
         setFormData({
           name: '',
@@ -336,8 +305,8 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
     }
   };
 
-  const matchingKnown = knownHospitals.filter((k) =>
-    k.name.toLowerCase().includes(formData.name.toLowerCase().trim())
+  const matchingHospitals = savedHospitals.filter((h) =>
+    h.name.toLowerCase().includes(formData.name.toLowerCase().trim())
   );
 
   return (
@@ -345,7 +314,7 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
       onSubmit={handleSubmit}
       className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 md:p-6 mb-6 shadow-card animate-fade-in"
     >
-      {/* Header Banner & Auto-Save Pill */}
+      {/* Header Banner & Draft Controls */}
       <div className="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-[var(--line)] flex-wrap">
         <div className="flex items-center gap-2">
           <span className="text-xl">🏥</span>
@@ -361,7 +330,6 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
           </div>
         </div>
 
-        {/* Draft indicator & clear button */}
         <div className="flex items-center gap-2">
           {draftRestored && (
             <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-50 text-amber-900 border border-amber-300 rounded-full flex items-center gap-1 shadow-2xs">
@@ -443,11 +411,11 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
 
       {/* Main Grid Fields */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-        {/* Hospital Name (With Autocomplete & Memory) */}
+        {/* Hospital Name with Autocomplete from My Lists */}
         <div className="relative" ref={hospitalInputRef}>
           <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5 flex items-center justify-between">
             <span>{t('form.hospitalName')}</span>
-            {matchingKnown.length > 0 && !showKnownList && (
+            {matchingHospitals.length > 0 && !showKnownList && (
               <button
                 type="button"
                 onClick={() => setShowKnownList(true)}
@@ -470,16 +438,16 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
             className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl font-medium outline-none"
           />
 
-          {/* Autocomplete Dropdown */}
-          {showKnownList && matchingKnown.length > 0 && (
+          {/* Autocomplete Dropdown from My Lists */}
+          {showKnownList && matchingHospitals.length > 0 && (
             <div className="absolute z-30 top-full mt-1 inset-x-0 bg-white border border-[var(--line)] rounded-xl shadow-xl overflow-hidden max-h-48 overflow-y-auto divide-y divide-gray-100 animate-in fade-in zoom-in-95 duration-100">
               <div className="p-1.5 bg-[#FAF7F0] text-[10px] font-bold text-[var(--ink-muted)]">
-                {language === 'ar' ? 'مستشفيات سابقة (اضغط للاسترجاع التلقائي):' : 'Saved Hospitals (Click to auto-fill):'}
+                {language === 'ar' ? 'مستشفيات من قائمتك (اضغط للاسترجاع والتعبئة الفورية):' : 'Saved Hospitals (Click to auto-fill):'}
               </div>
-              {matchingKnown.map((item, idx) => (
+              {matchingHospitals.map((item, idx) => (
                 <div
                   key={idx}
-                  onClick={() => handleSelectKnownHospital(item)}
+                  onClick={() => handleSelectMasterHospital(item)}
                   className="p-2.5 hover:bg-[var(--gold-tint)] cursor-pointer transition-colors text-xs flex items-center justify-between"
                 >
                   <div>
@@ -550,7 +518,7 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
           />
         </div>
 
-        {/* Visited Doctor Names (Requirement 1) */}
+        {/* Visited Doctor Names */}
         <div>
           <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
             {t('form.doctorNames')}
@@ -564,7 +532,7 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
           />
         </div>
 
-        {/* Pharmacist / Purchasing (Requirement 2) */}
+        {/* Pharmacist / Purchasing */}
         <div>
           <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5 flex items-center justify-between">
             <span>{t('form.contact')}</span>
@@ -596,7 +564,7 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
           />
         </div>
 
-        {/* Visit Cycle (Days) - Auto Calculated & Editable (Requirement 3) */}
+        {/* Visit Cycle (Days) - Auto Calculated & Editable */}
         <div>
           <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5 flex items-center justify-between">
             <span>{t('form.cycle')}</span>
@@ -614,11 +582,11 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
           />
         </div>
 
-        {/* Visit Date - Auto Calculates Next Visit (Requirement 3) */}
+        {/* Visit Date */}
         <div>
           <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5 flex items-center justify-between">
             <span>{t('form.visitDate')}</span>
-            <span className="text-[10px] text-gray-500 font-mono">Today / تاريخ اليوم</span>
+            <span className="text-[10px] text-gray-500 font-mono">Today / اليوم</span>
           </label>
           <input
             id="lastVisit"
@@ -629,7 +597,7 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
           />
         </div>
 
-        {/* Next Visit Date - Auto Calculated & Updates Cycle (Requirement 3) */}
+        {/* Next Visit Date */}
         <div>
           <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5 flex items-center justify-between">
             <span>{t('form.nextVisit')}</span>
@@ -658,7 +626,7 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
           />
         </div>
 
-        {/* Our Products Discussed - Multi-Select Sunny Catalog (Requirement 4) */}
+        {/* Our Products Discussed - Multi-Select */}
         <div className="sm:col-span-2 md:col-span-2">
           <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5 flex items-center justify-between">
             <span>{t('form.ourProducts')}</span>

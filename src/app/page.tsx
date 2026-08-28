@@ -12,6 +12,7 @@ import { PharmacyForm } from '@/components/reports/PharmacyForm';
 import { DoctorForm } from '@/components/reports/DoctorForm';
 import { BranchForm } from '@/components/reports/BranchForm';
 import { AvailabilityForm } from '@/components/reports/AvailabilityForm';
+import { MyListsView } from '@/components/my-lists/MyListsView';
 import { MyReportsView } from '@/components/my-reports/MyReportsView';
 import { WeeklyPlanView } from '@/components/weekly-plan/WeeklyPlanView';
 import { CustomSelect, SelectOption } from '@/components/ui/CustomSelect';
@@ -41,7 +42,7 @@ function HomePageContent() {
   // Sync view from query param if changed
   useEffect(() => {
     const viewParam = searchParams.get('view') as ViewType | null;
-    if (viewParam && (viewParam === 'submit' || viewParam === 'myreports' || viewParam === 'weeklyplan')) {
+    if (viewParam && (viewParam === 'submit' || viewParam === 'mylists' || viewParam === 'myreports' || viewParam === 'weeklyplan')) {
       setActiveView(viewParam);
     }
   }, [searchParams]);
@@ -193,7 +194,16 @@ function HomePageContent() {
         </div>
       )}
 
-      {/* ============ VIEW 2: MY REPORTS ============ */}
+      {/* ============ VIEW 2: MY LISTS (MASTER CUSTOMER LISTS) ============ */}
+      {activeView === 'mylists' && (
+        <MyListsView
+          reps={reps}
+          selectedRep={selectedRep}
+          onSelectRep={setSelectedRep}
+        />
+      )}
+
+      {/* ============ VIEW 3: MY REPORTS ============ */}
       {activeView === 'myreports' && (
         <MyReportsView
           reps={reps}
@@ -202,7 +212,7 @@ function HomePageContent() {
         />
       )}
 
-      {/* ============ VIEW 3: WEEKLY PLAN ============ */}
+      {/* ============ VIEW 4: WEEKLY PLAN ============ */}
       {activeView === 'weeklyplan' && (
         <WeeklyPlanView
           reps={reps}
