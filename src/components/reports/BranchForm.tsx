@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from '@/lib/i18nContext';
 import { Button } from '@/components/ui/Button';
 import { MasterCustomerPicker } from '@/components/reports/MasterCustomerPicker';
+import { VisitObjectiveSelect } from '@/components/reports/VisitObjectiveSelect';
 import { MasterBranch } from '@/types';
 
 interface BranchFormProps {
@@ -141,6 +142,14 @@ export function BranchForm({ selectedRep, onSuccess, onError }: BranchFormProps)
     const { id, value } = e.target;
     setFormData((prev) => {
       const next = { ...prev, [id]: value };
+      saveDraft(next);
+      return next;
+    });
+  };
+
+  const handleSelectChange = (field: string, value: string) => {
+    setFormData((prev) => {
+      const next = { ...prev, [field]: value };
       saveDraft(next);
       return next;
     });
@@ -334,22 +343,12 @@ export function BranchForm({ selectedRep, onSuccess, onError }: BranchFormProps)
         </div>
       </div>
 
-      {/* 1. Visit Objective (هدف الزيارة) - First Field */}
-      <div className="mb-4 bg-[var(--surface-subtle)]/70 p-3.5 md:p-4 rounded-xl border border-[var(--line)] shadow-2xs">
-        <label className="block text-xs font-extrabold text-[var(--ink)] mb-1.5 flex items-center justify-between">
-          <span className="flex items-center gap-1.5">
-            <span className="text-base">🎯</span>
-            <span>{t('form.objective')}</span>
-          </span>
-        </label>
-        <input
-          id="objective"
-          value={formData.objective}
-          onChange={handleChange}
-          placeholder={t('form.objectivePlaceholder')}
-          className="w-full px-3.5 py-2.5 text-xs md:text-sm bg-white border border-[var(--line)] focus:border-[var(--gold)] focus:ring-1 focus:ring-[var(--gold)] rounded-xl font-medium outline-none shadow-2xs transition-all"
-        />
-      </div>
+      {/* 1. Visit Objective (هدف الزيارة) - Tailored Field Objectives List */}
+      <VisitObjectiveSelect
+        section="branch"
+        value={formData.objective}
+        onChange={(val) => handleSelectChange('objective', val)}
+      />
 
       {/* Visit Settings Strip: Visit Type (Single/Double) + Master Customer Picker (My Lists) */}
       <div className="bg-[var(--surface-subtle)]/70 p-4 md:p-5 rounded-2xl border border-[var(--line)] mb-5 shadow-2xs">
@@ -574,6 +573,26 @@ export function BranchForm({ selectedRep, onSuccess, onError }: BranchFormProps)
             onChange={(e) => handleNextVisitChange(e.target.value)}
             className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl font-mono outline-none text-blue-900 font-bold"
           />
+        </div>
+
+        {/* Automated Status - تمت الزيارة */}
+        <div>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5 flex items-center justify-between">
+            <span>{t('th.status')}</span>
+            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-full flex items-center gap-1">
+              <span>⚡</span>
+              <span>{t('form.statusAutomated')}</span>
+            </span>
+          </label>
+          <div className="w-full px-3.5 py-2.5 text-xs md:text-sm bg-emerald-50 border border-emerald-200/90 rounded-xl font-bold text-emerald-800 flex items-center justify-between shadow-2xs">
+            <span className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-600 inline-block animate-pulse"></span>
+              <span>{language === 'ar' ? 'تمت الزيارة' : 'Visited'}</span>
+            </span>
+            <span className="text-xs text-emerald-700 font-semibold bg-white/80 border border-emerald-200 px-2 py-0.5 rounded-md">
+              ✓ {t('form.statusConfirmed')}
+            </span>
+          </div>
         </div>
 
         {/* Distributed Products */}

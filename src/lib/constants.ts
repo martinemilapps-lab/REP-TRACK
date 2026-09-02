@@ -126,3 +126,59 @@ export const VISIT_STATUS_OPTIONS = [
 
 export const PHARMACY_CLASSES = ['A', 'B', 'C'];
 export const DOCTOR_CLASSES = ['A', 'B'];
+
+export interface ObjectiveOption {
+  value: string;
+  labelAr: string;
+  labelEn: string;
+  isCommon?: boolean;
+}
+
+export const OBJECTIVES_BY_SECTION: Record<string, ObjectiveOption[]> = {
+  hospital: [
+    { value: 'تقديم وترويج منتجات جديدة للأقسام', labelAr: 'تقديم وترويج منتجات جديدة للأقسام الطبية', labelEn: 'Detailing New Products to Hospital Depts', isCommon: true },
+    { value: 'متابعة صيدلية المستشفى والمشتريات', labelAr: 'متابعة صيدلية المستشفى ولجنة المشتريات', labelEn: 'Hospital Pharmacy & Purchasing Follow-up', isCommon: true },
+    { value: 'فحص النواقص وتوافر المخزون بالمستشفى', labelAr: 'فحص النواقص وتوافر المخزون بالمستشفى', labelEn: 'Stock Shortage & Availability Check', isCommon: true },
+    { value: 'إدراج أصناف باللجنة الدوائية وتكويد المستحضرات', labelAr: 'إدراج أصناف باللجنة الدوائية / فتح كود', labelEn: 'Formulary Listing & Hospital Coding' },
+    { value: 'متابعة طلبية توريد أو مناقصة', labelAr: 'متابعة طلبية توريد أو مناقصة', labelEn: 'Hospital Order & Tender Supply Follow-up', isCommon: true },
+    { value: 'زيارة ومتابعة أطباء المستشفى الاستشاريين', labelAr: 'زيارة ومتابعة أطباء المستشفى الاستشاريين', labelEn: 'Follow-up with Hospital Key Physicians' },
+    { value: 'تسليم عينات ومطبوعات علمية للأقسام', labelAr: 'تسليم عينات ومطبوعات علمية للأقسام', labelEn: 'Samples & Scientific Literature Delivery' },
+    { value: 'حل مشكلات توريد أو فواتير', labelAr: 'حل مشكلات توريد أو فواتير', labelEn: 'Resolving Supply or Billing Issues' },
+    { value: 'دعوة لفعالية أو مؤتمر طبي برعاية صني', labelAr: 'دعوة لفعالية أو مؤتمر طبي برعاية صني', labelEn: 'Scientific Meeting / CME Invitation' },
+  ],
+  pharmacy: [
+    { value: 'فحص النواقص وتوافر المخزون بالصيدلية', labelAr: 'فحص النواقص وتوافر المخزون بالصيدلية', labelEn: 'Pharmacy Stock & Availability Check', isCommon: true },
+    { value: 'متابعة طلبية وتوريد نواقص', labelAr: 'متابعة طلبية وتوريد نواقص الصيدلية', labelEn: 'Order Booking & Supply Follow-up', isCommon: true },
+    { value: 'تقديم وعرض منتجات جديدة للصيدلي', labelAr: 'تقديم وعرض منتجات جديدة للصيدلي', labelEn: 'New Product Detailing to Pharmacist', isCommon: true },
+    { value: 'معرفة الأطباء الأكثر كتابة للأصناف بالمنطقة', labelAr: 'معرفة الأطباء الأكثر كتابة للأصناف بالمنطقة', labelEn: 'Prescription Feedback & Doctor Inquiry', isCommon: true },
+    { value: 'متابعة عروض الشركة والتخفيضات التجارية', labelAr: 'متابعة عروض الشركة والتخفيضات التجارية', labelEn: 'Promotional Offers & Commercial Terms' },
+    { value: 'تحصيل ومتابعة حسابات وفواتير', labelAr: 'تحصيل ومتابعة حسابات وفواتير', labelEn: 'Invoice Collection & Payment Follow-up' },
+    { value: 'تسليم مواد دعائية ومطبوعات وعينات', labelAr: 'تسليم مواد دعائية ومطبوعات وعينات', labelEn: 'POS Materials & Product Samples Drop' },
+    { value: 'حل شكوى أو مشكلة توريد مع المخزن', labelAr: 'حل شكوى أو مشكلة توريد مع المخزن', labelEn: 'Handling Distributor / Supply Complaints' },
+  ],
+  doctor: [
+    { value: 'تقديم وشرح منتج جديد ومزاياه التنافسية', labelAr: 'تقديم وشرح منتج جديد ومزاياه التنافسية', labelEn: 'New Product Detailing & Clinical Data', isCommon: true },
+    { value: 'زيارة دورية وتذكير بالأصناف الرئيسية', labelAr: 'زيارة دورية وتذكير بالأصناف الرئيسية', labelEn: 'Routine Follow-up & Core Brand Reminder', isCommon: true },
+    { value: 'متابعة معدل كتابة الروشتات واستجابة المرضى', labelAr: 'متابعة معدل كتابة الروشتات واستجابة المرضى', labelEn: 'Prescription Feedback & Patient Response', isCommon: true },
+    { value: 'مناقشة بروتوكول العلاج ودواعي الاستعمال', labelAr: 'مناقشة بروتوكول العلاج ودواعي الاستعمال', labelEn: 'Treatment Protocol & Indication Discussion' },
+    { value: 'تسليم عينات طبية ومراجع علمية', labelAr: 'تسليم عينات طبية ومراجع علمية', labelEn: 'Medical Samples & Clinical Studies Drop', isCommon: true },
+    { value: 'حل اعتراضات علمية أو استفسارات طبية', labelAr: 'حل اعتراضات علمية أو استفسارات طبية', labelEn: 'Handling Scientific Inquiries & Objections' },
+    { value: 'دعوة لمؤتمر أو لقاء علمي CME', labelAr: 'دعوة لمؤتمر أو لقاء علمي CME', labelEn: 'Scientific Meeting / CME Invitation' },
+  ],
+  branch: [
+    { value: 'متابعة أرصدة ومخزون المنتجات بالمخزن', labelAr: 'متابعة أرصدة ومخزون المنتجات بالمخزن', labelEn: 'Branch Inventory & Stock Balance Audit', isCommon: true },
+    { value: 'متابعة طلبيات التوزيع والتسليم للصيدليات', labelAr: 'متابعة طلبيات التوزيع والتسليم للصيدليات', labelEn: 'Distribution Orders & Delivery Tracking', isCommon: true },
+    { value: 'مراجعة مبيعات المنطقة وتغطية الفروع', labelAr: 'مراجعة مبيعات المنطقة وتغطية الفروع', labelEn: 'Territory Sales & Branch Coverage Review', isCommon: true },
+    { value: 'حل مشكلات التوزيع والتوريد اللوجستي', labelAr: 'حل مشكلات التوزيع والتوريد اللوجستي', labelEn: 'Resolving Supply & Logistics Bottlenecks' },
+    { value: 'تحصيل وتسوية حسابات وفواتير', labelAr: 'تحصيل وتسوية حسابات وفواتير', labelEn: 'Collection & Account Reconciliation', isCommon: true },
+    { value: 'تنسيق زيارات مشتركة مع مسؤولي الفرع', labelAr: 'تنسيق زيارات مشتركة مع مسؤولي الفرع', labelEn: 'Joint Visits Coordination with Supervisors' },
+  ],
+  availability: [
+    { value: 'فحص شهري لتوافر المستحضرات بالمستشفى', labelAr: 'فحص شهري لتوافر المستحضرات بالمستشفى', labelEn: 'Monthly Stock Availability Audit', isCommon: true },
+    { value: 'رصد الأصناف الناقصة وتحديد أسباب النقص', labelAr: 'رصد الأصناف الناقصة وتحديد أسباب النقص', labelEn: 'Out-of-Stock Assessment & Shortage Causes', isCommon: true },
+    { value: 'متابعة مبيعات المستحضر واستهلاك الأقسام', labelAr: 'متابعة مبيعات المستحضر واستهلاك الأقسام', labelEn: 'Unit Sales & Department Consumption', isCommon: true },
+    { value: 'مقارنة توافر منتجاتنا بالبدائل المنافسة', labelAr: 'مقارنة توافر منتجاتنا بالبدائل المنافسة', labelEn: 'Competitor Availability & Market Share Analysis' },
+    { value: 'التنسيق لإعادة الطلب وتفادي النواقص', labelAr: 'التنسيق لإعادة الطلب وتفادي النواقص', labelEn: 'Re-order Coordination & Stock Replenishment', isCommon: true },
+  ],
+};
+

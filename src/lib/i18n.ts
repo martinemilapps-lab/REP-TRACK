@@ -193,8 +193,14 @@ export const translations: Record<string, { ar: string; en: string }> = {
   'form.submit': { ar: 'حفظ وإرسال التقرير', en: 'Submit Visit Report' },
   'form.submitting': { ar: 'جاري الحفظ...', en: 'Submitting...' },
 
+  'form.selectObjective': { ar: '-- اختر هدف الزيارة من القائمة المناسبة --', en: '-- Select visit objective from list --' },
+  'form.customObjective': { ar: '✏️ أخرى (كتابة هدف مخصص)...', en: '✏️ Other (Custom Objective)...' },
+  'form.quickObjectives': { ar: 'أهداف سريعة:', en: 'Quick Presets:' },
+  'form.statusAutomated': { ar: 'تلقائي', en: 'Automated' },
+  'form.statusConfirmed': { ar: 'مؤكدة', en: 'Confirmed' },
+
   // Status Labels & Badges
-  'status.visited': { ar: 'تم الزيارة', en: 'Visited' },
+  'status.visited': { ar: 'تمت الزيارة', en: 'Visited' },
   'status.overdue': { ar: 'متأخرة', en: 'Overdue' },
   'status.notVisited': { ar: 'لم تتم الزيارة', en: 'Not visited yet' },
   'status.available': { ar: 'متوافر', en: 'Available' },

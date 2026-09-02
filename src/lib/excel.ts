@@ -116,6 +116,7 @@ export function generateExcelWorkbook(data: ExportDataPayload): Uint8Array {
     'Companion (Co-Rep / Manager)': r.companion || '',
     'Distributed Products': r.products || '',
     'Last Visit Date': r.lastVisit || '',
+    'Status': r.status || 'Visited',
     'Notes': r.notes || ''
   }));
 

@@ -48,7 +48,7 @@ export function Badge({ status, type = 'visit', className = '' }: BadgeProps) {
   let dotColor = 'bg-[var(--ink-muted)]';
   let label = status;
 
-  if (normalized === 'visited' || normalized.includes('تم الزيارة')) {
+  if (normalized === 'visited' || normalized.includes('تمت الزيارة') || normalized.includes('تم الزيارة')) {
     colorStyles = 'bg-[var(--visited-bg)] text-[var(--visited-color)] border-[var(--visited-border)]';
     dotColor = 'bg-[var(--visited-color)]';
     label = t('status.visited');

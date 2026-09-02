@@ -5,6 +5,7 @@ import { MONTHS_LIST, PRODUCTS_LIST } from '@/lib/constants';
 import { useTranslation } from '@/lib/i18nContext';
 import { Button } from '@/components/ui/Button';
 import { CustomSelect, SelectOption } from '@/components/ui/CustomSelect';
+import { VisitObjectiveSelect } from '@/components/reports/VisitObjectiveSelect';
 
 interface AvailabilityFormProps {
   selectedRep: string;
@@ -99,22 +100,12 @@ export function AvailabilityForm({ selectedRep, onSuccess, onError }: Availabili
         </h2>
       </div>
 
-      {/* 1. Visit Objective (هدف الزيارة / التقرير) - First Field */}
-      <div className="mb-4 bg-[var(--surface-subtle)]/70 p-3.5 md:p-4 rounded-xl border border-[var(--line)] shadow-2xs">
-        <label className="block text-xs font-extrabold text-[var(--ink)] mb-1.5 flex items-center justify-between">
-          <span className="flex items-center gap-1.5">
-            <span className="text-base">🎯</span>
-            <span>{t('form.objective')}</span>
-          </span>
-        </label>
-        <input
-          id="objective"
-          value={formData.objective}
-          onChange={handleChange}
-          placeholder={t('form.objectivePlaceholder')}
-          className="w-full px-3.5 py-2.5 text-xs md:text-sm bg-white border border-[var(--line)] focus:border-[var(--gold)] focus:ring-1 focus:ring-[var(--gold)] rounded-xl font-medium outline-none shadow-2xs transition-all"
-        />
-      </div>
+      {/* 1. Visit Objective (هدف الزيارة / التقرير) - Tailored Field Objectives List */}
+      <VisitObjectiveSelect
+        section="availability"
+        value={formData.objective}
+        onChange={(val) => handleSelectChange('objective', val)}
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
         <div>
