@@ -5,7 +5,7 @@ import { DOCTOR_CLASSES, PRODUCTS_LIST, VISIT_STATUS_OPTIONS } from '@/lib/const
 import { useTranslation } from '@/lib/i18nContext';
 import { Button } from '@/components/ui/Button';
 import { CustomSelect, SelectOption } from '@/components/ui/CustomSelect';
-import { MasterCustomerPicker } from '@/components/reports/MasterCustomerPicker';
+import { MasterNameCombobox } from '@/components/reports/MasterNameCombobox';
 import { VisitObjectiveSelect } from '@/components/reports/VisitObjectiveSelect';
 import { MasterDoctor } from '@/types';
 
@@ -49,10 +49,8 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
   const { t, language } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
-  const [showKnownList, setShowKnownList] = useState(false);
   const [savedDoctors, setSavedDoctors] = useState<MasterDoctor[]>([]);
   const [selectedMasterId, setSelectedMasterId] = useState<string>('');
-  const doctorInputRef = useRef<HTMLDivElement>(null);
 
   const initialToday = getTodayString();
   const initialNext = addDaysToDate(initialToday, 7);
@@ -121,17 +119,6 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
       // ignore
     }
   }, [selectedRep, draftKey, initialToday]);
-
-  // Click outside to close list
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (doctorInputRef.current && !doctorInputRef.current.contains(e.target as Node)) {
-        setShowKnownList(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const saveDraft = useCallback(
     (data: typeof formData) => {
@@ -230,7 +217,6 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
       saveDraft(next);
       return next;
     });
-    setShowKnownList(false);
   };
 
   const handleClearMasterDoctor = () => {
@@ -339,10 +325,6 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
     }
   };
 
-  const matchingDoctors = savedDoctors.filter((d) =>
-    d.name.toLowerCase().includes(formData.name.toLowerCase().trim())
-  );
-
   return (
     <form
       onSubmit={handleSubmit}
@@ -390,137 +372,94 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
         onChange={(val) => handleSelectChange('objective', val)}
       />
 
-      {/* Visit Settings Strip: Visit Type (Single/Double) + Master Customer Picker (My Lists) */}
-      <div className="bg-[var(--surface-subtle)]/70 p-4 md:p-5 rounded-2xl border border-[var(--line)] mb-5 shadow-2xs">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-5 items-start">
-          {/* Column 1: Visit Nature / Type (Single vs Double) */}
-          <div className="lg:col-span-4 space-y-2.5">
-            <label className="block text-xs font-extrabold text-[var(--ink)]">
-              {t('visit.type')} *
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setFormData((prev) => {
-                    const next = { ...prev, visitType: 'Single', companion: '' };
-                    saveDraft(next);
-                    return next;
-                  });
-                }}
-                className={`py-2 px-2.5 rounded-xl text-xs md:text-sm font-extrabold flex items-center justify-center gap-1.5 border transition-all cursor-pointer ${
-                  formData.visitType === 'Single'
-                    ? 'bg-white text-[var(--gold-dark)] border-[var(--gold)] shadow-sm'
-                    : 'bg-transparent text-[var(--ink-soft)] border-[var(--line)] hover:bg-white/60'
-                }`}
-              >
-                <span>👤</span>
-                <span>{t('visit.single')}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setFormData((prev) => {
-                    const next = { ...prev, visitType: 'Double' };
-                    saveDraft(next);
-                    return next;
-                  });
-                }}
-                className={`py-2 px-2.5 rounded-xl text-xs md:text-sm font-extrabold flex items-center justify-center gap-1.5 border transition-all cursor-pointer ${
-                  formData.visitType === 'Double'
-                    ? 'bg-gradient-to-r from-[var(--gold)] to-[var(--gold-light)] text-white border-[var(--gold-dark)] shadow-sm'
-                    : 'bg-transparent text-[var(--ink-soft)] border-[var(--line)] hover:bg-white/60'
-                }`}
-              >
-                <span>👥</span>
-                <span>{t('visit.double')}</span>
-              </button>
-            </div>
-            {formData.visitType === 'Double' && (
-              <div className="pt-2 border-t border-[var(--line)] animate-fade-in">
-                <label className="block text-[11px] font-bold text-[var(--ink-secondary)] mb-1">
-                  {t('visit.companion')}
-                </label>
-                <input
-                  type="text"
-                  id="companion"
-                  value={formData.companion}
-                  onChange={handleChange}
-                  placeholder={t('visit.companionPlaceholder')}
-                  className="w-full text-xs bg-white border border-[var(--line)] rounded-xl p-2 font-medium"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Column 2: Master Customer Picker from My Lists (Contained in the upper stripe) */}
-          <div className="lg:col-span-8 lg:border-s lg:border-[var(--line)] lg:ps-5">
-            <MasterCustomerPicker
-              category="doctors"
-              items={savedDoctors}
-              selectedId={selectedMasterId}
-              onSelect={handleSelectMasterDoctor}
-              onClear={handleClearMasterDoctor}
-              selectedRep={selectedRep}
-              embedded={true}
-            />
+      {/* Visit Nature (Single vs Double) */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 p-3 md:p-3.5 bg-[var(--surface-subtle)]/60 rounded-xl border border-[var(--line)]">
+        <div className="flex items-center gap-2.5">
+          <span className="text-xs font-extrabold text-[var(--ink)]">{t('visit.type')} *</span>
+          <div className="inline-flex rounded-xl p-1 bg-white border border-[var(--line)] shadow-2xs gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                setFormData((prev) => {
+                  const next = { ...prev, visitType: 'Single', companion: '' };
+                  saveDraft(next);
+                  return next;
+                });
+              }}
+              className={`py-1.5 px-3 rounded-lg text-xs md:text-sm font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                formData.visitType === 'Single'
+                  ? 'bg-white text-[var(--gold-dark)] border border-[var(--gold)] shadow-xs'
+                  : 'bg-transparent text-[var(--ink-soft)] hover:bg-gray-100'
+              }`}
+            >
+              <span>👤</span>
+              <span>{t('visit.single')}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setFormData((prev) => {
+                  const next = { ...prev, visitType: 'Double' };
+                  saveDraft(next);
+                  return next;
+                });
+              }}
+              className={`py-1.5 px-3 rounded-lg text-xs md:text-sm font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                formData.visitType === 'Double'
+                  ? 'bg-gradient-to-r from-[var(--gold)] to-[var(--gold-light)] text-white shadow-xs'
+                  : 'bg-transparent text-[var(--ink-soft)] hover:bg-gray-100'
+              }`}
+            >
+              <span>👥</span>
+              <span>{t('visit.double')}</span>
+            </button>
           </div>
         </div>
+
+        {formData.visitType === 'Double' && (
+          <div className="flex items-center gap-2 flex-1 min-w-[240px] animate-fade-in">
+            <label className="text-xs font-bold text-[var(--ink-secondary)] whitespace-nowrap">
+              {t('visit.companion')}:
+            </label>
+            <input
+              type="text"
+              id="companion"
+              value={formData.companion}
+              onChange={handleChange}
+              placeholder={t('visit.companionPlaceholder')}
+              className="w-full text-xs bg-white border border-[var(--line)] rounded-xl p-2 font-medium outline-none focus:border-[var(--gold)]"
+            />
+          </div>
+        )}
       </div>
 
       {/* Main Grid Fields */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-        {/* Doctor Name with List Autocomplete */}
-        <div className="relative" ref={doctorInputRef}>
-          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5 flex items-center justify-between">
-            <span>{t('form.doctorName')}</span>
-            {matchingDoctors.length > 0 && !showKnownList && (
-              <button
-                type="button"
-                onClick={() => setShowKnownList(true)}
-                className="text-[10px] text-[var(--gold-deep)] hover:underline font-bold cursor-pointer"
-              >
-                {language === 'ar' ? 'سجل الأطباء' : 'History'}
-              </button>
-            )}
-          </label>
-          <input
-            id="name"
-            value={formData.name}
-            onChange={(e) => {
-              handleChange(e);
-              setShowKnownList(true);
-            }}
-            onFocus={() => setShowKnownList(true)}
-            placeholder="مثال: د. حسام فوزي"
-            required
-            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl font-medium outline-none"
-          />
-
-          {/* Autocomplete Dropdown from My Lists */}
-          {showKnownList && matchingDoctors.length > 0 && (
-            <div className="absolute z-30 top-full mt-1 inset-x-0 bg-white border border-[var(--line)] rounded-xl shadow-xl overflow-hidden max-h-48 overflow-y-auto divide-y divide-gray-100 animate-in fade-in zoom-in-95 duration-100">
-              <div className="p-1.5 bg-[#FAF7F0] text-[10px] font-bold text-[var(--ink-muted)]">
-                {language === 'ar' ? 'أطباء من قائمتك (اضغط للاسترجاع والتعبئة الفورية):' : 'Saved Doctors (Click to auto-fill):'}
-              </div>
-              {matchingDoctors.map((item, idx) => (
-                <div
-                  key={idx}
-                  onClick={() => handleSelectMasterDoctor(item)}
-                  className="p-2.5 hover:bg-[var(--gold-tint)] cursor-pointer transition-colors text-xs flex items-center justify-between"
-                >
-                  <div>
-                    <span className="font-bold text-[var(--ink)] block">{item.name}</span>
-                    <span className="text-[10px] text-[var(--ink-muted)]">
-                      {item.specialty ? `${item.specialty} • ` : ''}{item.area || '—'} {item.workplace ? `• ${item.workplace}` : ''}
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-[var(--gold-deep)] font-extrabold">استرجاع ⚡</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        {/* Doctor Name - Integrated Combobox from My Lists */}
+        <MasterNameCombobox<MasterDoctor>
+          id="name"
+          label={t('form.doctorName')}
+          placeholder="مثال: د. حسام فوزي"
+          value={formData.name}
+          onChange={(val) => {
+            setFormData((prev) => {
+              const next = { ...prev, name: val };
+              saveDraft(next);
+              return next;
+            });
+            setSelectedMasterId('');
+          }}
+          items={savedDoctors}
+          getItemName={(d) => d.name}
+          getItemSublabel={(d) =>
+            [d.specialty, d.area, d.workplace].filter(Boolean).join(' • ')
+          }
+          getItemBadge={(d) => (d.classification ? `Class ${d.classification}` : '')}
+          onSelectItem={handleSelectMasterDoctor}
+          selectedMasterId={selectedMasterId}
+          onClearSelection={handleClearMasterDoctor}
+          required
+        />
 
         {/* Doctor Code */}
         <div>
