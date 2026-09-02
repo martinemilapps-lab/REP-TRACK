@@ -103,7 +103,21 @@ export const PRODUCTS_LIST = [
   'Herpasunny Hard Gelatin Capsule'
 ];
 
-export const SUNNY_PRODUCTS_LIST = PRODUCTS_LIST;
+export const OUR_PRODUCTS_DISCUSSED_LIST = [
+  'Beconeurin',
+  'Nitrong',
+  'Danasetron',
+  'Fermed',
+  'Sunnymethsaone',
+  'Metoject',
+  'Suplasyn',
+  'Sunnycarnitine',
+  'Sunnyrrhoids',
+  'Palonosetron',
+  'Setronosunny',
+];
+
+export const SUNNY_PRODUCTS_LIST = OUR_PRODUCTS_DISCUSSED_LIST;
 
 export const HOSPITAL_TYPES = [
   { value: 'Private', label: 'خاص (Private)' },

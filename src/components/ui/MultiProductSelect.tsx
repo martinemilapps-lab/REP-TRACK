@@ -217,7 +217,7 @@ export function MultiProductSelect({
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="ابحث بالاسم (مثال: Nitrong, Sugammadex, Propofol...)..."
+                placeholder="ابحث بالاسم (مثال: Beconeurin, Nitrong, Danasetron...)..."
                 className="w-full text-xs px-3 py-2 bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl outline-none font-medium shadow-2xs"
               />
               {search && (

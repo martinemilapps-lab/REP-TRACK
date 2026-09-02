@@ -633,7 +633,7 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
                 return next;
               });
             }}
-            placeholder="اختر منتج أو عدة منتجات من قائمة صني (Nitrong, Sugammadex, Danasetron...)..."
+            placeholder="اختر منتج أو عدة منتجات (Beconeurin, Nitrong, Danasetron...)..."
           />
         </div>
 

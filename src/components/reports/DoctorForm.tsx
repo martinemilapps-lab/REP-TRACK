@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { DOCTOR_CLASSES, PRODUCTS_LIST, VISIT_STATUS_OPTIONS } from '@/lib/constants';
+import { DOCTOR_CLASSES, OUR_PRODUCTS_DISCUSSED_LIST, VISIT_STATUS_OPTIONS } from '@/lib/constants';
 import { useTranslation } from '@/lib/i18nContext';
 import { Button } from '@/components/ui/Button';
 import { CustomSelect, SelectOption } from '@/components/ui/CustomSelect';
@@ -262,7 +262,7 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
 
   const productOptions: SelectOption[] = [
     { value: '', label: '-- بدون اختيار --' },
-    ...PRODUCTS_LIST.map((p) => ({ value: p, label: p })),
+    ...OUR_PRODUCTS_DISCUSSED_LIST.map((p) => ({ value: p, label: p })),
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
