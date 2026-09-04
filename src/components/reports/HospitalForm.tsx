@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { HOSPITAL_TYPES, VISIT_STATUS_OPTIONS } from '@/lib/constants';
+import { deriveVisitStatus } from '@/lib/business/status';
 import { useTranslation } from '@/lib/i18nContext';
 import { Button } from '@/components/ui/Button';
 import { CustomSelect } from '@/components/ui/CustomSelect';
@@ -76,6 +77,15 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
     competitor: '',
     notes: '',
   });
+
+  // Automated Visit Status derived in real-time from dates & cycle
+  const computedStatus = useMemo(() => {
+    return deriveVisitStatus({
+      lastVisitDate: formData.lastVisit,
+      nextVisitDate: formData.nextVisit,
+      cycleDays: formData.cycle,
+    });
+  }, [formData.lastVisit, formData.nextVisit, formData.cycle]);
 
   const draftKey = `rep_track_hospital_draft_${selectedRep || 'guest'}`;
 
@@ -266,7 +276,7 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
       const res = await fetch('/api/reports/hospital', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, rep: selectedRep }),
+        body: JSON.stringify({ ...formData, status: computedStatus, rep: selectedRep }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
@@ -349,11 +359,12 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
         </div>
       </div>
 
-      {/* 1. Visit Objective (هدف الزيارة) - Tailored Field Objectives List */}
+      {/* 1. Visit Objective (هدف الزيارة) - Multi-Select Field Objectives List */}
       <VisitObjectiveSelect
         section="hospital"
         value={formData.objective}
         onChange={(val) => handleSelectChange('objective', val)}
+        isMulti={true}
       />
 
       {/* Visit Nature (Single vs Double) */}
@@ -596,24 +607,63 @@ export function HospitalForm({ selectedRep, onSuccess, onError }: HospitalFormPr
           />
         </div>
 
-        {/* Automated Status - تمت الزيارة */}
+        {/* Automated Status - المحسوبة تلقائياً */}
         <div>
           <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5 flex items-center justify-between">
             <span>{t('th.status')}</span>
-            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-full flex items-center gap-1">
+            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
               <span>⚡</span>
               <span>{t('form.statusAutomated')}</span>
             </span>
           </label>
-          <div className="w-full px-3.5 py-2.5 text-xs md:text-sm bg-emerald-50 border border-emerald-200/90 rounded-xl font-bold text-emerald-800 flex items-center justify-between shadow-2xs">
+          <div
+            className={`w-full px-3.5 py-2.5 text-xs md:text-sm rounded-xl font-bold flex items-center justify-between shadow-2xs border transition-all ${
+              computedStatus === 'Visited'
+                ? 'bg-emerald-50 border-emerald-200/90 text-emerald-800'
+                : computedStatus === 'Overdue'
+                ? 'bg-amber-50 border-amber-300 text-amber-900'
+                : 'bg-slate-50 border-slate-200 text-slate-800'
+            }`}
+          >
             <span className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-600 inline-block animate-pulse"></span>
-              <span>{language === 'ar' ? 'تمت الزيارة' : 'Visited'}</span>
+              <span
+                className={`w-2.5 h-2.5 rounded-full inline-block ${
+                  computedStatus === 'Visited'
+                    ? 'bg-emerald-600 animate-pulse'
+                    : computedStatus === 'Overdue'
+                    ? 'bg-amber-600 animate-pulse'
+                    : 'bg-slate-400'
+                }`}
+              ></span>
+              <span>
+                {computedStatus === 'Visited'
+                  ? language === 'ar'
+                    ? 'تمت الزيارة (Visited)'
+                    : 'Visited'
+                  : computedStatus === 'Overdue'
+                  ? language === 'ar'
+                    ? 'متأخرة (Overdue)'
+                    : 'Overdue'
+                  : language === 'ar'
+                  ? 'لم تتم الزيارة (Not visited)'
+                  : 'Not visited yet'}
+              </span>
             </span>
-            <span className="text-xs text-emerald-700 font-semibold bg-white/80 border border-emerald-200 px-2 py-0.5 rounded-md">
-              ✓ {t('form.statusConfirmed')}
+            <span
+              className={`text-[11px] font-semibold px-2 py-0.5 rounded-md border ${
+                computedStatus === 'Visited'
+                  ? 'text-emerald-700 bg-white/80 border-emerald-200'
+                  : computedStatus === 'Overdue'
+                  ? 'text-amber-800 bg-white/80 border-amber-200'
+                  : 'text-slate-600 bg-white/80 border-slate-200'
+              }`}
+            >
+              ⚡ {language === 'ar' ? 'محسوبة تلقائياً' : 'Calculated Auto'}
             </span>
           </div>
+          <p className="text-[10px] text-[var(--ink-muted)] mt-1">
+            {t('form.statusAutoNotice')}
+          </p>
         </div>
 
         {/* Our Products Discussed - Multi-Select */}

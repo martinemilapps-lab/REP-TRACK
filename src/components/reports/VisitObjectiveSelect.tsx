@@ -10,6 +10,7 @@ interface VisitObjectiveSelectProps {
   value: string;
   onChange: (value: string) => void;
   className?: string;
+  isMulti?: boolean;
 }
 
 const CUSTOM_VALUE = '__custom__';
@@ -19,30 +20,76 @@ export function VisitObjectiveSelect({
   value,
   onChange,
   className = '',
+  isMulti = false,
 }: VisitObjectiveSelectProps) {
   const { t, language } = useTranslation();
   const objectives = useMemo<ObjectiveOption[]>(() => {
     return OBJECTIVES_BY_SECTION[section] || [];
   }, [section]);
 
-  // Determine whether current value matches a predefined option
+  // Multi-select state and helpers
+  const selectedMultiValues = useMemo(() => {
+    if (!isMulti || !value) return [];
+    return value
+      .split(/[,،]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }, [isMulti, value]);
+
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [customText, setCustomText] = useState('');
+
+  const handleToggleOption = (optValue: string) => {
+    const current = [...selectedMultiValues];
+    const index = current.indexOf(optValue);
+    if (index > -1) {
+      current.splice(index, 1);
+    } else {
+      current.push(optValue);
+    }
+    onChange(current.join('، '));
+  };
+
+  const handleAddCustom = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customText.trim()) return;
+    const trimmed = customText.trim();
+    if (!selectedMultiValues.includes(trimmed)) {
+      const next = [...selectedMultiValues, trimmed];
+      onChange(next.join('، '));
+    }
+    setCustomText('');
+    setShowCustomInput(false);
+  };
+
+  const handleRemoveItem = (itemToRemove: string) => {
+    const next = selectedMultiValues.filter((v) => v !== itemToRemove);
+    onChange(next.join('، '));
+  };
+
+  const handleClearAll = () => {
+    onChange('');
+  };
+
+  // Determine whether current value matches a predefined option (Single mode)
   const matchedPredefined = useMemo(() => {
-    if (!value) return null;
+    if (isMulti || !value) return null;
     return objectives.find(
       (opt) => opt.value === value || (language === 'ar' ? opt.labelAr : opt.labelEn) === value
     );
-  }, [objectives, value, language]);
+  }, [objectives, value, language, isMulti]);
 
   const [isCustomMode, setIsCustomMode] = useState<boolean>(() => {
+    if (isMulti) return false;
     return Boolean(value && !matchedPredefined);
   });
 
   // Keep custom mode synced when value changes externally (e.g. draft restore)
   useEffect(() => {
-    if (value && !matchedPredefined) {
+    if (!isMulti && value && !matchedPredefined) {
       setIsCustomMode(true);
     }
-  }, [value, matchedPredefined]);
+  }, [isMulti, value, matchedPredefined]);
 
   const selectOptions = useMemo<SelectOption[]>(() => {
     const list: SelectOption[] = objectives.map((opt) => ({
@@ -82,6 +129,163 @@ export function VisitObjectiveSelect({
     return objectives.filter((opt) => opt.isCommon);
   }, [objectives]);
 
+  // If in multi-select mode, render the rich multi-choice pill interface
+  if (isMulti) {
+    return (
+      <div
+        className={`mb-4 bg-[var(--surface-subtle)]/80 p-4 rounded-xl border border-[var(--line)] shadow-2xs transition-all ${className}`}
+      >
+        {/* Header with Title & Multi-selection notice */}
+        <div className="flex items-center justify-between gap-2 mb-2.5 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🎯</span>
+            <div>
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-extrabold text-[var(--ink)]">
+                  {t('form.objective')} *
+                </label>
+                {selectedMultiValues.length > 0 && (
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                    {selectedMultiValues.length} {t('form.selectedObjectivesCount')}
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-[var(--ink-muted)]">
+                {t('form.multiObjectivesNotice')}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {selectedMultiValues.length > 0 && (
+              <button
+                type="button"
+                onClick={handleClearAll}
+                className="text-[11px] font-bold text-red-600 hover:text-red-700 hover:underline cursor-pointer transition-colors"
+              >
+                ✕ {t('form.clearObjectives')}
+              </button>
+            )}
+            <span className="text-[10px] font-bold text-[var(--gold-deep)] bg-[var(--gold-tint)] px-2.5 py-1 rounded-md border border-[var(--gold-light)]/50">
+              {language === 'ar' ? 'اختيار متعدد' : 'Multi-Select'}
+            </span>
+          </div>
+        </div>
+
+        {/* Multi-Option Grid of Interactive Checkbox Pills */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mb-3">
+          {objectives.map((opt) => {
+            const isSelected =
+              selectedMultiValues.includes(opt.value) ||
+              selectedMultiValues.includes(opt.labelAr) ||
+              selectedMultiValues.includes(opt.labelEn);
+
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => handleToggleOption(opt.value)}
+                className={`p-2.5 rounded-xl border text-start flex items-start gap-2.5 transition-all cursor-pointer select-none ${
+                  isSelected
+                    ? 'bg-amber-50/90 border-[var(--gold)] text-amber-950 shadow-2xs scale-[1.01]'
+                    : 'bg-white border-[var(--line)] text-[var(--ink)] hover:border-[var(--gold)]/60 hover:bg-amber-50/30'
+                }`}
+              >
+                <span
+                  className={`w-4 h-4 mt-0.5 rounded flex items-center justify-center text-[10px] shrink-0 border transition-all ${
+                    isSelected
+                      ? 'bg-[var(--gold)] text-amber-950 border-[var(--gold-dark)] font-extrabold shadow-2xs'
+                      : 'border-gray-300 bg-white'
+                  }`}
+                >
+                  {isSelected ? '✓' : ''}
+                </span>
+                <span className={`text-xs leading-snug ${isSelected ? 'font-bold text-amber-950' : 'font-medium'}`}>
+                  {language === 'ar' ? opt.labelAr : opt.labelEn}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Custom additions tags */}
+        {selectedMultiValues.filter((val) => !objectives.some((o) => o.value === val || o.labelAr === val || o.labelEn === val)).length > 0 && (
+          <div className="mb-3 pt-2 border-t border-[var(--line)]/60 flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] font-bold text-[var(--ink-muted)]">
+              {language === 'ar' ? 'أهداف مخصصة إضافية:' : 'Custom objectives:'}
+            </span>
+            {selectedMultiValues
+              .filter((val) => !objectives.some((o) => o.value === val || o.labelAr === val || o.labelEn === val))
+              .map((customVal) => (
+                <span
+                  key={customVal}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-900 border border-blue-200 text-xs font-bold"
+                >
+                  <span>{customVal}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveItem(customVal)}
+                    className="text-blue-700 hover:text-red-600 font-bold ml-1 cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+          </div>
+        )}
+
+        {/* Custom Objective Addition Trigger & Form */}
+        <div className="pt-2 border-t border-[var(--line)]/60">
+          {!showCustomInput ? (
+            <button
+              type="button"
+              onClick={() => setShowCustomInput(true)}
+              className="text-xs font-bold text-[var(--gold-dark)] hover:text-amber-900 flex items-center gap-1.5 transition-colors cursor-pointer py-1"
+            >
+              <span>➕</span>
+              <span>{t('form.addCustomObjectiveBtn')}</span>
+            </button>
+          ) : (
+            <div className="flex items-center gap-2 animate-fade-in">
+              <input
+                type="text"
+                value={customText}
+                onChange={(e) => setCustomText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddCustom(e);
+                  }
+                }}
+                placeholder={language === 'ar' ? 'اكتب هدف الزيارة الإضافي واضغط إضافة...' : 'Type additional objective and click Add...'}
+                autoFocus
+                className="flex-1 px-3 py-1.5 text-xs bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-lg outline-none font-medium text-[var(--ink)]"
+              />
+              <button
+                type="button"
+                onClick={handleAddCustom}
+                className="px-3 py-1.5 rounded-lg bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-amber-950 font-bold text-xs shadow-2xs cursor-pointer transition-colors"
+              >
+                {language === 'ar' ? 'إضافة' : 'Add'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCustomInput(false);
+                  setCustomText('');
+                }}
+                className="px-2.5 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-xs cursor-pointer transition-colors"
+              >
+                {language === 'ar' ? 'إلغاء' : 'Cancel'}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Single-Select Mode
   return (
     <div
       className={`mb-4 bg-[var(--surface-subtle)]/75 p-3.5 md:p-4 rounded-xl border border-[var(--line)] shadow-2xs transition-all ${className}`}

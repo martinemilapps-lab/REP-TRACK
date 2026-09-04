@@ -150,16 +150,13 @@ export interface ObjectiveOption {
 
 export const OBJECTIVES_BY_SECTION: Record<string, ObjectiveOption[]> = {
   hospital: [
-    { value: 'تقديم وترويج منتجات جديدة للأقسام', labelAr: 'تقديم وترويج منتجات جديدة للأقسام الطبية', labelEn: 'Detailing New Products to Hospital Depts', isCommon: true },
-    { value: 'متابعة صيدلية المستشفى والمشتريات', labelAr: 'متابعة صيدلية المستشفى ولجنة المشتريات', labelEn: 'Hospital Pharmacy & Purchasing Follow-up', isCommon: true },
+    { value: 'تقديم وترويج منتجات جديدة للأقسام الطبية', labelAr: 'تقديم وترويج منتجات جديدة للأقسام الطبية', labelEn: 'Detailing New Products to Hospital Depts', isCommon: true },
+    { value: 'متابعة صيدلية المستشفى ولجنة المشتريات', labelAr: 'متابعة صيدلية المستشفى ولجنة المشتريات', labelEn: 'Hospital Pharmacy & Purchasing Follow-up', isCommon: true },
     { value: 'فحص النواقص وتوافر المخزون بالمستشفى', labelAr: 'فحص النواقص وتوافر المخزون بالمستشفى', labelEn: 'Stock Shortage & Availability Check', isCommon: true },
-    { value: 'إدراج أصناف باللجنة الدوائية وتكويد المستحضرات', labelAr: 'إدراج أصناف باللجنة الدوائية / فتح كود', labelEn: 'Formulary Listing & Hospital Coding' },
-    { value: 'متابعة طلبية توريد أو مناقصة', labelAr: 'متابعة طلبية توريد أو مناقصة', labelEn: 'Hospital Order & Tender Supply Follow-up', isCommon: true },
-    { value: 'زيارة ومتابعة أطباء المستشفى الاستشاريين', labelAr: 'زيارة ومتابعة أطباء المستشفى الاستشاريين', labelEn: 'Follow-up with Hospital Key Physicians' },
-    { value: 'التدريب', labelAr: 'التدريب (Training)', labelEn: 'Training', isCommon: true },
-    { value: 'تسليم عينات ومطبوعات علمية للأقسام', labelAr: 'تسليم عينات ومطبوعات علمية للأقسام', labelEn: 'Samples & Scientific Literature Delivery' },
-    { value: 'حل مشكلات توريد أو فواتير', labelAr: 'حل مشكلات توريد أو فواتير', labelEn: 'Resolving Supply or Billing Issues' },
-    { value: 'دعوة لفعالية أو مؤتمر طبي برعاية صني', labelAr: 'دعوة لفعالية أو مؤتمر طبي برعاية صني', labelEn: 'Scientific Meeting / CME Invitation' },
+    { value: 'متابعة توريد مناقصة', labelAr: 'متابعة توريد مناقصة (Tender Supply)', labelEn: 'Tender Supply Follow-up', isCommon: true },
+    { value: 'متابعة طلبية مستشفى', labelAr: 'متابعة طلبية مستشفى (Hospital Order)', labelEn: 'Hospital Order Follow-up', isCommon: true },
+    { value: 'زيارة ومتابعة أطباء المستشفى الاستشاريين', labelAr: 'زيارة ومتابعة أطباء المستشفى الاستشاريين', labelEn: 'Follow-up with Hospital Key Physicians', isCommon: true },
+    { value: 'حل مشكلات توريد أو فواتير', labelAr: 'حل مشكلات توريد أو فواتير', labelEn: 'Resolving Supply or Billing Issues', isCommon: true },
   ],
   pharmacy: [
     { value: 'فحص النواقص وتوافر المخزون بالصيدلية', labelAr: 'فحص النواقص وتوافر المخزون بالصيدلية', labelEn: 'Pharmacy Stock & Availability Check', isCommon: true },

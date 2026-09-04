@@ -253,8 +253,13 @@ export const translations: Record<string, { ar: string; en: string }> = {
   'form.selectObjective': { ar: '-- اختر هدف الزيارة من القائمة المناسبة --', en: '-- Select visit objective from list --' },
   'form.customObjective': { ar: '✏️ أخرى (كتابة هدف مخصص)...', en: '✏️ Other (Custom Objective)...' },
   'form.quickObjectives': { ar: 'أهداف سريعة:', en: 'Quick Presets:' },
+  'form.multiObjectivesNotice': { ar: 'يمكنك اختيار أكثر من هدف للزيارة (تحديد متعدد)', en: 'You can select multiple visit objectives (Multi-select)' },
+  'form.selectedObjectivesCount': { ar: 'أهداف محددة', en: 'objectives selected' },
+  'form.clearObjectives': { ar: 'إلغاء التحديد', en: 'Clear selection' },
+  'form.addCustomObjectiveBtn': { ar: '+ إضافة هدف إضافي', en: '+ Add custom objective' },
   'form.statusAutomated': { ar: 'تلقائي', en: 'Automated' },
   'form.statusConfirmed': { ar: 'مؤكدة', en: 'Confirmed' },
+  'form.statusAutoNotice': { ar: 'يتم تحديد حالة الزيارة تلقائياً بناءً على تاريخ الزيارة وموعد المتابعة', en: 'Visit status is dynamically calculated from visit dates & cycle' },
 
   // Status Labels & Badges
   'status.visited': { ar: 'تمت الزيارة', en: 'Visited' },
