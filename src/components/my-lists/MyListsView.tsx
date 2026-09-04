@@ -210,27 +210,46 @@ export function MyListsView({
     });
   }, [currentList, search]);
 
-  // Automated Required Average Visits Calculation
-  const visitStats = useMemo(() => {
-    const list = (listsData[activeCategory] || []) as any[];
-    if (list.length === 0) {
-      return { count: 0, perMonth: 0, perWeek: 0, perDay: 0 };
-    }
-    // Required visits / month = sum(30 / defaultCycle)
-    const totalPerMonth = list.reduce((sum, it) => {
-      const cycle = Number(it.defaultCycle) > 0 ? Number(it.defaultCycle) : 7;
-      return sum + 30 / cycle;
-    }, 0);
-    const totalPerWeek = totalPerMonth / 4.33;
-    const totalPerDay = totalPerMonth / 26; // 26 working days in pharma
+  // Manual Daily Rates state (keyed by category: 'hospitals', 'pharmacies', 'doctors', 'branches')
+  const [dailyInputs, setDailyInputs] = useState<Record<string, string>>({
+    hospitals: '',
+    pharmacies: '',
+    doctors: '',
+    branches: '',
+  });
 
-    return {
-      count: list.length,
-      perMonth: totalPerMonth,
-      perWeek: totalPerWeek,
-      perDay: totalPerDay,
-    };
-  }, [listsData, activeCategory]);
+  // Load manual rates from localStorage on mount and when selectedRep changes
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const repKey = selectedRep || 'default';
+    setDailyInputs({
+      hospitals: localStorage.getItem(`reptrack_daily_target_${repKey}_hospitals`) || localStorage.getItem('reptrack_daily_target_global_hospitals') || '',
+      pharmacies: localStorage.getItem(`reptrack_daily_target_${repKey}_pharmacies`) || localStorage.getItem('reptrack_daily_target_global_pharmacies') || '',
+      doctors: localStorage.getItem(`reptrack_daily_target_${repKey}_doctors`) || localStorage.getItem('reptrack_daily_target_global_doctors') || '',
+      branches: localStorage.getItem(`reptrack_daily_target_${repKey}_branches`) || localStorage.getItem('reptrack_daily_target_global_branches') || '',
+    });
+  }, [selectedRep]);
+
+  const handleDailyInputChange = (category: string, value: string) => {
+    setDailyInputs((prev) => ({ ...prev, [category]: value }));
+    if (typeof window !== 'undefined') {
+      const repKey = selectedRep || 'default';
+      const num = parseFloat(value);
+      if (!isNaN(num) && num >= 0) {
+        localStorage.setItem(`reptrack_daily_target_${repKey}_${category}`, value);
+        localStorage.setItem(`reptrack_daily_target_global_${category}`, value);
+      } else if (value.trim() === '') {
+        localStorage.removeItem(`reptrack_daily_target_${repKey}_${category}`);
+      }
+    }
+  };
+
+  // Active Category Calculation: Auto customer count, manual daily rate, auto weekly/monthly rates
+  const customerCount = (listsData[activeCategory] || []).length;
+  const currentDailyInputStr = dailyInputs[activeCategory] ?? '';
+  const activeDailyRate = parseFloat(currentDailyInputStr) || 0;
+  const activeWeeklyRate = activeDailyRate * 6; // 6 working days / week
+  const activeMonthlyRate = Math.round(activeDailyRate * 26); // 26 working days / month
 
   return (
     <div className="animate-fade-in space-y-5">
@@ -545,7 +564,7 @@ export function MyListsView({
 
         {/* Bottom Summary Cards: Required Average Visits /day, /week, /month */}
         <div className="mt-4 pt-4 border-t border-[var(--line)]">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 mb-3">
             <h4 className="text-xs font-black text-amber-950 flex items-center gap-1.5">
               <span>🎯</span>
               <span>
@@ -558,33 +577,94 @@ export function MyListsView({
                   : 'معدل الزيارات المطلوب للفروع والموزعين (Required Visit Rates)'}
               </span>
             </h4>
-            <span className="text-[11px] font-semibold text-gray-500 hidden sm:inline">
-              (محسوبة تلقائياً: شهر 30 يوم / 26 يوم عمل)
+            <span className="text-[11px] font-bold text-gray-500">
+              (إجمالي القائمة تلقائي | المعدل اليومي يدوي | الأسبوعي والشهري محسوب تلقائياً)
             </span>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="p-3 bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-xl">
-              <div className="text-[11px] font-bold text-amber-900">إجمالي العملاء بالقائمة</div>
-              <div className="text-lg font-black text-amber-950 font-mono mt-0.5">
-                {visitStats.count} <span className="text-xs font-normal text-amber-800">عميل</span>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* 1. Purple Scratch: Auto Recorded from List Customers */}
+            <div className="p-3.5 bg-gradient-to-br from-amber-50/90 to-orange-50/90 border-2 border-purple-300 rounded-2xl shadow-xs relative">
+              <div className="flex items-center justify-between gap-1 mb-1">
+                <div className="text-xs font-black text-amber-950">
+                  إجمالي العملاء بالقائمة
+                </div>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-purple-100 text-purple-900 border border-purple-300">
+                  تلقائي من القائمة
+                </span>
+              </div>
+              <div className="text-2xl font-black text-amber-950 font-mono mt-1">
+                {customerCount} <span className="text-xs font-bold text-amber-800">عميل</span>
+              </div>
+              <div className="text-[10px] text-amber-800/90 font-bold mt-1.5 flex items-center gap-1">
+                <span>✓</span>
+                <span>مسجل تلقائياً وفقاً للبيانات المعبأة</span>
               </div>
             </div>
-            <div className="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
-              <div className="text-[11px] font-bold text-blue-900">متوسط الزيارات / اليوم</div>
-              <div className="text-lg font-black text-blue-950 font-mono mt-0.5">
-                {visitStats.perDay.toFixed(1)} <span className="text-xs font-normal text-blue-800">زيارة/يوم</span>
+
+            {/* 2. Red Scratch: Manual Daily Visits Recording */}
+            <div className="p-3.5 bg-gradient-to-br from-blue-50/90 to-indigo-50/90 border-2 border-rose-400 rounded-2xl shadow-sm relative">
+              <div className="flex items-center justify-between gap-1 mb-1">
+                <div className="text-xs font-black text-blue-950">
+                  متوسط الزيارات / اليوم
+                </div>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300">
+                  ✍️ تسجيل يدوي
+                </span>
+              </div>
+              <div className="flex items-center gap-2 mt-1">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={currentDailyInputStr}
+                  onChange={(e) => handleDailyInputChange(activeCategory, e.target.value)}
+                  placeholder="0.0"
+                  className="w-24 px-2.5 py-1 text-lg font-black font-mono text-blue-950 bg-white border-2 border-rose-300 focus:border-rose-500 rounded-xl text-center focus:outline-none focus:ring-2 focus:ring-rose-400/40 shadow-inner"
+                />
+                <span className="text-xs font-black text-blue-950">زيارة / يوم</span>
+              </div>
+              <div className="text-[10px] text-rose-800/90 font-bold mt-1.5 flex items-center gap-1">
+                <span>✎</span>
+                <span>سجل المعدل اليومي المطلوب يدوياً</span>
               </div>
             </div>
-            <div className="p-3 bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl">
-              <div className="text-[11px] font-bold text-emerald-900">متوسط الزيارات / الأسبوع</div>
-              <div className="text-lg font-black text-emerald-950 font-mono mt-0.5">
-                {visitStats.perWeek.toFixed(1)} <span className="text-xs font-normal text-emerald-800">زيارة/أسبوع</span>
+
+            {/* 3. Green Scratch: Auto Calculated Weekly Visits */}
+            <div className="p-3.5 bg-gradient-to-br from-emerald-50/90 to-teal-50/90 border-2 border-emerald-400 rounded-2xl shadow-xs relative">
+              <div className="flex items-center justify-between gap-1 mb-1">
+                <div className="text-xs font-black text-emerald-950">
+                  متوسط الزيارات / الأسبوع
+                </div>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300">
+                  ⚡ تلقائي (×6)
+                </span>
+              </div>
+              <div className="text-2xl font-black text-emerald-950 font-mono mt-1">
+                {activeWeeklyRate.toFixed(1)} <span className="text-xs font-bold text-emerald-800">زيارة / أسبوع</span>
+              </div>
+              <div className="text-[10px] text-emerald-800/90 font-bold mt-1.5 flex items-center gap-1">
+                <span>⚡</span>
+                <span>محسوب تلقائياً (اليومي × 6 أيام عمل)</span>
               </div>
             </div>
-            <div className="p-3 bg-gradient-to-br from-purple-50 to-violet-50 border border-purple-200 rounded-xl">
-              <div className="text-[11px] font-bold text-purple-900">متوسط الزيارات / الشهر</div>
-              <div className="text-lg font-black text-purple-950 font-mono mt-0.5">
-                {Math.round(visitStats.perMonth)} <span className="text-xs font-normal text-purple-800">زيارة/شهر</span>
+
+            {/* 4. Green Scratch: Auto Calculated Monthly Visits */}
+            <div className="p-3.5 bg-gradient-to-br from-purple-50/90 to-violet-50/90 border-2 border-emerald-400 rounded-2xl shadow-xs relative">
+              <div className="flex items-center justify-between gap-1 mb-1">
+                <div className="text-xs font-black text-purple-950">
+                  متوسط الزيارات / الشهر
+                </div>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300">
+                  ⚡ تلقائي (×26)
+                </span>
+              </div>
+              <div className="text-2xl font-black text-purple-950 font-mono mt-1">
+                {activeMonthlyRate} <span className="text-xs font-bold text-purple-800">زيارة / شهر</span>
+              </div>
+              <div className="text-[10px] text-purple-800/90 font-bold mt-1.5 flex items-center gap-1">
+                <span>⚡</span>
+                <span>محسوب تلقائياً (اليومي × 26 يوم عمل)</span>
               </div>
             </div>
           </div>

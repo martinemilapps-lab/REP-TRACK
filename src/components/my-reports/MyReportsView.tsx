@@ -120,12 +120,34 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
     const mP = (data.masterLists?.pharmacies || []) as any[];
     const mD = (data.masterLists?.doctors || []) as any[];
 
-    // Target from My Lists (month based on 30 days, day based on 26 working days)
-    const targetHMonth = mH.reduce((acc, it) => acc + 30 / (Number(it.defaultCycle) > 0 ? Number(it.defaultCycle) : 7), 0);
-    const targetPMonth = mP.reduce((acc, it) => acc + 30 / (Number(it.defaultCycle) > 0 ? Number(it.defaultCycle) : 7), 0);
-    const targetDMonth = mD.reduce((acc, it) => acc + 30 / (Number(it.defaultCycle) > 0 ? Number(it.defaultCycle) : 7), 0);
+    // Read manual daily targets configured in My Lists (if set)
+    const repKey = selectedRep || 'default';
+    const manualHDay = typeof window !== 'undefined'
+      ? (parseFloat(localStorage.getItem(`reptrack_daily_target_${repKey}_hospitals`) || localStorage.getItem('reptrack_daily_target_global_hospitals') || '0') || 0)
+      : 0;
+    const manualPDay = typeof window !== 'undefined'
+      ? (parseFloat(localStorage.getItem(`reptrack_daily_target_${repKey}_pharmacies`) || localStorage.getItem('reptrack_daily_target_global_pharmacies') || '0') || 0)
+      : 0;
+    const manualDDay = typeof window !== 'undefined'
+      ? (parseFloat(localStorage.getItem(`reptrack_daily_target_${repKey}_doctors`) || localStorage.getItem('reptrack_daily_target_global_doctors') || '0') || 0)
+      : 0;
+
+    // Target from My Lists (fallback to cycle formula: month based on 30 days, day based on 26 working days)
+    const fallbackHMonth = mH.reduce((acc, it) => acc + 30 / (Number(it.defaultCycle) > 0 ? Number(it.defaultCycle) : 7), 0);
+    const fallbackPMonth = mP.reduce((acc, it) => acc + 30 / (Number(it.defaultCycle) > 0 ? Number(it.defaultCycle) : 7), 0);
+    const fallbackDMonth = mD.reduce((acc, it) => acc + 30 / (Number(it.defaultCycle) > 0 ? Number(it.defaultCycle) : 7), 0);
+
+    const targetHDay = manualHDay > 0 ? manualHDay : fallbackHMonth / 26;
+    const targetHMonth = manualHDay > 0 ? manualHDay * 26 : fallbackHMonth;
+
+    const targetPDay = manualPDay > 0 ? manualPDay : fallbackPMonth / 26;
+    const targetPMonth = manualPDay > 0 ? manualPDay * 26 : fallbackPMonth;
+
+    const targetDDay = manualDDay > 0 ? manualDDay : fallbackDMonth / 26;
+    const targetDMonth = manualDDay > 0 ? manualDDay * 26 : fallbackDMonth;
+
     const totalTargetMonth = targetHMonth + targetPMonth + targetDMonth;
-    const totalTargetDay = totalTargetMonth / 26;
+    const totalTargetDay = targetHDay + targetPDay + targetDDay;
 
     // Actual visits count
     const actualHMonth = data.hospitals.length;
@@ -155,17 +177,17 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
 
     return {
       targetHMonth,
-      targetHDay: targetHMonth / 26,
+      targetHDay,
       actualHMonth,
       actualHDay: actualHMonth / 26,
 
       targetPMonth,
-      targetPDay: targetPMonth / 26,
+      targetPDay,
       actualPMonth,
       actualPDay: actualPMonth / 26,
 
       targetDMonth,
-      targetDDay: targetDMonth / 26,
+      targetDDay,
       actualDMonth,
       actualDDay: actualDMonth / 26,
 
@@ -176,7 +198,7 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
       sd,
       achievementPct: totalTargetMonth > 0 ? Math.round((totalActual / totalTargetMonth) * 100) : 0,
     };
-  }, [data]);
+  }, [data, selectedRep]);
 
   const repOptions: SelectOption[] = useMemo(() => {
     return reps.map((r) => ({
