@@ -17,6 +17,7 @@ import {
 } from '../src/lib/services/masterEntityService';
 import { createHospitalVisit, getHospitalReports } from '../src/lib/services/hospitalService';
 import { upsertProductAvailability } from '../src/lib/services/availabilityService';
+import { getCairoTodayString } from '../src/lib/business/status';
 import { eq } from 'drizzle-orm';
 
 export async function runIntegrationTests() {
@@ -187,6 +188,8 @@ export async function runIntegrationTests() {
         repId: firstRep.id,
       };
 
+      const todayStr = getCairoTodayString();
+      const futureDate = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
       const visit = await createHospitalVisit(repSession, {
         name: 'Test Hospital Visit Log',
         area: 'Zamalek',
@@ -194,9 +197,9 @@ export async function runIntegrationTests() {
         drsVisited: 3,
         doctorNames: 'د. أحمد سامي، د. شريف عادل',
         contact: 'د. سارة (مسؤول الصيدلية والمشتريات)',
-        cycle: 14,
-        lastVisit: '2026-08-20',
-        nextVisit: '2026-09-03',
+        cycle: 30,
+        lastVisit: todayStr,
+        nextVisit: futureDate,
         ourProducts: 'Nitrong 5 mg, 10 mg ( Patch), Sugammadex 200 mg/ 2 ml Vial',
         competitor: 'None',
         notes: 'Integration test visit',

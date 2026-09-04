@@ -6,6 +6,9 @@ import {
   DoctorVisitRecord,
   BranchVisitRecord,
   ProductAvailabilityRecord,
+  EventRecord,
+  TrainingRecord,
+  SpecialTaskRecord,
   WeeklyPlanRecord
 } from '@/types';
 
@@ -16,6 +19,9 @@ export interface ExportDataPayload {
   doctors: DoctorVisitRecord[];
   branches: BranchVisitRecord[];
   availabilities: ProductAvailabilityRecord[];
+  events?: EventRecord[];
+  trainings?: TrainingRecord[];
+  specialTasks?: SpecialTaskRecord[];
   weeklyPlans?: WeeklyPlanRecord[];
 }
 
@@ -132,6 +138,44 @@ export function generateExcelWorkbook(data: ExportDataPayload): Uint8Array {
     'Notes': r.notes || ''
   }));
 
+  const eventsSheet = (data.events || []).map((r) => ({
+    'Assigned Rep': r.rep,
+    'Event Title': r.title,
+    'Event Type': r.eventType,
+    'Event Date': r.eventDate,
+    'Location / Venue': r.location || '',
+    'Attendees Count': r.attendeesCount ?? 0,
+    'Target Specialty': r.targetSpecialty || '',
+    'Highlighted Products': r.products || '',
+    'Budget / Cost': r.budget || '',
+    'Key Outcomes & Feedback': r.feedback || '',
+    'Notes': r.notes || ''
+  }));
+
+  const trainingsSheet = (data.trainings || []).map((r) => ({
+    'Assigned Rep': r.rep,
+    'Training Title': r.title,
+    'Training Type': r.trainingType,
+    'Training Date': r.trainingDate,
+    'Trainer / Facilitator': r.trainer || '',
+    'Attendees / Trainees': r.attendees || '',
+    'Duration (Hours)': r.durationHours ?? 1,
+    'Key Learnings & Takeaways': r.outcomes || '',
+    'Notes': r.notes || ''
+  }));
+
+  const specialTasksSheet = (data.specialTasks || []).map((r) => ({
+    'Assigned Rep': r.rep,
+    'Task Title': r.title,
+    'Task Category': r.taskCategory,
+    'Task Date': r.taskDate,
+    'Assigned By': r.assignedBy || '',
+    'Priority': r.priority || 'Normal',
+    'Status': r.status || 'Completed',
+    'Description & Deliverables': r.description || '',
+    'Notes': r.notes || ''
+  }));
+
   const weeklyPlansSheet = (data.weeklyPlans || []).map((p) => ({
     'Representative': p.rep,
     'Week Range': p.weekLabel || `${p.startDate} to ${p.endDate}`,
@@ -159,7 +203,10 @@ export function generateExcelWorkbook(data: ExportDataPayload): Uint8Array {
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(pharmaciesSheet.length ? pharmaciesSheet : [{}]), 'Pharmacies');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(doctorsSheet.length ? doctorsSheet : [{}]), 'Doctors');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(branchesSheet.length ? branchesSheet : [{}]), 'Distribution Branches');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(availabilitySheet.length ? availabilitySheet : [{}]), 'Product Availability');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(eventsSheet.length ? eventsSheet : [{}]), 'Events');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(trainingsSheet.length ? trainingsSheet : [{}]), 'Training');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(specialTasksSheet.length ? specialTasksSheet : [{}]), 'Special Tasks');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(availabilitySheet.length ? availabilitySheet : [{}]), 'Products Analysis');
   if (weeklyPlansSheet.length > 0) {
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(weeklyPlansSheet), 'Weekly Plans');
   }

@@ -10,6 +10,9 @@ import {
   BranchVisitRecord,
   ProductAvailabilityRecord,
   WeeklyPlanRecord,
+  EventRecord,
+  TrainingRecord,
+  SpecialTaskRecord,
 } from '@/types';
 import { StatPill } from '@/components/ui/StatPill';
 import { CoverageRing } from '@/components/ui/CoverageRing';
@@ -50,6 +53,9 @@ export function ManagerDashboardView({
     doctors: DoctorVisitRecord[];
     branches: BranchVisitRecord[];
     availabilities: ProductAvailabilityRecord[];
+    events?: EventRecord[];
+    trainings?: TrainingRecord[];
+    specialTasks?: SpecialTaskRecord[];
     weeklyPlans: WeeklyPlanRecord[];
   }>({
     hospitals: [],
@@ -57,6 +63,9 @@ export function ManagerDashboardView({
     doctors: [],
     branches: [],
     availabilities: [],
+    events: [],
+    trainings: [],
+    specialTasks: [],
     weeklyPlans: [],
   });
 
@@ -211,6 +220,43 @@ export function ManagerDashboardView({
     });
   }, [data.weeklyPlans, filterRep, searchTerm]);
 
+  const filteredEvents = useMemo(() => {
+    return (data.events || []).filter((x) => {
+      const repMatch = !filterRep || x.rep.trim().toLowerCase() === filterRep.trim().toLowerCase();
+      const searchMatch =
+        matchesSearch(x.title) ||
+        matchesSearch(x.eventType) ||
+        matchesSearch(x.location) ||
+        matchesSearch(x.products) ||
+        matchesSearch(x.rep);
+      return repMatch && searchMatch;
+    });
+  }, [data.events, filterRep, searchTerm]);
+
+  const filteredTrainings = useMemo(() => {
+    return (data.trainings || []).filter((x) => {
+      const repMatch = !filterRep || x.rep.trim().toLowerCase() === filterRep.trim().toLowerCase();
+      const searchMatch =
+        matchesSearch(x.title) ||
+        matchesSearch(x.trainingType) ||
+        matchesSearch(x.trainer) ||
+        matchesSearch(x.rep);
+      return repMatch && searchMatch;
+    });
+  }, [data.trainings, filterRep, searchTerm]);
+
+  const filteredSpecialTasks = useMemo(() => {
+    return (data.specialTasks || []).filter((x) => {
+      const repMatch = !filterRep || x.rep.trim().toLowerCase() === filterRep.trim().toLowerCase();
+      const searchMatch =
+        matchesSearch(x.title) ||
+        matchesSearch(x.taskCategory) ||
+        matchesSearch(x.assignedBy) ||
+        matchesSearch(x.rep);
+      return repMatch && searchMatch;
+    });
+  }, [data.specialTasks, filterRep, searchTerm]);
+
   return (
     <div className="animate-fade-in">
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
@@ -302,7 +348,10 @@ export function ManagerDashboardView({
               { id: 'pharmacy', icon: '💊', label: t('activity.pharmacy') },
               { id: 'doctor', icon: '🩺', label: t('activity.doctor') },
               { id: 'branch', icon: '🏢', label: t('activity.branch') },
-              { id: 'availability', icon: '📦', label: t('activity.availability') },
+              { id: 'event', icon: '🎟️', label: t('activity.events') },
+              { id: 'training', icon: '🎓', label: t('activity.training') },
+              { id: 'special_task', icon: '⚡', label: t('activity.specialTasks') },
+              { id: 'availability', icon: '📊', label: t('activity.productsAnalysis') },
               { id: 'weeklyPlans', icon: '📅', label: t('manager.tab.weeklyPlans') },
             ].map((tab) => (
               <button
@@ -591,6 +640,132 @@ export function ManagerDashboardView({
                         <td className="font-mono whitespace-nowrap font-bold">{r.sales ?? 0}</td>
                         <td className="whitespace-nowrap"><Badge status={r.status} type="availability" /></td>
                         <td className="whitespace-nowrap max-w-xs truncate">{r.notes}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
+
+          {activeTab === 'event' &&
+            (filteredEvents.length === 0 ? (
+              <EmptyState title="لا توجد فعاليات أو مؤتمرات مسجلة" icon="🎟️" className="border-none shadow-none" />
+            ) : (
+              <div className="overflow-x-auto">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>المندوب</th>
+                      <th>اسم الفعالية / المؤتمر</th>
+                      <th>نوع الفعالية</th>
+                      <th>التاريخ</th>
+                      <th>المكان / القاعة</th>
+                      <th>الحضور</th>
+                      <th>التخصص المستهدف</th>
+                      <th>المنتجات المعروضة</th>
+                      <th>المخرجات والنتائج</th>
+                      <th>ملاحظات</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredEvents.map((r) => (
+                      <tr key={r.id}>
+                        <td className="font-bold text-[var(--gold-dark)] whitespace-nowrap">{r.rep}</td>
+                        <td className="font-bold whitespace-nowrap text-[var(--ink)]">{r.title}</td>
+                        <td className="whitespace-nowrap font-semibold text-[var(--gold-dark)]">{r.eventType}</td>
+                        <td className="font-mono whitespace-nowrap">{r.eventDate}</td>
+                        <td className="whitespace-nowrap">{r.location || '—'}</td>
+                        <td className="font-mono whitespace-nowrap font-bold">{r.attendeesCount || '0'}</td>
+                        <td className="whitespace-nowrap">{r.targetSpecialty || '—'}</td>
+                        <td className="whitespace-nowrap font-medium">{r.products || '—'}</td>
+                        <td className="whitespace-nowrap max-w-xs truncate" title={r.feedback || ''}>{r.feedback || '—'}</td>
+                        <td className="whitespace-nowrap max-w-xs truncate">{r.notes || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
+
+          {activeTab === 'training' &&
+            (filteredTrainings.length === 0 ? (
+              <EmptyState title="لا توجد دورات أو ورش تدريبية مسجلة" icon="🎓" className="border-none shadow-none" />
+            ) : (
+              <div className="overflow-x-auto">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>المندوب</th>
+                      <th>عنوان التدريب / الورشة</th>
+                      <th>نوع التدريب</th>
+                      <th>التاريخ</th>
+                      <th>المدرب / المحاضر</th>
+                      <th>الحضور / الفئة</th>
+                      <th>المدة</th>
+                      <th>محاور الاستفادة والمخرجات</th>
+                      <th>ملاحظات</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredTrainings.map((r) => (
+                      <tr key={r.id}>
+                        <td className="font-bold text-[var(--gold-dark)] whitespace-nowrap">{r.rep}</td>
+                        <td className="font-bold whitespace-nowrap text-[var(--ink)]">{r.title}</td>
+                        <td className="whitespace-nowrap font-semibold text-[var(--gold-dark)]">{r.trainingType}</td>
+                        <td className="font-mono whitespace-nowrap">{r.trainingDate}</td>
+                        <td className="whitespace-nowrap">{r.trainer || '—'}</td>
+                        <td className="whitespace-nowrap">{r.attendees || '—'}</td>
+                        <td className="font-mono whitespace-nowrap font-bold">{r.durationHours} س</td>
+                        <td className="whitespace-nowrap max-w-xs truncate" title={r.outcomes || ''}>{r.outcomes || '—'}</td>
+                        <td className="whitespace-nowrap max-w-xs truncate">{r.notes || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
+
+          {activeTab === 'special_task' &&
+            (filteredSpecialTasks.length === 0 ? (
+              <EmptyState title="لا توجد مهام خاصة مسجلة" icon="⚡" className="border-none shadow-none" />
+            ) : (
+              <div className="overflow-x-auto">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>المندوب</th>
+                      <th>عنوان المهمة</th>
+                      <th>التصنيف</th>
+                      <th>التاريخ</th>
+                      <th>بتكليف من</th>
+                      <th>الأولوية</th>
+                      <th>الحالة</th>
+                      <th>تفاصيل ومخرجات المهمة</th>
+                      <th>ملاحظات</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredSpecialTasks.map((r) => (
+                      <tr key={r.id}>
+                        <td className="font-bold text-[var(--gold-dark)] whitespace-nowrap">{r.rep}</td>
+                        <td className="font-bold whitespace-nowrap text-[var(--ink)]">{r.title}</td>
+                        <td className="whitespace-nowrap font-semibold text-[var(--gold-dark)]">{r.taskCategory}</td>
+                        <td className="font-mono whitespace-nowrap">{r.taskDate}</td>
+                        <td className="whitespace-nowrap">{r.assignedBy || '—'}</td>
+                        <td className="whitespace-nowrap">
+                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                            r.priority === 'Urgent' ? 'bg-red-100 text-red-700' : r.priority === 'High' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
+                          }`}>
+                            {r.priority}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap">
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                            {r.status}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap max-w-xs truncate" title={r.description || ''}>{r.description || '—'}</td>
+                        <td className="whitespace-nowrap max-w-xs truncate">{r.notes || '—'}</td>
                       </tr>
                     ))}
                   </tbody>

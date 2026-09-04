@@ -48,6 +48,9 @@ export async function GET(req: NextRequest) {
       doctors: reportsData.doctors,
       branches: reportsData.branches,
       availabilities: reportsData.availabilities,
+      events: reportsData.events,
+      trainings: reportsData.trainings,
+      specialTasks: reportsData.specialTasks,
       masterLists,
       totalVisits: reportsData.totalVisits,
     });

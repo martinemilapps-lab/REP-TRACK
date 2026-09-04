@@ -94,10 +94,15 @@ export function AvailabilityForm({ selectedRep, onSuccess, onError }: Availabili
       className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 md:p-6 mb-4 shadow-card animate-fade-in"
     >
       <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[var(--line)]">
-        <span className="text-xl">📦</span>
-        <h2 className="text-base font-extrabold text-[var(--ink)]">
-          {t('activity.availability')} — {t('nav.submit')}
-        </h2>
+        <span className="text-2xl">📊</span>
+        <div>
+          <h2 className="text-base font-extrabold text-[var(--ink)]">
+            {t('analysis.formTitle')}
+          </h2>
+          <p className="text-xs text-[var(--ink-soft)] mt-0.5">
+            البند الخامس في شيت المندوب الطبي: {t('analysis.formDesc')}
+          </p>
+        </div>
       </div>
 
       {/* 1. Visit Objective (هدف الزيارة / التقرير) - Tailored Field Objectives List */}

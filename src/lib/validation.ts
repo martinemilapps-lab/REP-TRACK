@@ -155,6 +155,46 @@ export const ProductAvailabilitySchema = z.object({
   rep: z.string().optional(),
 });
 
+export const ProductAnalysisSchema = ProductAvailabilitySchema;
+
+export const EventSchema = z.object({
+  title: z.string().min(1, 'اسم الفعالية / الحدث مطلوب').trim(),
+  eventType: z.string().min(1, 'نوع الفعالية مطلوب').default('مؤتمر طبي'),
+  eventDate: z.string().min(1, 'تاريخ الفعالية مطلوب').trim(),
+  location: z.string().optional().default(''),
+  attendeesCount: z.coerce.number().min(0).optional().default(0),
+  targetSpecialty: z.string().optional().default(''),
+  products: z.string().optional().default(''),
+  budget: z.string().optional().default(''),
+  feedback: z.string().optional().default(''),
+  notes: z.string().optional().default(''),
+  rep: z.string().optional(),
+});
+
+export const TrainingSchema = z.object({
+  title: z.string().min(1, 'عنوان التدريب مطلوب').trim(),
+  trainingType: z.string().min(1, 'نوع التدريب مطلوب').default('تدريب علمي ومنتجات'),
+  trainingDate: z.string().min(1, 'تاريخ التدريب مطلوب').trim(),
+  trainer: z.string().optional().default(''),
+  attendees: z.string().optional().default(''),
+  durationHours: z.coerce.number().min(0).optional().default(1),
+  outcomes: z.string().optional().default(''),
+  notes: z.string().optional().default(''),
+  rep: z.string().optional(),
+});
+
+export const SpecialTaskSchema = z.object({
+  title: z.string().min(1, 'عنوان المهمة مطلوب').trim(),
+  taskCategory: z.string().min(1, 'تصنيف المهمة مطلوب').default('مسح ميداني للسوق'),
+  taskDate: z.string().min(1, 'تاريخ المهمة مطلوب').trim(),
+  assignedBy: z.string().optional().default(''),
+  priority: z.string().optional().default('Normal'),
+  status: z.string().optional().default('Completed'),
+  description: z.string().optional().default(''),
+  notes: z.string().optional().default(''),
+  rep: z.string().optional(),
+});
+
 export const WeeklyPlanSchema = z.object({
   rep: z.string().optional(),
   repId: z.string().optional(),

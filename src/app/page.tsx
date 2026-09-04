@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, Suspense, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Representative, ActivityType } from '@/types';
+import { Representative, ActivityType, VisitEntityType } from '@/types';
 import { Topbar, ViewType } from '@/components/layout/Topbar';
 import { Toast, ToastMessage } from '@/components/ui/Toast';
 import { LoadingScreen } from '@/components/ui/LoadingScreen';
@@ -12,6 +12,9 @@ import { PharmacyForm } from '@/components/reports/PharmacyForm';
 import { DoctorForm } from '@/components/reports/DoctorForm';
 import { BranchForm } from '@/components/reports/BranchForm';
 import { AvailabilityForm } from '@/components/reports/AvailabilityForm';
+import { EventForm } from '@/components/reports/EventForm';
+import { TrainingForm } from '@/components/reports/TrainingForm';
+import { SpecialTaskForm } from '@/components/reports/SpecialTaskForm';
 import { MyListsView } from '@/components/my-lists/MyListsView';
 import { MyReportsView } from '@/components/my-reports/MyReportsView';
 import { WeeklyPlanView } from '@/components/weekly-plan/WeeklyPlanView';
@@ -28,6 +31,7 @@ function HomePageContent() {
   const [reps, setReps] = useState<Representative[]>(INITIAL_REPRESENTATIVES);
   const [selectedRep, setSelectedRep] = useState<string>('');
   const [selectedType, setSelectedType] = useState<ActivityType>('hospital');
+  const [visitSubtype, setVisitSubtype] = useState<VisitEntityType>('hospital');
   const [isManagerUnlocked, setIsManagerUnlocked] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [toast, setToast] = useState<ToastMessage | null>(null);
@@ -148,11 +152,17 @@ function HomePageContent() {
             <p className="text-xs text-[var(--ink-soft)] mb-3.5 leading-relaxed">
               {t('activity.type.desc')}
             </p>
-            <TypePicker selectedType={selectedType} onSelect={setSelectedType} />
+            <TypePicker
+              selectedType={selectedType}
+              onSelect={setSelectedType}
+              visitSubtype={visitSubtype}
+              onSelectVisitSubtype={setVisitSubtype}
+            />
           </div>
 
-          {/* Activity Forms */}
-          {selectedType === 'hospital' && (
+          {/* 5 Medical Rep Sheet Item Forms */}
+          {/* Item 1: Visit Types (Hospital, Pharmacy, Doctor, Branch) */}
+          {(selectedType === 'hospital' || (selectedType === 'visit' && visitSubtype === 'hospital')) && (
             <HospitalForm
               selectedRep={selectedRep}
               onSuccess={(msg) => showToast(msg)}
@@ -160,7 +170,7 @@ function HomePageContent() {
             />
           )}
 
-          {selectedType === 'pharmacy' && (
+          {(selectedType === 'pharmacy' || (selectedType === 'visit' && visitSubtype === 'pharmacy')) && (
             <PharmacyForm
               selectedRep={selectedRep}
               onSuccess={(msg) => showToast(msg)}
@@ -168,7 +178,7 @@ function HomePageContent() {
             />
           )}
 
-          {selectedType === 'doctor' && (
+          {(selectedType === 'doctor' || (selectedType === 'visit' && visitSubtype === 'doctor')) && (
             <DoctorForm
               selectedRep={selectedRep}
               onSuccess={(msg) => showToast(msg)}
@@ -176,7 +186,7 @@ function HomePageContent() {
             />
           )}
 
-          {selectedType === 'branch' && (
+          {(selectedType === 'branch' || (selectedType === 'visit' && visitSubtype === 'branch')) && (
             <BranchForm
               selectedRep={selectedRep}
               onSuccess={(msg) => showToast(msg)}
@@ -184,7 +194,35 @@ function HomePageContent() {
             />
           )}
 
-          {selectedType === 'availability' && (
+          {/* Item 2: Events */}
+          {selectedType === 'event' && (
+            <EventForm
+              selectedRep={selectedRep}
+              onSuccess={(msg) => showToast(msg)}
+              onError={(msg) => showToast(msg, true)}
+            />
+          )}
+
+          {/* Item 3: Training */}
+          {selectedType === 'training' && (
+            <TrainingForm
+              selectedRep={selectedRep}
+              onSuccess={(msg) => showToast(msg)}
+              onError={(msg) => showToast(msg, true)}
+            />
+          )}
+
+          {/* Item 4: Special Task / Others */}
+          {selectedType === 'special_task' && (
+            <SpecialTaskForm
+              selectedRep={selectedRep}
+              onSuccess={(msg) => showToast(msg)}
+              onError={(msg) => showToast(msg, true)}
+            />
+          )}
+
+          {/* Item 5: Products Analysis */}
+          {(selectedType === 'availability' || selectedType === 'product_analysis') && (
             <AvailabilityForm
               selectedRep={selectedRep}
               onSuccess={(msg) => showToast(msg)}

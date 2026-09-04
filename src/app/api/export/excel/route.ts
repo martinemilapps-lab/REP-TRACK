@@ -14,6 +14,9 @@ import {
   branchVisits,
   productAvailabilities,
   weeklyPlans,
+  events,
+  trainings,
+  specialTasks,
 } from '@/lib/db';
 import { generateExcelWorkbook } from '@/lib/excel';
 import { eq, desc } from 'drizzle-orm';
@@ -33,173 +36,244 @@ export async function GET() {
     // 2. Fetch all datasets from Turso
     const allReps = await db.select().from(representatives).all();
 
-    const [allHospVisits, allPharmVisits, allDrVisits, allBranchVisits, allAvails, allWeeklyPlans] =
-      await Promise.all([
-        db
-          .select({
-            id: hospitalVisits.id,
-            repId: hospitalVisits.repId,
-            rep: representatives.name,
-            name: hospitals.name,
-            objective: hospitalVisits.objective,
-            area: hospitals.area,
-            type: hospitals.type,
-            dept: hospitalVisits.dept,
-            drsVisited: hospitalVisits.drsVisited,
-            contact: hospitals.contact,
-            phone: hospitals.phone,
-            cycle: hospitalVisits.cycleDays,
-            lastVisit: hospitalVisits.lastVisitDate,
-            nextVisit: hospitalVisits.nextVisitDate,
-            visitType: hospitalVisits.visitType,
-            companion: hospitalVisits.companion,
-            ourProducts: hospitalVisits.ourProducts,
-            competitor: hospitalVisits.competitor,
-            notes: hospitalVisits.notes,
-            submittedAt: hospitalVisits.submittedAt,
-          })
-          .from(hospitalVisits)
-          .innerJoin(hospitals, eq(hospitalVisits.hospitalId, hospitals.id))
-          .innerJoin(representatives, eq(hospitalVisits.repId, representatives.id))
-          .orderBy(desc(hospitalVisits.submittedAt))
-          .all(),
+    const [
+      allHospVisits,
+      allPharmVisits,
+      allDrVisits,
+      allBranchVisits,
+      allAvails,
+      allWeeklyPlans,
+      allEvents,
+      allTrainings,
+      allSpecialTasks,
+    ] = await Promise.all([
+      db
+        .select({
+          id: hospitalVisits.id,
+          repId: hospitalVisits.repId,
+          rep: representatives.name,
+          name: hospitals.name,
+          objective: hospitalVisits.objective,
+          area: hospitals.area,
+          type: hospitals.type,
+          dept: hospitalVisits.dept,
+          drsVisited: hospitalVisits.drsVisited,
+          contact: hospitals.contact,
+          phone: hospitals.phone,
+          cycle: hospitalVisits.cycleDays,
+          lastVisit: hospitalVisits.lastVisitDate,
+          nextVisit: hospitalVisits.nextVisitDate,
+          visitType: hospitalVisits.visitType,
+          companion: hospitalVisits.companion,
+          ourProducts: hospitalVisits.ourProducts,
+          competitor: hospitalVisits.competitor,
+          notes: hospitalVisits.notes,
+          submittedAt: hospitalVisits.submittedAt,
+        })
+        .from(hospitalVisits)
+        .innerJoin(hospitals, eq(hospitalVisits.hospitalId, hospitals.id))
+        .innerJoin(representatives, eq(hospitalVisits.repId, representatives.id))
+        .orderBy(desc(hospitalVisits.submittedAt))
+        .all(),
 
-        db
-          .select({
-            id: pharmacyVisits.id,
-            repId: pharmacyVisits.repId,
-            rep: representatives.name,
-            name: pharmacies.name,
-            objective: pharmacyVisits.objective,
-            area: pharmacies.area,
-            address: pharmacies.address,
-            pharmacist: pharmacies.pharmacist,
-            mobile: pharmacies.mobile,
-            cls: pharmacies.classification,
-            cycle: pharmacyVisits.cycleDays,
-            lastVisit: pharmacyVisits.lastVisitDate,
-            nextVisit: pharmacyVisits.nextVisitDate,
-            visitType: pharmacyVisits.visitType,
-            companion: pharmacyVisits.companion,
-            ourProducts: pharmacyVisits.ourProducts,
-            competitor: pharmacyVisits.competitor,
-            notes: pharmacyVisits.notes,
-            submittedAt: pharmacyVisits.submittedAt,
-          })
-          .from(pharmacyVisits)
-          .innerJoin(pharmacies, eq(pharmacyVisits.pharmacyId, pharmacies.id))
-          .innerJoin(representatives, eq(pharmacyVisits.repId, representatives.id))
-          .orderBy(desc(pharmacyVisits.submittedAt))
-          .all(),
+      db
+        .select({
+          id: pharmacyVisits.id,
+          repId: pharmacyVisits.repId,
+          rep: representatives.name,
+          name: pharmacies.name,
+          objective: pharmacyVisits.objective,
+          area: pharmacies.area,
+          address: pharmacies.address,
+          pharmacist: pharmacies.pharmacist,
+          mobile: pharmacies.mobile,
+          cls: pharmacies.classification,
+          cycle: pharmacyVisits.cycleDays,
+          lastVisit: pharmacyVisits.lastVisitDate,
+          nextVisit: pharmacyVisits.nextVisitDate,
+          visitType: pharmacyVisits.visitType,
+          companion: pharmacyVisits.companion,
+          ourProducts: pharmacyVisits.ourProducts,
+          competitor: pharmacyVisits.competitor,
+          notes: pharmacyVisits.notes,
+          submittedAt: pharmacyVisits.submittedAt,
+        })
+        .from(pharmacyVisits)
+        .innerJoin(pharmacies, eq(pharmacyVisits.pharmacyId, pharmacies.id))
+        .innerJoin(representatives, eq(pharmacyVisits.repId, representatives.id))
+        .orderBy(desc(pharmacyVisits.submittedAt))
+        .all(),
 
-        db
-          .select({
-            id: doctorVisits.id,
-            repId: doctorVisits.repId,
-            rep: representatives.name,
-            code: doctors.code,
-            name: doctors.name,
-            objective: doctorVisits.objective,
-            specialty: doctors.specialty,
-            workplace: doctors.workplace,
-            area: doctors.area,
-            mobile: doctors.mobile,
-            cls: doctors.classification,
-            visitDate: doctorVisits.visitDate,
-            cycle: doctorVisits.cycleDays,
-            nextVisit: doctorVisits.nextVisitDate,
-            visitType: doctorVisits.visitType,
-            companion: doctorVisits.companion,
-            f1: doctorVisits.product1,
-            f2: doctorVisits.product2,
-            f3: doctorVisits.product3,
-            reminder: doctorVisits.reminderProduct,
-            notes: doctorVisits.notes,
-            submittedAt: doctorVisits.submittedAt,
-          })
-          .from(doctorVisits)
-          .innerJoin(doctors, eq(doctorVisits.doctorId, doctors.id))
-          .innerJoin(representatives, eq(doctorVisits.repId, representatives.id))
-          .orderBy(desc(doctorVisits.submittedAt))
-          .all(),
+      db
+        .select({
+          id: doctorVisits.id,
+          repId: doctorVisits.repId,
+          rep: representatives.name,
+          code: doctors.code,
+          name: doctors.name,
+          objective: doctorVisits.objective,
+          specialty: doctors.specialty,
+          workplace: doctors.workplace,
+          area: doctors.area,
+          mobile: doctors.mobile,
+          cls: doctors.classification,
+          visitDate: doctorVisits.visitDate,
+          cycle: doctorVisits.cycleDays,
+          nextVisit: doctorVisits.nextVisitDate,
+          visitType: doctorVisits.visitType,
+          companion: doctorVisits.companion,
+          f1: doctorVisits.product1,
+          f2: doctorVisits.product2,
+          f3: doctorVisits.product3,
+          reminder: doctorVisits.reminderProduct,
+          notes: doctorVisits.notes,
+          submittedAt: doctorVisits.submittedAt,
+        })
+        .from(doctorVisits)
+        .innerJoin(doctors, eq(doctorVisits.doctorId, doctors.id))
+        .innerJoin(representatives, eq(doctorVisits.repId, representatives.id))
+        .orderBy(desc(doctorVisits.submittedAt))
+        .all(),
 
-        db
-          .select({
-            id: branchVisits.id,
-            repId: branchVisits.repId,
-            rep: representatives.name,
-            name: distributionBranches.name,
-            objective: branchVisits.objective,
-            area: distributionBranches.coverageArea,
-            contact: distributionBranches.contact,
-            phone: distributionBranches.phone,
-            products: distributionBranches.distributedProducts,
-            lastVisit: branchVisits.lastVisitDate,
-            visitType: branchVisits.visitType,
-            companion: branchVisits.companion,
-            notes: branchVisits.notes,
-            submittedAt: branchVisits.submittedAt,
-          })
-          .from(branchVisits)
-          .innerJoin(distributionBranches, eq(branchVisits.branchId, distributionBranches.id))
-          .innerJoin(representatives, eq(branchVisits.repId, representatives.id))
-          .orderBy(desc(branchVisits.submittedAt))
-          .all(),
+      db
+        .select({
+          id: branchVisits.id,
+          repId: branchVisits.repId,
+          rep: representatives.name,
+          name: distributionBranches.name,
+          objective: branchVisits.objective,
+          area: distributionBranches.coverageArea,
+          contact: distributionBranches.contact,
+          phone: distributionBranches.phone,
+          products: distributionBranches.distributedProducts,
+          lastVisit: branchVisits.lastVisitDate,
+          visitType: branchVisits.visitType,
+          companion: branchVisits.companion,
+          notes: branchVisits.notes,
+          submittedAt: branchVisits.submittedAt,
+        })
+        .from(branchVisits)
+        .innerJoin(distributionBranches, eq(branchVisits.branchId, distributionBranches.id))
+        .innerJoin(representatives, eq(branchVisits.repId, representatives.id))
+        .orderBy(desc(branchVisits.submittedAt))
+        .all(),
 
-        db
-          .select({
-            id: productAvailabilities.id,
-            repId: productAvailabilities.repId,
-            rep: representatives.name,
-            hospital: hospitals.name,
-            objective: productAvailabilities.objective,
-            area: hospitals.area,
-            product: products.name,
-            month: productAvailabilities.month,
-            sales: productAvailabilities.salesUnits,
-            isAvailable: productAvailabilities.isAvailable,
-            notes: productAvailabilities.notes,
-            submittedAt: productAvailabilities.submittedAt,
-          })
-          .from(productAvailabilities)
-          .innerJoin(hospitals, eq(productAvailabilities.hospitalId, hospitals.id))
-          .innerJoin(products, eq(productAvailabilities.productId, products.id))
-          .innerJoin(representatives, eq(productAvailabilities.repId, representatives.id))
-          .orderBy(desc(productAvailabilities.submittedAt))
-          .all(),
+      db
+        .select({
+          id: productAvailabilities.id,
+          repId: productAvailabilities.repId,
+          rep: representatives.name,
+          hospital: hospitals.name,
+          objective: productAvailabilities.objective,
+          area: hospitals.area,
+          product: products.name,
+          month: productAvailabilities.month,
+          sales: productAvailabilities.salesUnits,
+          isAvailable: productAvailabilities.isAvailable,
+          notes: productAvailabilities.notes,
+          submittedAt: productAvailabilities.submittedAt,
+        })
+        .from(productAvailabilities)
+        .innerJoin(hospitals, eq(productAvailabilities.hospitalId, hospitals.id))
+        .innerJoin(products, eq(productAvailabilities.productId, products.id))
+        .innerJoin(representatives, eq(productAvailabilities.repId, representatives.id))
+        .orderBy(desc(productAvailabilities.submittedAt))
+        .all(),
 
-        db
-          .select({
-            id: weeklyPlans.id,
-            repId: weeklyPlans.repId,
-            rep: representatives.name,
-            startDate: weeklyPlans.startDate,
-            endDate: weeklyPlans.endDate,
-            weekLabel: weeklyPlans.weekLabel,
-            saturdayAm: weeklyPlans.saturdayAm,
-            saturdayPm: weeklyPlans.saturdayPm,
-            sundayAm: weeklyPlans.sundayAm,
-            sundayPm: weeklyPlans.sundayPm,
-            mondayAm: weeklyPlans.mondayAm,
-            mondayPm: weeklyPlans.mondayPm,
-            tuesdayAm: weeklyPlans.tuesdayAm,
-            tuesdayPm: weeklyPlans.tuesdayPm,
-            wednesdayAm: weeklyPlans.wednesdayAm,
-            wednesdayPm: weeklyPlans.wednesdayPm,
-            thursdayAm: weeklyPlans.thursdayAm,
-            thursdayPm: weeklyPlans.thursdayPm,
-            fridayAm: weeklyPlans.fridayAm,
-            fridayPm: weeklyPlans.fridayPm,
-            status: weeklyPlans.status,
-            managerNotes: weeklyPlans.managerNotes,
-            submittedAt: weeklyPlans.submittedAt,
-            updatedAt: weeklyPlans.updatedAt,
-          })
-          .from(weeklyPlans)
-          .innerJoin(representatives, eq(weeklyPlans.repId, representatives.id))
-          .orderBy(desc(weeklyPlans.submittedAt))
-          .all(),
-      ]);
+      db
+        .select({
+          id: weeklyPlans.id,
+          repId: weeklyPlans.repId,
+          rep: representatives.name,
+          startDate: weeklyPlans.startDate,
+          endDate: weeklyPlans.endDate,
+          weekLabel: weeklyPlans.weekLabel,
+          saturdayAm: weeklyPlans.saturdayAm,
+          saturdayPm: weeklyPlans.saturdayPm,
+          sundayAm: weeklyPlans.sundayAm,
+          sundayPm: weeklyPlans.sundayPm,
+          mondayAm: weeklyPlans.mondayAm,
+          mondayPm: weeklyPlans.mondayPm,
+          tuesdayAm: weeklyPlans.tuesdayAm,
+          tuesdayPm: weeklyPlans.tuesdayPm,
+          wednesdayAm: weeklyPlans.wednesdayAm,
+          wednesdayPm: weeklyPlans.wednesdayPm,
+          thursdayAm: weeklyPlans.thursdayAm,
+          thursdayPm: weeklyPlans.thursdayPm,
+          fridayAm: weeklyPlans.fridayAm,
+          fridayPm: weeklyPlans.fridayPm,
+          status: weeklyPlans.status,
+          managerNotes: weeklyPlans.managerNotes,
+          submittedAt: weeklyPlans.submittedAt,
+          updatedAt: weeklyPlans.updatedAt,
+        })
+        .from(weeklyPlans)
+        .innerJoin(representatives, eq(weeklyPlans.repId, representatives.id))
+        .orderBy(desc(weeklyPlans.submittedAt))
+        .all(),
+
+      db
+        .select({
+          id: events.id,
+          repId: events.repId,
+          rep: representatives.name,
+          title: events.title,
+          eventType: events.eventType,
+          eventDate: events.eventDate,
+          location: events.location,
+          attendeesCount: events.attendeesCount,
+          targetSpecialty: events.targetSpecialty,
+          products: events.products,
+          budget: events.budget,
+          feedback: events.feedback,
+          notes: events.notes,
+          submittedAt: events.submittedAt,
+        })
+        .from(events)
+        .innerJoin(representatives, eq(events.repId, representatives.id))
+        .orderBy(desc(events.submittedAt))
+        .all(),
+
+      db
+        .select({
+          id: trainings.id,
+          repId: trainings.repId,
+          rep: representatives.name,
+          title: trainings.title,
+          trainingType: trainings.trainingType,
+          trainingDate: trainings.trainingDate,
+          trainer: trainings.trainer,
+          attendees: trainings.attendees,
+          durationHours: trainings.durationHours,
+          outcomes: trainings.outcomes,
+          notes: trainings.notes,
+          submittedAt: trainings.submittedAt,
+        })
+        .from(trainings)
+        .innerJoin(representatives, eq(trainings.repId, representatives.id))
+        .orderBy(desc(trainings.submittedAt))
+        .all(),
+
+      db
+        .select({
+          id: specialTasks.id,
+          repId: specialTasks.repId,
+          rep: representatives.name,
+          title: specialTasks.title,
+          taskCategory: specialTasks.taskCategory,
+          taskDate: specialTasks.taskDate,
+          assignedBy: specialTasks.assignedBy,
+          priority: specialTasks.priority,
+          status: specialTasks.status,
+          description: specialTasks.description,
+          notes: specialTasks.notes,
+          submittedAt: specialTasks.submittedAt,
+        })
+        .from(specialTasks)
+        .innerJoin(representatives, eq(specialTasks.repId, representatives.id))
+        .orderBy(desc(specialTasks.submittedAt))
+        .all(),
+    ]);
 
     const buffer = generateExcelWorkbook({
       reps: allReps,
@@ -261,7 +335,7 @@ export async function GET() {
       branches: allBranchVisits.map((b) => ({
         ...b,
         objective: b.objective ?? undefined,
-        status: 'Visited',
+        status: deriveVisitStatus({ lastVisitDate: b.lastVisit, cycleDays: 7 }),
         contact: b.contact ?? undefined,
         phone: b.phone ?? undefined,
         products: b.products ?? undefined,
@@ -275,7 +349,7 @@ export async function GET() {
         ...a,
         objective: a.objective ?? undefined,
         status: a.isAvailable ? 'Available' : 'Not Available',
-        sales: a.sales ?? undefined,
+        sales: a.sales ?? 0,
         notes: a.notes ?? undefined,
         submittedAt: a.submittedAt ? new Date(a.submittedAt).toISOString() : undefined,
       })),
@@ -299,6 +373,33 @@ export async function GET() {
         managerNotes: wp.managerNotes ?? undefined,
         submittedAt: wp.submittedAt ? new Date(wp.submittedAt).toISOString() : undefined,
         updatedAt: wp.updatedAt ? new Date(wp.updatedAt).toISOString() : undefined,
+      })),
+      events: allEvents.map((e) => ({
+        ...e,
+        location: e.location ?? undefined,
+        attendeesCount: e.attendeesCount ?? 0,
+        targetSpecialty: e.targetSpecialty ?? undefined,
+        products: e.products ?? undefined,
+        budget: e.budget ?? undefined,
+        feedback: e.feedback ?? undefined,
+        notes: e.notes ?? undefined,
+        submittedAt: e.submittedAt ? new Date(e.submittedAt).toISOString() : undefined,
+      })),
+      trainings: allTrainings.map((tr) => ({
+        ...tr,
+        trainer: tr.trainer ?? undefined,
+        attendees: tr.attendees ?? undefined,
+        durationHours: tr.durationHours ?? 1,
+        outcomes: tr.outcomes ?? undefined,
+        notes: tr.notes ?? undefined,
+        submittedAt: tr.submittedAt ? new Date(tr.submittedAt).toISOString() : undefined,
+      })),
+      specialTasks: allSpecialTasks.map((st) => ({
+        ...st,
+        assignedBy: st.assignedBy ?? undefined,
+        description: st.description ?? undefined,
+        notes: st.notes ?? undefined,
+        submittedAt: st.submittedAt ? new Date(st.submittedAt).toISOString() : undefined,
       })),
     });
 

@@ -9,6 +9,9 @@ import {
   DoctorVisitRecord,
   BranchVisitRecord,
   ProductAvailabilityRecord,
+  EventRecord,
+  TrainingRecord,
+  SpecialTaskRecord,
 } from '@/types';
 import { StatPill } from '@/components/ui/StatPill';
 import { CoverageRing } from '@/components/ui/CoverageRing';
@@ -38,6 +41,9 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
     doctors: DoctorVisitRecord[];
     branches: BranchVisitRecord[];
     availabilities: ProductAvailabilityRecord[];
+    events?: EventRecord[];
+    trainings?: TrainingRecord[];
+    specialTasks?: SpecialTaskRecord[];
     masterLists?: {
       hospitals: any[];
       pharmacies: any[];
@@ -50,6 +56,9 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
     doctors: [],
     branches: [],
     availabilities: [],
+    events: [],
+    trainings: [],
+    specialTasks: [],
   });
 
   const loadRepData = useCallback(async (repName: string) => {
@@ -499,7 +508,7 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
 
               {activeTab === 'availability' &&
                 (data.availabilities.length === 0 ? (
-                  <EmptyState title={t('empty.noAvailability')} icon="📦" className="border-none shadow-none" />
+                  <EmptyState title="لا توجد تقارير تحليل منتجات مسجلة حتى الآن" icon="📊" className="border-none shadow-none" />
                 ) : (
                   <div className="overflow-x-auto">
                     <table>
@@ -528,6 +537,126 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                             <td className="font-mono whitespace-nowrap font-bold">{r.sales ?? 0}</td>
                             <td className="whitespace-nowrap"><Badge status={r.status} type="availability" /></td>
                             <td className="whitespace-nowrap max-w-xs truncate">{r.notes}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
+
+              {activeTab === 'event' &&
+                (!data.events || data.events.length === 0 ? (
+                  <EmptyState title="لا توجد فعاليات أو مؤتمرات مسجلة حتى الآن" icon="🎟️" className="border-none shadow-none" />
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>اسم الفعالية / المؤتمر</th>
+                          <th>نوع الفعالية</th>
+                          <th>التاريخ</th>
+                          <th>المكان / القاعة</th>
+                          <th>الحضور</th>
+                          <th>التخصص المستهدف</th>
+                          <th>المنتجات المعروضة</th>
+                          <th>النتائج والمخرجات</th>
+                          <th>ملاحظات</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.events.map((r) => (
+                          <tr key={r.id}>
+                            <td className="font-bold text-[var(--ink)] whitespace-nowrap">{r.title}</td>
+                            <td className="whitespace-nowrap font-semibold text-[var(--gold-dark)]">{r.eventType}</td>
+                            <td className="font-mono whitespace-nowrap">{r.eventDate}</td>
+                            <td className="whitespace-nowrap">{r.location || '—'}</td>
+                            <td className="font-mono whitespace-nowrap">{r.attendeesCount || '0'}</td>
+                            <td className="whitespace-nowrap">{r.targetSpecialty || '—'}</td>
+                            <td className="whitespace-nowrap font-medium text-[var(--ink)]">{r.products || '—'}</td>
+                            <td className="whitespace-nowrap max-w-xs truncate" title={r.feedback || ''}>{r.feedback || '—'}</td>
+                            <td className="whitespace-nowrap max-w-xs truncate">{r.notes || '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
+
+              {activeTab === 'training' &&
+                (!data.trainings || data.trainings.length === 0 ? (
+                  <EmptyState title="لا توجد دورات أو ورش تدريبية مسجلة حتى الآن" icon="🎓" className="border-none shadow-none" />
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>عنوان التدريب / الورشة</th>
+                          <th>نوع التدريب</th>
+                          <th>التاريخ</th>
+                          <th>المدرب / المحاضر</th>
+                          <th>الحضور / الفئة</th>
+                          <th>المدة (ساعات)</th>
+                          <th>محاور الاستفادة والمخرجات</th>
+                          <th>ملاحظات</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.trainings.map((r) => (
+                          <tr key={r.id}>
+                            <td className="font-bold text-[var(--ink)] whitespace-nowrap">{r.title}</td>
+                            <td className="whitespace-nowrap font-semibold text-[var(--gold-dark)]">{r.trainingType}</td>
+                            <td className="font-mono whitespace-nowrap">{r.trainingDate}</td>
+                            <td className="whitespace-nowrap">{r.trainer || '—'}</td>
+                            <td className="whitespace-nowrap">{r.attendees || '—'}</td>
+                            <td className="font-mono whitespace-nowrap">{r.durationHours} س</td>
+                            <td className="whitespace-nowrap max-w-xs truncate" title={r.outcomes || ''}>{r.outcomes || '—'}</td>
+                            <td className="whitespace-nowrap max-w-xs truncate">{r.notes || '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
+
+              {activeTab === 'special_task' &&
+                (!data.specialTasks || data.specialTasks.length === 0 ? (
+                  <EmptyState title="لا توجد مهام خاصة مسجلة حتى الآن" icon="⚡" className="border-none shadow-none" />
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>عنوان المهمة</th>
+                          <th>التصنيف</th>
+                          <th>التاريخ</th>
+                          <th>بتكليف من</th>
+                          <th>الأولوية</th>
+                          <th>الحالة</th>
+                          <th>تفاصيل المهمة والنتائج</th>
+                          <th>ملاحظات</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.specialTasks.map((r) => (
+                          <tr key={r.id}>
+                            <td className="font-bold text-[var(--ink)] whitespace-nowrap">{r.title}</td>
+                            <td className="whitespace-nowrap font-semibold text-[var(--gold-dark)]">{r.taskCategory}</td>
+                            <td className="font-mono whitespace-nowrap">{r.taskDate}</td>
+                            <td className="whitespace-nowrap">{r.assignedBy || '—'}</td>
+                            <td className="whitespace-nowrap">
+                              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                                r.priority === 'Urgent' ? 'bg-red-100 text-red-700' : r.priority === 'High' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
+                              }`}>
+                                {r.priority}
+                              </span>
+                            </td>
+                            <td className="whitespace-nowrap">
+                              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                                {r.status}
+                              </span>
+                            </td>
+                            <td className="whitespace-nowrap max-w-xs truncate" title={r.description || ''}>{r.description || '—'}</td>
+                            <td className="whitespace-nowrap max-w-xs truncate">{r.notes || '—'}</td>
                           </tr>
                         ))}
                       </tbody>

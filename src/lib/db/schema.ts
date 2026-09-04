@@ -237,7 +237,63 @@ export const productAvailabilities = sqliteTable('product_availabilities', {
 ]);
 
 // ----------------------------------------------------
-// 5. WEEKLY PLANS (SATURDAY TO FRIDAY)
+// 5. EVENTS, TRAINING & SPECIAL TASKS (MEDICAL REP SHEET)
+// ----------------------------------------------------
+export const events = sqliteTable('events', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  repId: text('rep_id').notNull().references(() => representatives.id, { onDelete: 'restrict' }),
+  title: text('title').notNull(),
+  eventType: text('event_type').notNull(), // Conference, Symposium, Booth/Stand, Roundtable, Launch, Other
+  eventDate: text('event_date').notNull(), // YYYY-MM-DD
+  location: text('location'),
+  attendeesCount: integer('attendees_count').default(0),
+  targetSpecialty: text('target_specialty'),
+  products: text('products'),
+  budget: text('budget'),
+  feedback: text('feedback'),
+  notes: text('notes'),
+  submittedAt: integer('submitted_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
+}, (table) => [
+  index('idx_events_rep').on(table.repId),
+  index('idx_events_date').on(table.eventDate),
+]);
+
+export const trainings = sqliteTable('trainings', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  repId: text('rep_id').notNull().references(() => representatives.id, { onDelete: 'restrict' }),
+  title: text('title').notNull(),
+  trainingType: text('training_type').notNull(), // Product Knowledge, Scientific Workshop, Selling Skills, Field Coaching, Other
+  trainingDate: text('training_date').notNull(), // YYYY-MM-DD
+  trainer: text('trainer'),
+  attendees: text('attendees'),
+  durationHours: integer('duration_hours').default(1),
+  outcomes: text('outcomes'),
+  notes: text('notes'),
+  submittedAt: integer('submitted_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
+}, (table) => [
+  index('idx_trainings_rep').on(table.repId),
+  index('idx_trainings_date').on(table.trainingDate),
+]);
+
+export const specialTasks = sqliteTable('special_tasks', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  repId: text('rep_id').notNull().references(() => representatives.id, { onDelete: 'restrict' }),
+  title: text('title').notNull(),
+  taskCategory: text('task_category').notNull(), // Market Survey, Competitor Intelligence, Office/Admin, Delivery, Urgent, Other
+  taskDate: text('task_date').notNull(), // YYYY-MM-DD
+  assignedBy: text('assigned_by'),
+  priority: text('priority').notNull().default('Normal'), // Normal, High, Urgent
+  status: text('status').notNull().default('Completed'), // Completed, In Progress, Follow-up Needed
+  description: text('description'),
+  notes: text('notes'),
+  submittedAt: integer('submitted_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
+}, (table) => [
+  index('idx_special_tasks_rep').on(table.repId),
+  index('idx_special_tasks_date').on(table.taskDate),
+]);
+
+// ----------------------------------------------------
+// 6. WEEKLY PLANS (SATURDAY TO FRIDAY)
 // ----------------------------------------------------
 export const weeklyPlans = sqliteTable('weekly_plans', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -296,7 +352,31 @@ export const representativesRelations = relations(representatives, ({ one, many 
   doctorVisits: many(doctorVisits),
   branchVisits: many(branchVisits),
   productAvailabilities: many(productAvailabilities),
+  events: many(events),
+  trainings: many(trainings),
+  specialTasks: many(specialTasks),
   weeklyPlans: many(weeklyPlans),
+}));
+
+export const eventsRelations = relations(events, ({ one }) => ({
+  representative: one(representatives, {
+    fields: [events.repId],
+    references: [representatives.id],
+  }),
+}));
+
+export const trainingsRelations = relations(trainings, ({ one }) => ({
+  representative: one(representatives, {
+    fields: [trainings.repId],
+    references: [representatives.id],
+  }),
+}));
+
+export const specialTasksRelations = relations(specialTasks, ({ one }) => ({
+  representative: one(representatives, {
+    fields: [specialTasks.repId],
+    references: [representatives.id],
+  }),
 }));
 
 export const weeklyPlansRelations = relations(weeklyPlans, ({ one }) => ({

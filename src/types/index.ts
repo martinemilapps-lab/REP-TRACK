@@ -1,4 +1,18 @@
-export type ActivityType = 'hospital' | 'pharmacy' | 'doctor' | 'branch' | 'availability';
+export type RepSheetItem = 'visit' | 'event' | 'training' | 'special_task' | 'product_analysis';
+
+export type VisitEntityType = 'hospital' | 'pharmacy' | 'doctor' | 'branch';
+
+export type ActivityType = 
+  | 'visit'
+  | 'hospital' 
+  | 'pharmacy' 
+  | 'doctor' 
+  | 'branch' 
+  | 'event'
+  | 'training'
+  | 'special_task'
+  | 'availability'
+  | 'product_analysis';
 
 export type VisitStatus = 'Visited' | 'Overdue' | 'Not visited yet';
 
@@ -178,7 +192,54 @@ export interface MasterListsPayload {
   branches: MasterBranch[];
 }
 
-export interface ProductAvailabilityRecord {
+export interface EventRecord {
+  id: string;
+  repId?: string;
+  rep: string;
+  title: string;
+  eventType: string; // Conference, Symposium, Exhibition/Booth, Roundtable, Launch, Other
+  eventDate: string; // YYYY-MM-DD
+  location?: string;
+  attendeesCount?: number;
+  targetSpecialty?: string;
+  products?: string;
+  budget?: string;
+  feedback?: string;
+  notes?: string;
+  submittedAt?: string;
+}
+
+export interface TrainingRecord {
+  id: string;
+  repId?: string;
+  rep: string;
+  title: string;
+  trainingType: string; // Product Knowledge, Scientific Workshop, Selling Skills, Field Coaching, Other
+  trainingDate: string; // YYYY-MM-DD
+  trainer?: string;
+  attendees?: string;
+  durationHours?: number;
+  outcomes?: string;
+  notes?: string;
+  submittedAt?: string;
+}
+
+export interface SpecialTaskRecord {
+  id: string;
+  repId?: string;
+  rep: string;
+  title: string;
+  taskCategory: string; // Market Survey, Competitor Intelligence, Office/Admin, Delivery, Urgent, Other
+  taskDate: string; // YYYY-MM-DD
+  assignedBy?: string;
+  priority: 'Normal' | 'High' | 'Urgent' | string;
+  status: 'Completed' | 'In Progress' | 'Follow-up Needed' | string;
+  description?: string;
+  notes?: string;
+  submittedAt?: string;
+}
+
+export interface ProductAnalysisRecord {
   id: string;
   repId?: string;
   rep: string;
@@ -193,6 +254,8 @@ export interface ProductAvailabilityRecord {
   createdAt?: string;
   submittedAt?: string;
 }
+
+export type ProductAvailabilityRecord = ProductAnalysisRecord;
 
 export interface WeeklyPlanRecord {
   id: string;
@@ -242,6 +305,9 @@ export interface ManagerOverviewStats {
   totalDoctorVisits: number;
   totalBranchVisits: number;
   totalAvailabilityReports: number;
+  totalEventReports?: number;
+  totalTrainingReports?: number;
+  totalSpecialTaskReports?: number;
   totalWeeklyPlans?: number;
   totalReps: number;
 }
