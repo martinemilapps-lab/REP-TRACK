@@ -77,6 +77,8 @@ export function generateExcelWorkbook(data: ExportDataPayload): Uint8Array {
     'Responsible Pharmacist': r.pharmacist || '',
     'Mobile Number': r.mobile || '',
     'Class (A/B/C)': r.cls || 'A',
+    'Stock per Month': r.stockPerMonth ?? '',
+    'Sales per Month': r.salesPerMonth ?? '',
     'Visit Type': r.visitType || 'Single',
     'Companion (Co-Rep / Manager)': r.companion || '',
     'Visit Cycle (Days)': r.cycle ?? '',
@@ -95,9 +97,11 @@ export function generateExcelWorkbook(data: ExportDataPayload): Uint8Array {
     'Visit Objective': r.objective || '',
     'Specialty': r.specialty || '',
     'Workplace (Clinic/Hospital)': r.workplace || '',
+    'Nearby Pharmacy': r.nearbyPharmacy || '',
     'Area': r.area,
     'Mobile Number': r.mobile || '',
     'Class (A/B)': r.cls || 'A',
+    'Prescriptions Rate': r.prescriptionRate || '',
     'Date visited': r.visitDate || '',
     'Visit Type': r.visitType || 'Single',
     'Companion (Co-Rep / Manager)': r.companion || '',
@@ -121,22 +125,39 @@ export function generateExcelWorkbook(data: ExportDataPayload): Uint8Array {
     'Visit Type': r.visitType || 'Single',
     'Companion (Co-Rep / Manager)': r.companion || '',
     'Distributed Products': r.products || '',
+    'Monthly Stock': r.monthlyStock ?? '',
+    'Monthly Sales': r.monthlySales ?? '',
     'Last Visit Date': r.lastVisit || '',
     'Status': r.status || 'Visited',
     'Notes': r.notes || ''
   }));
 
-  const availabilitySheet = data.availabilities.map((r) => ({
-    'Assigned Rep': r.rep,
-    'Hospital': r.hospital,
-    'Visit Objective': r.objective || '',
-    'Area': r.area,
-    'Product': r.product,
-    'Month': r.month,
-    'Sales (Units)': r.sales ?? 0,
-    'Availability': r.status || 'Available',
-    'Notes': r.notes || ''
-  }));
+  const availabilitySheet = data.availabilities.map((r) => {
+    const salesVal = r.sales ?? 0;
+    const avgVal = r.avgMonthlyTarget ?? 0;
+    const annualVal = r.annualTarget ?? 0;
+    const potVal = r.potentiality ?? 0;
+    const pctAvg = avgVal > 0 ? `${Math.round((salesVal / avgVal) * 100)}%` : '0%';
+    const pctAnn = annualVal > 0 ? `${Math.round((salesVal / annualVal) * 100)}%` : '0%';
+    const pctPot = potVal > 0 ? `${Math.round((salesVal / potVal) * 100)}%` : '0%';
+
+    return {
+      'Assigned Rep': r.rep,
+      'Hospital / Medical Center': r.hospital,
+      'Area': r.area,
+      'Product': r.product,
+      'Month': r.month,
+      'Annual Target for Each Product': r.annualTarget ?? '',
+      'Average Target / Month': r.avgMonthlyTarget ?? '',
+      'Sales / Month': salesVal,
+      'Potentiality / Month': r.potentiality ?? '',
+      'Sales % of Average Target / Month': r.salesPctAvgTarget || pctAvg,
+      'Sales % of Annual Target': r.salesPctAnnualTarget || pctAnn,
+      'Sales % of Potentiality': r.salesPctPotentiality || pctPot,
+      'Availability Status': r.status || 'Available',
+      'Notes': r.notes || '',
+    };
+  });
 
   const eventsSheet = (data.events || []).map((r) => ({
     'Assigned Rep': r.rep,

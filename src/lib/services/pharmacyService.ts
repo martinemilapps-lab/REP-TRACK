@@ -60,6 +60,8 @@ export async function createPharmacyVisit(
       visitType: input.visitType || 'Single',
       companion: input.companion || null,
       ourProducts: input.ourProducts || null,
+      stockPerMonth: input.stockPerMonth || null,
+      salesPerMonth: input.salesPerMonth || null,
       competitor: input.competitor || null,
       notes: input.notes || null,
     })
@@ -79,6 +81,8 @@ export async function createPharmacyVisit(
     pharmacist: pharmacy.pharmacist,
     mobile: pharmacy.mobile,
     cls: pharmacy.classification,
+    stockPerMonth: visit.stockPerMonth,
+    salesPerMonth: visit.salesPerMonth,
     status: computedStatus,
   };
 }
@@ -110,6 +114,8 @@ export async function getPharmacyReports(
       visitType: pharmacyVisits.visitType,
       companion: pharmacyVisits.companion,
       ourProducts: pharmacyVisits.ourProducts,
+      stockPerMonth: pharmacyVisits.stockPerMonth,
+      salesPerMonth: pharmacyVisits.salesPerMonth,
       competitor: pharmacyVisits.competitor,
       notes: pharmacyVisits.notes,
       submittedAt: pharmacyVisits.submittedAt,
@@ -139,6 +145,8 @@ export async function getPharmacyReports(
         visitType: pharmacyVisits.visitType,
         companion: pharmacyVisits.companion,
         ourProducts: pharmacyVisits.ourProducts,
+        stockPerMonth: pharmacyVisits.stockPerMonth,
+        salesPerMonth: pharmacyVisits.salesPerMonth,
         competitor: pharmacyVisits.competitor,
         notes: pharmacyVisits.notes,
         submittedAt: pharmacyVisits.submittedAt,

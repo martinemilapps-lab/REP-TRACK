@@ -141,6 +141,13 @@ export const VISIT_STATUS_OPTIONS = [
 export const PHARMACY_CLASSES = ['A', 'B', 'C'];
 export const DOCTOR_CLASSES = ['A', 'B'];
 
+export const PRESCRIPTION_RATE_OPTIONS = [
+  { value: 'Awareness', labelAr: 'Awareness (توعية / معرفة)', labelEn: 'Awareness' },
+  { value: 'Trial', labelAr: 'Trial (تجربة مبدئية)', labelEn: 'Trial' },
+  { value: 'Regular', labelAr: 'Regular (كتابة منتظمة)', labelEn: 'Regular' },
+  { value: 'Loyal', labelAr: 'Loyal (ولاء / كتابة مستمرة)', labelEn: 'Loyal' },
+];
+
 export interface ObjectiveOption {
   value: string;
   labelAr: string;
@@ -163,7 +170,6 @@ export const OBJECTIVES_BY_SECTION: Record<string, ObjectiveOption[]> = {
     { value: 'متابعة طلبية وتوريد نواقص', labelAr: 'متابعة طلبية وتوريد نواقص الصيدلية', labelEn: 'Order Booking & Supply Follow-up', isCommon: true },
     { value: 'تقديم وعرض منتجات جديدة للصيدلي', labelAr: 'تقديم وعرض منتجات جديدة للصيدلي', labelEn: 'New Product Detailing to Pharmacist', isCommon: true },
     { value: 'معرفة الأطباء الأكثر كتابة للأصناف بالمنطقة', labelAr: 'معرفة الأطباء الأكثر كتابة للأصناف بالمنطقة', labelEn: 'Prescription Feedback & Doctor Inquiry', isCommon: true },
-    { value: 'التدريب', labelAr: 'التدريب (Training)', labelEn: 'Training', isCommon: true },
     { value: 'متابعة عروض الشركة والتخفيضات التجارية', labelAr: 'متابعة عروض الشركة والتخفيضات التجارية', labelEn: 'Promotional Offers & Commercial Terms' },
     { value: 'تحصيل ومتابعة حسابات وفواتير', labelAr: 'تحصيل ومتابعة حسابات وفواتير', labelEn: 'Invoice Collection & Payment Follow-up' },
     { value: 'تسليم مواد دعائية ومطبوعات وعينات', labelAr: 'تسليم مواد دعائية ومطبوعات وعينات', labelEn: 'POS Materials & Product Samples Drop' },
@@ -174,19 +180,16 @@ export const OBJECTIVES_BY_SECTION: Record<string, ObjectiveOption[]> = {
     { value: 'زيارة دورية وتذكير بالأصناف الرئيسية', labelAr: 'زيارة دورية وتذكير بالأصناف الرئيسية', labelEn: 'Routine Follow-up & Core Brand Reminder', isCommon: true },
     { value: 'متابعة معدل كتابة الروشتات واستجابة المرضى', labelAr: 'متابعة معدل كتابة الروشتات واستجابة المرضى', labelEn: 'Prescription Feedback & Patient Response', isCommon: true },
     { value: 'مناقشة بروتوكول العلاج ودواعي الاستعمال', labelAr: 'مناقشة بروتوكول العلاج ودواعي الاستعمال', labelEn: 'Treatment Protocol & Indication Discussion' },
-    { value: 'التدريب', labelAr: 'التدريب (Training)', labelEn: 'Training', isCommon: true },
     { value: 'تسليم عينات طبية ومراجع علمية', labelAr: 'تسليم عينات طبية ومراجع علمية', labelEn: 'Medical Samples & Clinical Studies Drop', isCommon: true },
     { value: 'حل اعتراضات علمية أو استفسارات طبية', labelAr: 'حل اعتراضات علمية أو استفسارات طبية', labelEn: 'Handling Scientific Inquiries & Objections' },
     { value: 'دعوة لمؤتمر أو لقاء علمي CME', labelAr: 'دعوة لمؤتمر أو لقاء علمي CME', labelEn: 'Scientific Meeting / CME Invitation' },
   ],
   branch: [
-    { value: 'متابعة أرصدة ومخزون المنتجات بالمخزن', labelAr: 'متابعة أرصدة ومخزون المنتجات بالمخزن', labelEn: 'Branch Inventory & Stock Balance Audit', isCommon: true },
-    { value: 'متابعة طلبيات التوزيع والتسليم للصيدليات', labelAr: 'متابعة طلبيات التوزيع والتسليم للصيدليات', labelEn: 'Distribution Orders & Delivery Tracking', isCommon: true },
-    { value: 'مراجعة مبيعات المنطقة وتغطية الفروع', labelAr: 'مراجعة مبيعات المنطقة وتغطية الفروع', labelEn: 'Territory Sales & Branch Coverage Review', isCommon: true },
-    { value: 'التدريب', labelAr: 'التدريب (Training)', labelEn: 'Training', isCommon: true },
-    { value: 'حل مشكلات التوزيع والتوريد اللوجستي', labelAr: 'حل مشكلات التوزيع والتوريد اللوجستي', labelEn: 'Resolving Supply & Logistics Bottlenecks' },
-    { value: 'تحصيل وتسوية حسابات وفواتير', labelAr: 'تحصيل وتسوية حسابات وفواتير', labelEn: 'Collection & Account Reconciliation', isCommon: true },
-    { value: 'تنسيق زيارات مشتركة مع مسؤولي الفرع', labelAr: 'تنسيق زيارات مشتركة مع مسؤولي الفرع', labelEn: 'Joint Visits Coordination with Supervisors' },
+    { value: 'متابعة المخزون والأرصدة بالمخزن', labelAr: 'متابعة المخزون والأرصدة بالمخزن', labelEn: 'Stock & Inventory Follow-up', isCommon: true },
+    { value: 'متابعة طلبيات التوزيع والتوريد', labelAr: 'متابعة طلبيات التوزيع والتوريد', labelEn: 'Distribution & Supply Orders', isCommon: true },
+    { value: 'مراجعة المبيعات وتغطية الفرع', labelAr: 'مراجعة المبيعات وتغطية الفرع', labelEn: 'Branch Sales & Coverage Review', isCommon: true },
+    { value: 'حل مشكلات التوريد والتحصيل', labelAr: 'حل مشكلات التوريد والتحصيل', labelEn: 'Supply & Collection Resolution', isCommon: true },
+    { value: 'تنسيق زيارة مشتركة', labelAr: 'تنسيق زيارة مشتركة', labelEn: 'Joint Visit Coordination', isCommon: true },
   ],
   availability: [
     { value: 'فحص شهري لتوافر المستحضرات بالمستشفى', labelAr: 'فحص شهري لتوافر المستحضرات بالمستشفى', labelEn: 'Monthly Stock Availability Audit', isCommon: true },

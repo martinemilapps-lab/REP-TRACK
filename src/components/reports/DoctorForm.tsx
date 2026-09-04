@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { DOCTOR_CLASSES, OUR_PRODUCTS_DISCUSSED_LIST, VISIT_STATUS_OPTIONS } from '@/lib/constants';
+import { DOCTOR_CLASSES, OUR_PRODUCTS_DISCUSSED_LIST, VISIT_STATUS_OPTIONS, PRESCRIPTION_RATE_OPTIONS } from '@/lib/constants';
 import { useTranslation } from '@/lib/i18nContext';
 import { Button } from '@/components/ui/Button';
 import { CustomSelect, SelectOption } from '@/components/ui/CustomSelect';
@@ -64,6 +64,8 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
     area: '',
     mobile: '',
     cls: 'A',
+    prescriptionRate: 'Awareness',
+    nearbyPharmacy: '',
     visitDate: initialToday,
     cycle: 7,
     nextVisit: initialNext,
@@ -240,6 +242,8 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
       area: '',
       mobile: '',
       cls: 'A',
+      prescriptionRate: 'Awareness',
+      nearbyPharmacy: '',
       visitDate: today,
       cycle: 7,
       nextVisit: addDaysToDate(today, 7),
@@ -258,6 +262,11 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
   const classOptions: SelectOption[] = DOCTOR_CLASSES.map((c) => ({
     value: c,
     label: `Class ${c}`,
+  }));
+
+  const prescriptionRateOptions: SelectOption[] = PRESCRIPTION_RATE_OPTIONS.map((opt) => ({
+    value: opt.value,
+    label: language === 'ar' ? opt.labelAr : opt.labelEn,
   }));
 
   const productOptions: SelectOption[] = [
@@ -302,6 +311,8 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
           area: '',
           mobile: '',
           cls: 'A',
+          prescriptionRate: 'Awareness',
+          nearbyPharmacy: '',
           visitDate: today,
           cycle: 7,
           nextVisit: addDaysToDate(today, 7),
@@ -365,11 +376,12 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
         </div>
       </div>
 
-      {/* 1. Visit Objective (هدف الزيارة) - Tailored Field Objectives List */}
+      {/* 1. Visit Objective (هدف الزيارة) - Multi-Select Field Objectives List */}
       <VisitObjectiveSelect
         section="doctor"
         value={formData.objective}
         onChange={(val) => handleSelectChange('objective', val)}
+        isMulti={true}
       />
 
       {/* Visit Nature (Single vs Double) */}
@@ -503,6 +515,23 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
           />
         </div>
 
+        {/* Nearby Pharmacy (الصيدلية القريبة) */}
+        <div>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5 flex items-center justify-between">
+            <span>{t('form.nearbyPharmacy')}</span>
+            <span className="text-[10px] text-[var(--gold-deep)] bg-[var(--gold-tint)] px-1.5 py-0.5 rounded font-bold">
+              💊 Pharmacy
+            </span>
+          </label>
+          <input
+            id="nearbyPharmacy"
+            value={formData.nearbyPharmacy}
+            onChange={handleChange}
+            placeholder="اسم الصيدلية القريبة من العيادة..."
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl font-medium outline-none"
+          />
+        </div>
+
         {/* Area / Region */}
         <div>
           <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
@@ -541,6 +570,21 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
             options={classOptions}
             value={formData.cls}
             onChange={(val) => handleSelectChange('cls', val)}
+          />
+        </div>
+
+        {/* Prescriptions Rate (معدل كتابة الروشتات) */}
+        <div>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5 flex items-center justify-between">
+            <span>{t('form.prescriptionRate')}</span>
+            <span className="text-[10px] font-bold text-[var(--gold-deep)] bg-[var(--gold-tint)] px-1.5 py-0.5 rounded">
+              Rx Rate
+            </span>
+          </label>
+          <CustomSelect
+            options={prescriptionRateOptions}
+            value={formData.prescriptionRate}
+            onChange={(val) => handleSelectChange('prescriptionRate', val)}
           />
         </div>
 

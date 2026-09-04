@@ -469,6 +469,8 @@ export function ManagerDashboardView({
                       <th>{t('th.pharmacist')}</th>
                       <th>{t('th.mobile')}</th>
                       <th>{t('th.classification')}</th>
+                      <th>{t('th.stockPerMonth')}</th>
+                      <th>{t('th.salesPerMonth')}</th>
                       <th>{t('th.lastVisit')}</th>
                       <th>{t('th.nextVisit')}</th>
                       <th>{t('th.status')}</th>
@@ -493,6 +495,8 @@ export function ManagerDashboardView({
                         <td className="whitespace-nowrap">{r.pharmacist}</td>
                         <td className="font-mono whitespace-nowrap">{r.mobile}</td>
                         <td className="whitespace-nowrap"><Badge status={r.cls} type="class" /></td>
+                        <td className="font-mono whitespace-nowrap font-bold text-amber-900">{r.stockPerMonth ?? '—'}</td>
+                        <td className="font-mono whitespace-nowrap font-bold text-emerald-700">{r.salesPerMonth ?? '—'}</td>
                         <td className="font-mono whitespace-nowrap">{r.lastVisit}</td>
                         <td className="font-mono whitespace-nowrap">{r.nextVisit}</td>
                         <td className="whitespace-nowrap"><Badge status={r.status} /></td>
@@ -521,9 +525,11 @@ export function ManagerDashboardView({
                       <th>{t('th.visitType')}</th>
                       <th>{t('th.specialty')}</th>
                       <th>{t('th.workplace')}</th>
+                      <th>{t('th.nearbyPharmacy')}</th>
                       <th>{t('th.area')}</th>
                       <th>{t('th.mobile')}</th>
                       <th>{t('th.classification')}</th>
+                      <th>{t('th.prescriptionRate')}</th>
                       <th>{t('th.lastVisit')}</th>
                       <th>{t('th.nextVisit')}</th>
                       <th>{t('th.status')}</th>
@@ -547,9 +553,19 @@ export function ManagerDashboardView({
                           </td>
                           <td className="whitespace-nowrap">{r.specialty}</td>
                           <td className="whitespace-nowrap">{r.workplace}</td>
+                          <td className="whitespace-nowrap font-medium text-blue-900">{r.nearbyPharmacy || '—'}</td>
                           <td className="whitespace-nowrap">{r.area}</td>
                           <td className="font-mono whitespace-nowrap">{r.mobile}</td>
                           <td className="whitespace-nowrap"><Badge status={r.cls} type="class" /></td>
+                          <td className="whitespace-nowrap">
+                            {r.prescriptionRate ? (
+                              <span className="inline-block text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                                {r.prescriptionRate}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400">—</span>
+                            )}
+                          </td>
                           <td className="font-mono whitespace-nowrap">{r.visitDate}</td>
                           <td className="font-mono whitespace-nowrap">{r.nextVisit}</td>
                           <td className="whitespace-nowrap"><Badge status={r.status} /></td>
@@ -579,6 +595,8 @@ export function ManagerDashboardView({
                       <th>{t('th.contact')}</th>
                       <th>{t('th.phone')}</th>
                       <th>{t('th.ourProducts')}</th>
+                      <th>{t('th.monthlyStock')}</th>
+                      <th>{t('th.monthlySales')}</th>
                       <th>{t('th.lastVisit')}</th>
                       <th>{t('th.notes')}</th>
                     </tr>
@@ -598,6 +616,8 @@ export function ManagerDashboardView({
                         <td className="whitespace-nowrap">{r.contact}</td>
                         <td className="font-mono whitespace-nowrap">{r.phone}</td>
                         <td className="whitespace-nowrap">{r.products}</td>
+                        <td className="font-mono whitespace-nowrap font-bold text-amber-900">{r.monthlyStock ?? '—'}</td>
+                        <td className="font-mono whitespace-nowrap font-bold text-blue-700">{r.monthlySales ?? '—'}</td>
                         <td className="font-mono whitespace-nowrap">{r.lastVisit}</td>
                         <td className="whitespace-nowrap max-w-xs truncate">{r.notes}</td>
                       </tr>
@@ -617,31 +637,61 @@ export function ManagerDashboardView({
                     <tr>
                       <th>{t('th.rep')}</th>
                       <th>{t('th.hospital')}</th>
-                      <th>{t('th.objective')}</th>
                       <th>{t('th.area')}</th>
                       <th>{t('th.product')}</th>
                       <th>{t('th.month')}</th>
-                      <th>{t('th.sales')}</th>
+                      <th>{t('analysis.annualTarget')}</th>
+                      <th>{t('analysis.avgMonthlyTarget')}</th>
+                      <th>{t('analysis.sales')}</th>
+                      <th>{t('analysis.potentiality')}</th>
+                      <th>{t('analysis.pctAvgTarget')}</th>
+                      <th>{t('analysis.pctAnnualTarget')}</th>
+                      <th>{t('analysis.pctPotentiality')}</th>
                       <th>{t('th.availability')}</th>
                       <th>{t('th.notes')}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredAvailabilities.map((r) => (
-                      <tr key={r.id}>
-                        <td className="font-bold text-[var(--gold-dark)] whitespace-nowrap">{r.rep}</td>
-                        <td className="font-bold whitespace-nowrap">{r.hospital}</td>
-                        <td className="whitespace-nowrap max-w-[180px] truncate font-medium text-[var(--ink-secondary)]" title={r.objective || ''}>
-                          {r.objective || '—'}
-                        </td>
-                        <td className="whitespace-nowrap">{r.area}</td>
-                        <td className="font-bold text-[var(--gold-dark)] whitespace-nowrap">{r.product}</td>
-                        <td className="whitespace-nowrap">{r.month}</td>
-                        <td className="font-mono whitespace-nowrap font-bold">{r.sales ?? 0}</td>
-                        <td className="whitespace-nowrap"><Badge status={r.status} type="availability" /></td>
-                        <td className="whitespace-nowrap max-w-xs truncate">{r.notes}</td>
-                      </tr>
-                    ))}
+                    {filteredAvailabilities.map((r) => {
+                      const salesVal = r.sales ?? 0;
+                      const avgVal = r.avgMonthlyTarget ?? 0;
+                      const annualVal = r.annualTarget ?? 0;
+                      const potVal = r.potentiality ?? 0;
+                      const pctAvg = avgVal > 0 ? Math.round((salesVal / avgVal) * 100) : null;
+                      const pctAnn = annualVal > 0 ? Math.round((salesVal / annualVal) * 100) : null;
+                      const pctPot = potVal > 0 ? Math.round((salesVal / potVal) * 100) : null;
+
+                      return (
+                        <tr key={r.id}>
+                          <td className="font-bold text-[var(--gold-dark)] whitespace-nowrap">{r.rep}</td>
+                          <td className="font-bold whitespace-nowrap">{r.hospital}</td>
+                          <td className="whitespace-nowrap">{r.area}</td>
+                          <td className="font-bold text-[var(--gold-dark)] whitespace-nowrap">{r.product}</td>
+                          <td className="whitespace-nowrap">{r.month}</td>
+                          <td className="font-mono whitespace-nowrap">{r.annualTarget ?? '—'}</td>
+                          <td className="font-mono whitespace-nowrap">{r.avgMonthlyTarget ?? '—'}</td>
+                          <td className="font-mono whitespace-nowrap font-bold text-emerald-800">{salesVal}</td>
+                          <td className="font-mono whitespace-nowrap">{r.potentiality ?? '—'}</td>
+                          <td className="font-mono whitespace-nowrap">
+                            <span className="px-2 py-0.5 rounded-md font-bold text-xs bg-emerald-50 text-emerald-800 border border-emerald-200">
+                              {r.salesPctAvgTarget ?? (pctAvg !== null ? `${pctAvg}%` : '—')}
+                            </span>
+                          </td>
+                          <td className="font-mono whitespace-nowrap">
+                            <span className="px-2 py-0.5 rounded-md font-bold text-xs bg-blue-50 text-blue-800 border border-blue-200">
+                              {r.salesPctAnnualTarget ?? (pctAnn !== null ? `${pctAnn}%` : '—')}
+                            </span>
+                          </td>
+                          <td className="font-mono whitespace-nowrap">
+                            <span className="px-2 py-0.5 rounded-md font-bold text-xs bg-purple-50 text-purple-800 border border-purple-200">
+                              {r.salesPctPotentiality ?? (pctPot !== null ? `${pctPot}%` : '—')}
+                            </span>
+                          </td>
+                          <td className="whitespace-nowrap"><Badge status={r.status} type="availability" /></td>
+                          <td className="whitespace-nowrap max-w-xs truncate">{r.notes}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

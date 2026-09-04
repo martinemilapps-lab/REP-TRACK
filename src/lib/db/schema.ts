@@ -94,6 +94,7 @@ export const doctors = sqliteTable('doctors', {
   specialty: text('specialty'),
   workplace: text('workplace'),
   area: text('area').notNull(),
+  address: text('address'),
   mobile: text('mobile'),
   classification: text('classification').notNull().default('A'), // A, B
   bestTime: text('best_time'),
@@ -112,6 +113,7 @@ export const distributionBranches = sqliteTable('distribution_branches', {
   repId: text('rep_id').references(() => representatives.id, { onDelete: 'set null' }),
   name: text('name').notNull(),
   coverageArea: text('coverage_area').notNull(),
+  address: text('address'),
   contact: text('contact'),
   phone: text('phone'),
   distributedProducts: text('distributed_products'),
@@ -170,6 +172,8 @@ export const pharmacyVisits = sqliteTable('pharmacy_visits', {
   visitType: text('visit_type').notNull().default('Single'), // 'Single' | 'Double'
   companion: text('companion'),
   ourProducts: text('our_products'),
+  stockPerMonth: text('stock_per_month'),
+  salesPerMonth: text('sales_per_month'),
   competitor: text('competitor'),
   notes: text('notes'),
   submittedAt: integer('submitted_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
@@ -183,6 +187,8 @@ export const doctorVisits = sqliteTable('doctor_visits', {
   repId: text('rep_id').notNull().references(() => representatives.id, { onDelete: 'restrict' }),
   doctorId: text('doctor_id').notNull().references(() => doctors.id, { onDelete: 'restrict' }),
   objective: text('objective'),
+  prescriptionRate: text('prescription_rate'), // 'Awareness' | 'Trial' | 'Regular' | 'Loyal'
+  nearbyPharmacy: text('nearby_pharmacy'),
   visitDate: text('visit_date'), // YYYY-MM-DD
   cycleDays: integer('cycle_days').default(0),
   nextVisitDate: text('next_visit_date'), // YYYY-MM-DD
@@ -209,6 +215,9 @@ export const branchVisits = sqliteTable('branch_visits', {
   nextVisitDate: text('next_visit_date'), // YYYY-MM-DD
   visitType: text('visit_type').notNull().default('Single'), // 'Single' | 'Double'
   companion: text('companion'),
+  products: text('products'),
+  monthlyStock: text('monthly_stock'),
+  monthlySales: text('monthly_sales'),
   notes: text('notes'),
   submittedAt: integer('submitted_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
 }, (table) => [
@@ -226,7 +235,10 @@ export const productAvailabilities = sqliteTable('product_availabilities', {
   productId: text('product_id').notNull().references(() => products.id, { onDelete: 'restrict' }),
   objective: text('objective'),
   month: text('month').notNull(), // Format: YYYY-MM (e.g. 2026-08)
+  annualTarget: integer('annual_target').default(0),
+  avgMonthlyTarget: integer('avg_monthly_target').default(0),
   salesUnits: integer('sales_units').notNull().default(0),
+  potentiality: integer('potentiality').default(0),
   isAvailable: integer('is_available', { mode: 'boolean' }).notNull().default(true),
   notes: text('notes'),
   submittedAt: integer('submitted_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),

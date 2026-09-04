@@ -72,9 +72,12 @@ export async function upsertProductAvailability(
     const updated = await db
       .update(productAvailabilities)
       .set({
-        salesUnits: input.sales || 0,
+        annualTarget: input.annualTarget || 0,
+        avgMonthlyTarget: input.avgMonthlyTarget || 0,
+        salesUnits: input.monthlySales !== undefined && input.monthlySales !== 0 ? input.monthlySales : (input.sales || 0),
+        potentiality: input.potentiality || 0,
         isAvailable: isAvail,
-        objective: input.objective || null,
+        objective: null,
         notes: input.notes || null,
         submittedAt: new Date(),
       })
@@ -89,9 +92,12 @@ export async function upsertProductAvailability(
         repId,
         hospitalId: hospital.id,
         productId: product.id,
-        objective: input.objective || null,
+        objective: null,
         month: cleanMonth,
-        salesUnits: input.sales || 0,
+        annualTarget: input.annualTarget || 0,
+        avgMonthlyTarget: input.avgMonthlyTarget || 0,
+        salesUnits: input.monthlySales !== undefined && input.monthlySales !== 0 ? input.monthlySales : (input.sales || 0),
+        potentiality: input.potentiality || 0,
         isAvailable: isAvail,
         notes: input.notes || null,
       })
@@ -128,7 +134,10 @@ export async function getProductAvailabilityReports(
       product: products.name,
       objective: productAvailabilities.objective,
       month: productAvailabilities.month,
+      annualTarget: productAvailabilities.annualTarget,
+      avgMonthlyTarget: productAvailabilities.avgMonthlyTarget,
       sales: productAvailabilities.salesUnits,
+      potentiality: productAvailabilities.potentiality,
       isAvailable: productAvailabilities.isAvailable,
       notes: productAvailabilities.notes,
       submittedAt: productAvailabilities.submittedAt,
@@ -151,7 +160,10 @@ export async function getProductAvailabilityReports(
         product: products.name,
         objective: productAvailabilities.objective,
         month: productAvailabilities.month,
+        annualTarget: productAvailabilities.annualTarget,
+        avgMonthlyTarget: productAvailabilities.avgMonthlyTarget,
         sales: productAvailabilities.salesUnits,
+        potentiality: productAvailabilities.potentiality,
         isAvailable: productAvailabilities.isAvailable,
         notes: productAvailabilities.notes,
         submittedAt: productAvailabilities.submittedAt,
@@ -172,9 +184,24 @@ export async function getProductAvailabilityReports(
       .all();
   }
 
-  return results.map((a) => ({
-    ...a,
-    status: a.isAvailable ? 'Available' : 'Not Available',
-    submittedAt: a.submittedAt ? new Date(a.submittedAt).toISOString() : undefined,
-  }));
+  return results.map((a) => {
+    const sales = a.sales ?? 0;
+    const avgMonthlyTarget = a.avgMonthlyTarget ?? 0;
+    const annualTarget = a.annualTarget ?? 0;
+    const potentiality = a.potentiality ?? 0;
+
+    const salesPctAvgTarget = avgMonthlyTarget > 0 ? Math.round((sales / avgMonthlyTarget) * 100) : 0;
+    const salesPctAnnualTarget = annualTarget > 0 ? Math.round((sales / annualTarget) * 100) : 0;
+    const salesPctPotentiality = potentiality > 0 ? Math.round((sales / potentiality) * 100) : 0;
+
+    return {
+      ...a,
+      monthlySales: sales,
+      salesPctAvgTarget,
+      salesPctAnnualTarget,
+      salesPctPotentiality,
+      status: a.isAvailable ? 'Available' : 'Not Available',
+      submittedAt: a.submittedAt ? new Date(a.submittedAt).toISOString() : undefined,
+    };
+  });
 }

@@ -71,6 +71,8 @@ export function PharmacyForm({ selectedRep, onSuccess, onError }: PharmacyFormPr
     visitType: 'Single',
     companion: '',
     ourProducts: '',
+    stockPerMonth: '',
+    salesPerMonth: '',
     competitor: '',
     notes: '',
   });
@@ -239,6 +241,8 @@ export function PharmacyForm({ selectedRep, onSuccess, onError }: PharmacyFormPr
       visitType: 'Single',
       companion: '',
       ourProducts: '',
+      stockPerMonth: '',
+      salesPerMonth: '',
       competitor: '',
       notes: '',
     });
@@ -293,6 +297,8 @@ export function PharmacyForm({ selectedRep, onSuccess, onError }: PharmacyFormPr
           visitType: 'Single',
           companion: '',
           ourProducts: '',
+          stockPerMonth: '',
+          salesPerMonth: '',
           competitor: '',
           notes: '',
         });
@@ -347,11 +353,12 @@ export function PharmacyForm({ selectedRep, onSuccess, onError }: PharmacyFormPr
         </div>
       </div>
 
-      {/* 1. Visit Objective (هدف الزيارة) - Tailored Field Objectives List */}
+      {/* 1. Visit Objective (هدف الزيارة) - Multi-Select Field Objectives List */}
       <VisitObjectiveSelect
         section="pharmacy"
         value={formData.objective}
         onChange={(val) => handleSelectChange('objective', val)}
+        isMulti={true}
       />
 
       {/* Visit Nature (Single vs Double) */}
@@ -600,6 +607,40 @@ export function PharmacyForm({ selectedRep, onSuccess, onError }: PharmacyFormPr
               });
             }}
             placeholder="اختر المنتجات التي تم مناقشتها مع الصيدلي..."
+          />
+        </div>
+
+        {/* Stock Per Month */}
+        <div>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5 flex items-center justify-between">
+            <span>{t('form.stockPerMonth')}</span>
+            <span className="text-[10px] text-purple-700 bg-purple-100/80 px-1.5 py-0.5 rounded font-bold">
+              📦 Stock/Mo
+            </span>
+          </label>
+          <input
+            id="stockPerMonth"
+            value={formData.stockPerMonth}
+            onChange={handleChange}
+            placeholder="رصيد أو مخزون المستحضر بالصيدلية شهرياً..."
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl font-medium outline-none"
+          />
+        </div>
+
+        {/* Sales Per Month */}
+        <div>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5 flex items-center justify-between">
+            <span>{t('form.salesPerMonth')}</span>
+            <span className="text-[10px] text-emerald-700 bg-emerald-100/80 px-1.5 py-0.5 rounded font-bold">
+              💰 Sales/Mo
+            </span>
+          </label>
+          <input
+            id="salesPerMonth"
+            value={formData.salesPerMonth}
+            onChange={handleChange}
+            placeholder="معدل سحب ومبيعات المستحضر بالصيدلية شهرياً..."
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl font-medium outline-none"
           />
         </div>
 

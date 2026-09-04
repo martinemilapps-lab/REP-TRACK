@@ -82,12 +82,9 @@ export function MyListsView({
         name: '',
         area: '',
         type: 'Private',
-        dept: '',
         contact: '',
         phone: '',
-        doctorNames: '',
         defaultCycle: 7,
-        targetProducts: '',
       });
     } else if (activeCategory === 'pharmacies') {
       setModalFormData({
@@ -107,16 +104,17 @@ export function MyListsView({
         specialty: '',
         workplace: '',
         area: '',
+        address: '',
         mobile: '',
         classification: 'A',
         bestTime: '',
         defaultCycle: 7,
-        targetProducts: '',
       });
     } else if (activeCategory === 'branches') {
       setModalFormData({
         name: '',
         coverageArea: '',
+        address: '',
         contact: '',
         phone: '',
         distributedProducts: '',
@@ -202,14 +200,37 @@ export function MyListsView({
       return (
         item.name?.toLowerCase().includes(term) ||
         item.area?.toLowerCase().includes(term) ||
+        item.address?.toLowerCase().includes(term) ||
         item.coverageArea?.toLowerCase().includes(term) ||
         item.contact?.toLowerCase().includes(term) ||
         item.pharmacist?.toLowerCase().includes(term) ||
         item.specialty?.toLowerCase().includes(term) ||
-        item.doctorNames?.toLowerCase().includes(term)
+        item.workplace?.toLowerCase().includes(term)
       );
     });
   }, [currentList, search]);
+
+  // Automated Required Average Visits Calculation
+  const visitStats = useMemo(() => {
+    const list = (listsData[activeCategory] || []) as any[];
+    if (list.length === 0) {
+      return { count: 0, perMonth: 0, perWeek: 0, perDay: 0 };
+    }
+    // Required visits / month = sum(30 / defaultCycle)
+    const totalPerMonth = list.reduce((sum, it) => {
+      const cycle = Number(it.defaultCycle) > 0 ? Number(it.defaultCycle) : 7;
+      return sum + 30 / cycle;
+    }, 0);
+    const totalPerWeek = totalPerMonth / 4.33;
+    const totalPerDay = totalPerMonth / 26; // 26 working days in pharma
+
+    return {
+      count: list.length,
+      perMonth: totalPerMonth,
+      perWeek: totalPerWeek,
+      perDay: totalPerDay,
+    };
+  }, [listsData, activeCategory]);
 
   return (
     <div className="animate-fade-in space-y-5">
@@ -408,14 +429,13 @@ export function MyListsView({
                   {activeCategory === 'hospitals' && (
                     <>
                       <th>النوع</th>
-                      <th>القسم</th>
                       <th>الصيدلي / المشتريات</th>
-                      <th>الأطباء</th>
+                      <th>التليفون</th>
                     </>
                   )}
                   {activeCategory === 'pharmacies' && (
                     <>
-                      <th>العنوان</th>
+                      <th>العنوان التفصيلي</th>
                       <th>الصيدلي المسؤول</th>
                       <th>التليفون</th>
                       <th>التصنيف</th>
@@ -423,8 +443,9 @@ export function MyListsView({
                   )}
                   {activeCategory === 'doctors' && (
                     <>
-                      <th>التخصص</th>
-                      <th>العيادة / المستشفى</th>
+                      <th>العنوان التفصيلي</th>
+                      <th>Speciality (التخصص)</th>
+                      <th>Working Hospital/s (العمل)</th>
                       <th>الموبايل</th>
                       <th>التصنيف</th>
                       <th>أفضل موعد</th>
@@ -432,7 +453,8 @@ export function MyListsView({
                   )}
                   {activeCategory === 'branches' && (
                     <>
-                      <th>المسؤول</th>
+                      <th>العنوان التفصيلي</th>
+                      <th>Key Person (المسؤول)</th>
                       <th>التليفون</th>
                       <th>المنتجات الموزعة</th>
                     </>
@@ -452,17 +474,14 @@ export function MyListsView({
                     {activeCategory === 'hospitals' && (
                       <>
                         <td className="whitespace-nowrap">{item.type || '—'}</td>
-                        <td className="whitespace-nowrap">{item.dept || '—'}</td>
                         <td className="whitespace-nowrap">{item.contact || '—'}</td>
-                        <td className="whitespace-nowrap max-w-[150px] truncate" title={item.doctorNames}>
-                          {item.doctorNames || '—'}
-                        </td>
+                        <td className="font-mono whitespace-nowrap">{item.phone || '—'}</td>
                       </>
                     )}
 
                     {activeCategory === 'pharmacies' && (
                       <>
-                        <td className="whitespace-nowrap max-w-[160px] truncate">{item.address || '—'}</td>
+                        <td className="whitespace-nowrap max-w-[160px] truncate" title={item.address}>{item.address || '—'}</td>
                         <td className="whitespace-nowrap">{item.pharmacist || '—'}</td>
                         <td className="font-mono whitespace-nowrap">{item.mobile || '—'}</td>
                         <td className="whitespace-nowrap">
@@ -475,8 +494,9 @@ export function MyListsView({
 
                     {activeCategory === 'doctors' && (
                       <>
-                        <td className="whitespace-nowrap">{item.specialty || '—'}</td>
-                        <td className="whitespace-nowrap">{item.workplace || '—'}</td>
+                        <td className="whitespace-nowrap max-w-[150px] truncate" title={item.address}>{item.address || '—'}</td>
+                        <td className="whitespace-nowrap font-medium text-amber-950">{item.specialty || '—'}</td>
+                        <td className="whitespace-nowrap max-w-[150px] truncate" title={item.workplace}>{item.workplace || '—'}</td>
                         <td className="font-mono whitespace-nowrap">{item.mobile || '—'}</td>
                         <td className="whitespace-nowrap">
                           <span className="font-bold px-2 py-0.5 bg-blue-100 text-blue-900 rounded">
@@ -489,9 +509,10 @@ export function MyListsView({
 
                     {activeCategory === 'branches' && (
                       <>
-                        <td className="whitespace-nowrap">{item.contact || '—'}</td>
+                        <td className="whitespace-nowrap max-w-[150px] truncate" title={item.address}>{item.address || '—'}</td>
+                        <td className="whitespace-nowrap font-bold text-slate-800">{item.contact || '—'}</td>
                         <td className="font-mono whitespace-nowrap">{item.phone || '—'}</td>
-                        <td className="whitespace-nowrap max-w-[160px] truncate">{item.distributedProducts || '—'}</td>
+                        <td className="whitespace-nowrap max-w-[160px] truncate" title={item.distributedProducts}>{item.distributedProducts || '—'}</td>
                       </>
                     )}
 
@@ -521,6 +542,53 @@ export function MyListsView({
             </table>
           </div>
         )}
+
+        {/* Bottom Summary Cards: Required Average Visits /day, /week, /month */}
+        <div className="mt-4 pt-4 border-t border-[var(--line)]">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-xs font-black text-amber-950 flex items-center gap-1.5">
+              <span>🎯</span>
+              <span>
+                {activeCategory === 'hospitals'
+                  ? 'معدل الزيارات المطلوب للمستشفيات (Required Visit Rates)'
+                  : activeCategory === 'pharmacies'
+                  ? 'معدل الزيارات المطلوب للصيدليات (Required Visit Rates)'
+                  : activeCategory === 'doctors'
+                  ? 'معدل الزيارات المطلوب للأطباء (Required Visit Rates)'
+                  : 'معدل الزيارات المطلوب للفروع والموزعين (Required Visit Rates)'}
+              </span>
+            </h4>
+            <span className="text-[11px] font-semibold text-gray-500 hidden sm:inline">
+              (محسوبة تلقائياً: شهر 30 يوم / 26 يوم عمل)
+            </span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="p-3 bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-xl">
+              <div className="text-[11px] font-bold text-amber-900">إجمالي العملاء بالقائمة</div>
+              <div className="text-lg font-black text-amber-950 font-mono mt-0.5">
+                {visitStats.count} <span className="text-xs font-normal text-amber-800">عميل</span>
+              </div>
+            </div>
+            <div className="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
+              <div className="text-[11px] font-bold text-blue-900">متوسط الزيارات / اليوم</div>
+              <div className="text-lg font-black text-blue-950 font-mono mt-0.5">
+                {visitStats.perDay.toFixed(1)} <span className="text-xs font-normal text-blue-800">زيارة/يوم</span>
+              </div>
+            </div>
+            <div className="p-3 bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl">
+              <div className="text-[11px] font-bold text-emerald-900">متوسط الزيارات / الأسبوع</div>
+              <div className="text-lg font-black text-emerald-950 font-mono mt-0.5">
+                {visitStats.perWeek.toFixed(1)} <span className="text-xs font-normal text-emerald-800">زيارة/أسبوع</span>
+              </div>
+            </div>
+            <div className="p-3 bg-gradient-to-br from-purple-50 to-violet-50 border border-purple-200 rounded-xl">
+              <div className="text-[11px] font-bold text-purple-900">متوسط الزيارات / الشهر</div>
+              <div className="text-lg font-black text-purple-950 font-mono mt-0.5">
+                {Math.round(visitStats.perMonth)} <span className="text-xs font-normal text-purple-800">زيارة/شهر</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Add / Edit Customer Modal */}
@@ -590,29 +658,21 @@ export function MyListsView({
                   />
                 </div>
 
-                {/* Area / Region */}
-                <div>
-                  <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1">
-                    المنطقة / العنوان
-                  </label>
-                  <input
-                    type="text"
-                    value={modalFormData.area || modalFormData.coverageArea || ''}
-                    onChange={(e) =>
-                      setModalFormData({
-                        ...modalFormData,
-                        area: e.target.value,
-                        coverageArea: e.target.value,
-                      })
-                    }
-                    placeholder="مثال: الدقي - الجيزة"
-                    className="w-full text-xs px-3.5 py-2 bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl outline-none"
-                  />
-                </div>
-
                 {/* Hospital Specific Fields */}
                 {activeCategory === 'hospitals' && (
                   <>
+                    <div>
+                      <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1">
+                        المنطقة (Area)
+                      </label>
+                      <input
+                        type="text"
+                        value={modalFormData.area || ''}
+                        onChange={(e) => setModalFormData({ ...modalFormData, area: e.target.value })}
+                        placeholder="مثال: الدقي - الجيزة"
+                        className="w-full text-xs px-3.5 py-2 bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl outline-none"
+                      />
+                    </div>
                     <div>
                       <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1">
                         نوع المستشفى
@@ -625,18 +685,6 @@ export function MyListsView({
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1">
-                        القسم المستهدف
-                      </label>
-                      <input
-                        type="text"
-                        value={modalFormData.dept || ''}
-                        onChange={(e) => setModalFormData({ ...modalFormData, dept: e.target.value })}
-                        placeholder="مثال: الباطنة / الرعاية"
-                        className="w-full text-xs px-3.5 py-2 bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1">
                         الصيدلي / المشتريات (المسؤول)
                       </label>
                       <input
@@ -644,18 +692,6 @@ export function MyListsView({
                         value={modalFormData.contact || ''}
                         onChange={(e) => setModalFormData({ ...modalFormData, contact: e.target.value })}
                         placeholder="اسم الصيدلي أو مسؤول المشتريات"
-                        className="w-full text-xs px-3.5 py-2 bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl outline-none"
-                      />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1">
-                        أسماء الأطباء في المستشفى
-                      </label>
-                      <input
-                        type="text"
-                        value={modalFormData.doctorNames || ''}
-                        onChange={(e) => setModalFormData({ ...modalFormData, doctorNames: e.target.value })}
-                        placeholder="مثال: د. طارق علي، د. سمير كمال..."
                         className="w-full text-xs px-3.5 py-2 bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl outline-none"
                       />
                     </div>
@@ -679,6 +715,30 @@ export function MyListsView({
                   <>
                     <div>
                       <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1">
+                        المنطقة (Area)
+                      </label>
+                      <input
+                        type="text"
+                        value={modalFormData.area || ''}
+                        onChange={(e) => setModalFormData({ ...modalFormData, area: e.target.value })}
+                        placeholder="مثال: مصر الجديدة"
+                        className="w-full text-xs px-3.5 py-2 bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1">
+                        العنوان التفصيلي (Address)
+                      </label>
+                      <input
+                        type="text"
+                        value={modalFormData.address || ''}
+                        onChange={(e) => setModalFormData({ ...modalFormData, address: e.target.value })}
+                        placeholder="الشارع / المعلم..."
+                        className="w-full text-xs px-3.5 py-2 bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1">
                         الصيدلي المسؤول
                       </label>
                       <input
@@ -686,18 +746,6 @@ export function MyListsView({
                         value={modalFormData.pharmacist || ''}
                         onChange={(e) => setModalFormData({ ...modalFormData, pharmacist: e.target.value })}
                         placeholder="اسم الصيدلي المسؤول"
-                        className="w-full text-xs px-3.5 py-2 bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1">
-                        العنوان التفصيلي
-                      </label>
-                      <input
-                        type="text"
-                        value={modalFormData.address || ''}
-                        onChange={(e) => setModalFormData({ ...modalFormData, address: e.target.value })}
-                        placeholder="الشارع / المعلم..."
                         className="w-full text-xs px-3.5 py-2 bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl outline-none"
                       />
                     </div>
@@ -731,7 +779,31 @@ export function MyListsView({
                   <>
                     <div>
                       <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1">
-                        التخصص
+                        المنطقة (Area)
+                      </label>
+                      <input
+                        type="text"
+                        value={modalFormData.area || ''}
+                        onChange={(e) => setModalFormData({ ...modalFormData, area: e.target.value })}
+                        placeholder="مثال: المعادي - القاهرة"
+                        className="w-full text-xs px-3.5 py-2 bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1">
+                        العنوان التفصيلي (Address)
+                      </label>
+                      <input
+                        type="text"
+                        value={modalFormData.address || ''}
+                        onChange={(e) => setModalFormData({ ...modalFormData, address: e.target.value })}
+                        placeholder="الشارع / رقم المبنى / الدور..."
+                        className="w-full text-xs px-3.5 py-2 bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1">
+                        Speciality (التخصص)
                       </label>
                       <input
                         type="text"
@@ -743,7 +815,7 @@ export function MyListsView({
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1">
-                        العيادة / المستشفى
+                        Working Hospital/s (مستشفى / عيادات العمل)
                       </label>
                       <input
                         type="text"
@@ -795,13 +867,43 @@ export function MyListsView({
                   <>
                     <div>
                       <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1">
-                        الشخص المسؤول
+                        المنطقة (Area)
+                      </label>
+                      <input
+                        type="text"
+                        value={modalFormData.coverageArea || modalFormData.area || ''}
+                        onChange={(e) =>
+                          setModalFormData({
+                            ...modalFormData,
+                            coverageArea: e.target.value,
+                            area: e.target.value,
+                          })
+                        }
+                        placeholder="مثال: القاهرة الكبرى / شبرا"
+                        className="w-full text-xs px-3.5 py-2 bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1">
+                        العنوان التفصيلي (Address)
+                      </label>
+                      <input
+                        type="text"
+                        value={modalFormData.address || ''}
+                        onChange={(e) => setModalFormData({ ...modalFormData, address: e.target.value })}
+                        placeholder="عنوان الفرع أو المخزن..."
+                        className="w-full text-xs px-3.5 py-2 bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1">
+                        Key Person (الشخص المفتاح / المسؤول)
                       </label>
                       <input
                         type="text"
                         value={modalFormData.contact || ''}
                         onChange={(e) => setModalFormData({ ...modalFormData, contact: e.target.value })}
-                        placeholder="اسم المسؤول"
+                        placeholder="اسم المسؤول / Key Person"
                         className="w-full text-xs px-3.5 py-2 bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl outline-none"
                       />
                     </div>
@@ -815,6 +917,18 @@ export function MyListsView({
                         onChange={(e) => setModalFormData({ ...modalFormData, phone: e.target.value })}
                         placeholder="01xxxxxxxxx"
                         className="w-full text-xs px-3.5 py-2 bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl outline-none font-mono"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1">
+                        المنتجات الموزعة
+                      </label>
+                      <input
+                        type="text"
+                        value={modalFormData.distributedProducts || ''}
+                        onChange={(e) => setModalFormData({ ...modalFormData, distributedProducts: e.target.value })}
+                        placeholder="مثال: جميع الأصناف أو أصناف محددة..."
+                        className="w-full text-xs px-3.5 py-2 bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl outline-none"
                       />
                     </div>
                   </>
@@ -836,8 +950,8 @@ export function MyListsView({
                   />
                 </div>
 
-                {/* Target Products (Multi-Select) */}
-                {activeCategory !== 'branches' && (
+                {/* Target Products (Only for Pharmacies) */}
+                {activeCategory === 'pharmacies' && (
                   <div className="sm:col-span-2">
                     <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1">
                       المنتجات المستهدفة مع هذا العميل

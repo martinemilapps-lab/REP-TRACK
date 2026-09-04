@@ -114,6 +114,70 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
     return calculateRepOverviewStats(allVisits, data.availabilities.length);
   }, [data]);
 
+  // Automated Call Rate & Standard Deviation (SD) Calculation vs My Lists Target
+  const callRateAnalytics = useMemo(() => {
+    const mH = (data.masterLists?.hospitals || []) as any[];
+    const mP = (data.masterLists?.pharmacies || []) as any[];
+    const mD = (data.masterLists?.doctors || []) as any[];
+
+    // Target from My Lists (month based on 30 days, day based on 26 working days)
+    const targetHMonth = mH.reduce((acc, it) => acc + 30 / (Number(it.defaultCycle) > 0 ? Number(it.defaultCycle) : 7), 0);
+    const targetPMonth = mP.reduce((acc, it) => acc + 30 / (Number(it.defaultCycle) > 0 ? Number(it.defaultCycle) : 7), 0);
+    const targetDMonth = mD.reduce((acc, it) => acc + 30 / (Number(it.defaultCycle) > 0 ? Number(it.defaultCycle) : 7), 0);
+    const totalTargetMonth = targetHMonth + targetPMonth + targetDMonth;
+    const totalTargetDay = totalTargetMonth / 26;
+
+    // Actual visits count
+    const actualHMonth = data.hospitals.length;
+    const actualPMonth = data.pharmacies.length;
+    const actualDMonth = data.doctors.length;
+    const totalActual = actualHMonth + actualPMonth + actualDMonth;
+    const actualPerDay = totalActual / 26;
+
+    // Calculate Standard Deviation across recorded dates
+    const visitsByDate: Record<string, number> = {};
+    const addDate = (dStr?: string) => {
+      if (!dStr) return;
+      const key = dStr.slice(0, 10);
+      visitsByDate[key] = (visitsByDate[key] || 0) + 1;
+    };
+    data.hospitals.forEach((h) => addDate(h.lastVisit || h.createdAt));
+    data.pharmacies.forEach((p) => addDate(p.lastVisit || p.createdAt));
+    data.doctors.forEach((d) => addDate(d.visitDate || d.createdAt));
+
+    const dailyCounts = Object.values(visitsByDate);
+    const variance =
+      dailyCounts.length > 1
+        ? dailyCounts.reduce((acc, cnt) => acc + Math.pow(cnt - totalActual / dailyCounts.length, 2), 0) /
+          dailyCounts.length
+        : 0;
+    const sd = Math.sqrt(variance);
+
+    return {
+      targetHMonth,
+      targetHDay: targetHMonth / 26,
+      actualHMonth,
+      actualHDay: actualHMonth / 26,
+
+      targetPMonth,
+      targetPDay: targetPMonth / 26,
+      actualPMonth,
+      actualPDay: actualPMonth / 26,
+
+      targetDMonth,
+      targetDDay: targetDMonth / 26,
+      actualDMonth,
+      actualDDay: actualDMonth / 26,
+
+      totalTargetMonth,
+      totalTargetDay,
+      totalActual,
+      actualPerDay,
+      sd,
+      achievementPct: totalTargetMonth > 0 ? Math.round((totalActual / totalTargetMonth) * 100) : 0,
+    };
+  }, [data]);
+
   const repOptions: SelectOption[] = useMemo(() => {
     return reps.map((r) => ({
       value: r.name,
@@ -189,6 +253,105 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
             <StatPill label={t('status.visited')} value={stats.visitedCount} icon="✓" />
             <StatPill label={t('status.notVisited')} value={stats.notVisitedCount} icon="⏳" />
             <StatPill label={t('status.overdue')} value={stats.overdueCount} icon="⚠️" />
+          </div>
+
+          {/* Automated Call Rate & Standard Deviation (SD) Analytics Strip */}
+          <div className="bg-gradient-to-r from-[#FAF8F5] to-[#F5EFE6] border border-[#E8DFC8] rounded-[var(--radius)] p-4 mb-4 shadow-card">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3 pb-2.5 border-b border-[#E8DFC8]/70">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">📈</span>
+                <div>
+                  <h3 className="text-sm font-black text-amber-950">
+                    {t('reports.callRateAnalytics')}
+                  </h3>
+                  <p className="text-[11px] text-amber-800/80 font-medium">
+                    معدل الزيارات الفعلي مقارنة بالمستهدف من القوائم (My Lists) والانحراف المعياري (SD)
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-xs font-bold flex-wrap">
+                <span className="px-2.5 py-1 bg-amber-100/90 text-amber-950 rounded-lg border border-amber-300/80">
+                  {t('reports.standardDeviation')}: ±{callRateAnalytics.sd.toFixed(2)} SD
+                </span>
+                <span className="px-2.5 py-1 bg-emerald-100 text-emerald-950 rounded-lg border border-emerald-300">
+                  {t('reports.achievement')}: {callRateAnalytics.achievementPct}%
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {/* Overall Total */}
+              <div className="p-3 bg-white/80 rounded-xl border border-[#E2D8C0] shadow-2xs">
+                <div className="text-[11px] font-bold text-gray-600 mb-1">
+                  🌐 إجمالي معدل الزيارات (Overall)
+                </div>
+                <div className="flex items-baseline gap-1 font-mono">
+                  <span className="text-lg font-black text-[var(--ink)]">
+                    {callRateAnalytics.actualPerDay.toFixed(1)}
+                  </span>
+                  <span className="text-xs text-gray-500 font-semibold">
+                    / {callRateAnalytics.totalTargetDay.toFixed(1)} يومياً
+                  </span>
+                </div>
+                <div className="text-[11px] text-gray-500 font-mono mt-0.5">
+                  شهرياً: <strong>{callRateAnalytics.totalActual}</strong> / {Math.round(callRateAnalytics.totalTargetMonth)}
+                </div>
+              </div>
+
+              {/* Hospitals */}
+              <div className="p-3 bg-white/80 rounded-xl border border-[#E2D8C0] shadow-2xs">
+                <div className="text-[11px] font-bold text-amber-900 mb-1">
+                  🏥 {t('lists.hospitals')}
+                </div>
+                <div className="flex items-baseline gap-1 font-mono">
+                  <span className="text-lg font-black text-amber-950">
+                    {callRateAnalytics.actualHDay.toFixed(1)}
+                  </span>
+                  <span className="text-xs text-gray-500 font-semibold">
+                    / {callRateAnalytics.targetHDay.toFixed(1)} يومياً
+                  </span>
+                </div>
+                <div className="text-[11px] text-gray-500 font-mono mt-0.5">
+                  شهرياً: <strong>{callRateAnalytics.actualHMonth}</strong> / {Math.round(callRateAnalytics.targetHMonth)}
+                </div>
+              </div>
+
+              {/* Pharmacies */}
+              <div className="p-3 bg-white/80 rounded-xl border border-[#E2D8C0] shadow-2xs">
+                <div className="text-[11px] font-bold text-blue-900 mb-1">
+                  💊 {t('lists.pharmacies')}
+                </div>
+                <div className="flex items-baseline gap-1 font-mono">
+                  <span className="text-lg font-black text-blue-950">
+                    {callRateAnalytics.actualPDay.toFixed(1)}
+                  </span>
+                  <span className="text-xs text-gray-500 font-semibold">
+                    / {callRateAnalytics.targetPDay.toFixed(1)} يومياً
+                  </span>
+                </div>
+                <div className="text-[11px] text-gray-500 font-mono mt-0.5">
+                  شهرياً: <strong>{callRateAnalytics.actualPMonth}</strong> / {Math.round(callRateAnalytics.targetPMonth)}
+                </div>
+              </div>
+
+              {/* Doctors */}
+              <div className="p-3 bg-white/80 rounded-xl border border-[#E2D8C0] shadow-2xs">
+                <div className="text-[11px] font-bold text-emerald-900 mb-1">
+                  🩺 {t('lists.doctors')}
+                </div>
+                <div className="flex items-baseline gap-1 font-mono">
+                  <span className="text-lg font-black text-emerald-950">
+                    {callRateAnalytics.actualDDay.toFixed(1)}
+                  </span>
+                  <span className="text-xs text-gray-500 font-semibold">
+                    / {callRateAnalytics.targetDDay.toFixed(1)} يومياً
+                  </span>
+                </div>
+                <div className="text-[11px] text-gray-500 font-mono mt-0.5">
+                  شهرياً: <strong>{callRateAnalytics.actualDMonth}</strong> / {Math.round(callRateAnalytics.targetDMonth)}
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Coverage Summary Card */}
@@ -334,6 +497,8 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                           <th>{t('th.pharmacist')}</th>
                           <th>{t('th.mobile')}</th>
                           <th>{t('th.classification')}</th>
+                          <th>{t('th.stockPerMonth')}</th>
+                          <th>{t('th.salesPerMonth')}</th>
                           <th>{t('th.lastVisit')}</th>
                           <th>{t('th.nextVisit')}</th>
                           <th>{t('th.status')}</th>
@@ -370,6 +535,8 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                             <td className="whitespace-nowrap">{r.pharmacist}</td>
                             <td className="font-mono whitespace-nowrap">{r.mobile}</td>
                             <td className="whitespace-nowrap"><Badge status={r.cls} type="class" /></td>
+                            <td className="font-mono whitespace-nowrap font-bold text-amber-900">{r.stockPerMonth ?? '—'}</td>
+                            <td className="font-mono whitespace-nowrap font-bold text-emerald-700">{r.salesPerMonth ?? '—'}</td>
                             <td className="font-mono whitespace-nowrap">{r.lastVisit}</td>
                             <td className="font-mono whitespace-nowrap">{r.nextVisit}</td>
                             <td className="whitespace-nowrap"><Badge status={r.status} /></td>
@@ -397,9 +564,11 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                           <th>{t('th.visitType')}</th>
                           <th>{t('th.specialty')}</th>
                           <th>{t('th.workplace')}</th>
+                          <th>{t('th.nearbyPharmacy')}</th>
                           <th>{t('th.area')}</th>
                           <th>{t('th.mobile')}</th>
                           <th>{t('th.classification')}</th>
+                          <th>{t('th.prescriptionRate')}</th>
                           <th>{t('th.lastVisit')}</th>
                           <th>{t('th.nextVisit')}</th>
                           <th>{t('th.status')}</th>
@@ -435,9 +604,19 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                               </td>
                               <td className="whitespace-nowrap">{r.specialty}</td>
                               <td className="whitespace-nowrap">{r.workplace}</td>
+                              <td className="whitespace-nowrap font-medium text-blue-900">{r.nearbyPharmacy || '—'}</td>
                               <td className="whitespace-nowrap">{r.area}</td>
                               <td className="font-mono whitespace-nowrap">{r.mobile}</td>
                               <td className="whitespace-nowrap"><Badge status={r.cls} type="class" /></td>
+                              <td className="whitespace-nowrap">
+                                {r.prescriptionRate ? (
+                                  <span className="inline-block text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                                    {r.prescriptionRate}
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-400">—</span>
+                                )}
+                              </td>
                               <td className="font-mono whitespace-nowrap">{r.visitDate}</td>
                               <td className="font-mono whitespace-nowrap">{r.nextVisit}</td>
                               <td className="whitespace-nowrap"><Badge status={r.status} /></td>
@@ -466,6 +645,8 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                           <th>{t('th.contact')}</th>
                           <th>{t('th.phone')}</th>
                           <th>{t('th.ourProducts')}</th>
+                          <th>{t('th.monthlyStock')}</th>
+                          <th>{t('th.monthlySales')}</th>
                           <th>{t('th.lastVisit')}</th>
                           <th>{t('th.notes')}</th>
                         </tr>
@@ -497,6 +678,8 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                             <td className="whitespace-nowrap">{r.contact}</td>
                             <td className="font-mono whitespace-nowrap">{r.phone}</td>
                             <td className="whitespace-nowrap">{r.products}</td>
+                            <td className="font-mono whitespace-nowrap font-bold text-amber-900">{r.monthlyStock ?? '—'}</td>
+                            <td className="font-mono whitespace-nowrap font-bold text-blue-700">{r.monthlySales ?? '—'}</td>
                             <td className="font-mono whitespace-nowrap">{r.lastVisit}</td>
                             <td className="whitespace-nowrap max-w-xs truncate">{r.notes}</td>
                           </tr>
@@ -515,30 +698,60 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
                       <thead>
                         <tr>
                           <th>{t('th.hospital')}</th>
-                          <th>{t('th.objective')}</th>
                           <th>{t('th.area')}</th>
                           <th>{t('th.product')}</th>
                           <th>{t('th.month')}</th>
-                          <th>{t('th.sales')}</th>
+                          <th>{t('analysis.annualTarget')}</th>
+                          <th>{t('analysis.avgMonthlyTarget')}</th>
+                          <th>{t('analysis.sales')}</th>
+                          <th>{t('analysis.potentiality')}</th>
+                          <th>{t('analysis.pctAvgTarget')}</th>
+                          <th>{t('analysis.pctAnnualTarget')}</th>
+                          <th>{t('analysis.pctPotentiality')}</th>
                           <th>{t('th.availability')}</th>
                           <th>{t('th.notes')}</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {data.availabilities.map((r) => (
-                          <tr key={r.id}>
-                            <td className="font-bold text-[var(--ink)] whitespace-nowrap">{r.hospital}</td>
-                            <td className="whitespace-nowrap max-w-[180px] truncate font-medium text-[var(--ink-secondary)]" title={r.objective || ''}>
-                              {r.objective || '—'}
-                            </td>
-                            <td className="whitespace-nowrap">{r.area}</td>
-                            <td className="font-bold text-[var(--gold-dark)] whitespace-nowrap">{r.product}</td>
-                            <td className="whitespace-nowrap">{r.month}</td>
-                            <td className="font-mono whitespace-nowrap font-bold">{r.sales ?? 0}</td>
-                            <td className="whitespace-nowrap"><Badge status={r.status} type="availability" /></td>
-                            <td className="whitespace-nowrap max-w-xs truncate">{r.notes}</td>
-                          </tr>
-                        ))}
+                        {data.availabilities.map((r) => {
+                          const salesVal = r.sales ?? 0;
+                          const avgVal = r.avgMonthlyTarget ?? 0;
+                          const annualVal = r.annualTarget ?? 0;
+                          const potVal = r.potentiality ?? 0;
+                          const pctAvg = avgVal > 0 ? Math.round((salesVal / avgVal) * 100) : null;
+                          const pctAnn = annualVal > 0 ? Math.round((salesVal / annualVal) * 100) : null;
+                          const pctPot = potVal > 0 ? Math.round((salesVal / potVal) * 100) : null;
+
+                          return (
+                            <tr key={r.id}>
+                              <td className="font-bold text-[var(--ink)] whitespace-nowrap">{r.hospital}</td>
+                              <td className="whitespace-nowrap">{r.area}</td>
+                              <td className="font-bold text-[var(--gold-dark)] whitespace-nowrap">{r.product}</td>
+                              <td className="whitespace-nowrap">{r.month}</td>
+                              <td className="font-mono whitespace-nowrap">{r.annualTarget ?? '—'}</td>
+                              <td className="font-mono whitespace-nowrap">{r.avgMonthlyTarget ?? '—'}</td>
+                              <td className="font-mono whitespace-nowrap font-bold text-emerald-800">{salesVal}</td>
+                              <td className="font-mono whitespace-nowrap">{r.potentiality ?? '—'}</td>
+                              <td className="font-mono whitespace-nowrap">
+                                <span className="px-2 py-0.5 rounded-md font-bold text-xs bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                  {r.salesPctAvgTarget ?? (pctAvg !== null ? `${pctAvg}%` : '—')}
+                                </span>
+                              </td>
+                              <td className="font-mono whitespace-nowrap">
+                                <span className="px-2 py-0.5 rounded-md font-bold text-xs bg-blue-50 text-blue-800 border border-blue-200">
+                                  {r.salesPctAnnualTarget ?? (pctAnn !== null ? `${pctAnn}%` : '—')}
+                                </span>
+                              </td>
+                              <td className="font-mono whitespace-nowrap">
+                                <span className="px-2 py-0.5 rounded-md font-bold text-xs bg-purple-50 text-purple-800 border border-purple-200">
+                                  {r.salesPctPotentiality ?? (pctPot !== null ? `${pctPot}%` : '—')}
+                                </span>
+                              </td>
+                              <td className="whitespace-nowrap"><Badge status={r.status} type="availability" /></td>
+                              <td className="whitespace-nowrap max-w-xs truncate">{r.notes || '—'}</td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>

@@ -60,6 +60,8 @@ export function BranchForm({ selectedRep, onSuccess, onError }: BranchFormProps)
     contact: '',
     phone: '',
     products: '',
+    monthlyStock: '',
+    monthlySales: '',
     cycle: 7,
     lastVisit: initialToday,
     nextVisit: initialNext,
@@ -222,6 +224,8 @@ export function BranchForm({ selectedRep, onSuccess, onError }: BranchFormProps)
       contact: '',
       phone: '',
       products: '',
+      monthlyStock: '',
+      monthlySales: '',
       cycle: 7,
       lastVisit: today,
       nextVisit: addDaysToDate(today, 7),
@@ -267,6 +271,8 @@ export function BranchForm({ selectedRep, onSuccess, onError }: BranchFormProps)
           contact: '',
           phone: '',
           products: '',
+          monthlyStock: '',
+          monthlySales: '',
           cycle: 7,
           lastVisit: today,
           nextVisit: addDaysToDate(today, 7),
@@ -330,6 +336,7 @@ export function BranchForm({ selectedRep, onSuccess, onError }: BranchFormProps)
         section="branch"
         value={formData.objective}
         onChange={(val) => handleSelectChange('objective', val)}
+        isMulti={true}
       />
 
       {/* Visit Nature (Single vs Double) */}
@@ -543,6 +550,40 @@ export function BranchForm({ selectedRep, onSuccess, onError }: BranchFormProps)
             value={formData.products}
             onChange={handleChange}
             placeholder="المنتجات التي تم مراجعتها / توافرها..."
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl font-medium outline-none"
+          />
+        </div>
+
+        {/* Monthly Stock */}
+        <div>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5 flex items-center justify-between">
+            <span>{t('th.stockPerMonth')}</span>
+            <span className="text-[10px] text-purple-700 bg-purple-100/80 px-1.5 py-0.5 rounded font-bold">
+              📦 Monthly Stock
+            </span>
+          </label>
+          <input
+            id="monthlyStock"
+            value={formData.monthlyStock}
+            onChange={handleChange}
+            placeholder="رصيد المخزون الشهري للمنتج..."
+            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl font-medium outline-none"
+          />
+        </div>
+
+        {/* Monthly Sales */}
+        <div>
+          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5 flex items-center justify-between">
+            <span>{t('th.salesPerMonth')}</span>
+            <span className="text-[10px] text-emerald-700 bg-emerald-100/80 px-1.5 py-0.5 rounded font-bold">
+              💰 Monthly Sales
+            </span>
+          </label>
+          <input
+            id="monthlySales"
+            value={formData.monthlySales}
+            onChange={handleChange}
+            placeholder="المبيعات الشهرية للمنتج بالفرع..."
             className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl font-medium outline-none"
           />
         </div>

@@ -74,11 +74,15 @@ export interface PharmacyVisitRecord {
   visitType?: VisitType | string;
   companion?: string;
   ourProducts?: string;
+  stockPerMonth?: string;
+  salesPerMonth?: string;
   competitor?: string;
   notes?: string;
   createdAt?: string;
   submittedAt?: string;
 }
+
+export type PrescriptionRate = 'Awareness' | 'Trial' | 'Regular' | 'Loyal';
 
 export interface DoctorVisitRecord {
   id: string;
@@ -87,6 +91,8 @@ export interface DoctorVisitRecord {
   code?: string;
   name: string;
   objective?: string;
+  prescriptionRate?: PrescriptionRate | string | null;
+  nearbyPharmacy?: string;
   specialty?: string;
   workplace?: string;
   area: string;
@@ -117,6 +123,8 @@ export interface BranchVisitRecord {
   contact?: string;
   phone?: string;
   products?: string;
+  monthlyStock?: string;
+  monthlySales?: string;
   cycle?: number;
   lastVisit?: string;
   nextVisit?: string;
@@ -165,6 +173,7 @@ export interface MasterDoctor {
   specialty?: string;
   workplace?: string;
   area: string;
+  address?: string;
   mobile?: string;
   classification: string;
   bestTime?: string;
@@ -178,6 +187,7 @@ export interface MasterBranch {
   repId?: string;
   name: string;
   coverageArea: string;
+  address?: string;
   contact?: string;
   phone?: string;
   distributedProducts?: string;
@@ -248,7 +258,14 @@ export interface ProductAnalysisRecord {
   product: string;
   objective?: string;
   month: string;
+  annualTarget?: number;
+  avgMonthlyTarget?: number;
+  monthlySales?: number;
   sales?: number;
+  potentiality?: number;
+  salesPctAvgTarget?: number;
+  salesPctAnnualTarget?: number;
+  salesPctPotentiality?: number;
   status: string; // 'Available' | 'Not Available'
   notes?: string;
   createdAt?: string;
