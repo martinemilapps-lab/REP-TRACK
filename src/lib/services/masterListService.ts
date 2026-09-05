@@ -7,9 +7,12 @@ import {
   MasterBranch,
   MasterListsPayload,
 } from '@/types';
+import { UserSessionPayload } from '@/lib/auth';
+import { organizationService } from '@/lib/services/organizationService';
+import { AppError } from '@/lib/errors';
 
 /**
- * Resolves repId from rep name or ID
+ * Resolves repId from representative name or ID
  */
 export async function resolveRepId(repIdOrName?: string): Promise<string | null> {
   if (!repIdOrName) return null;
@@ -22,9 +25,65 @@ export async function resolveRepId(repIdOrName?: string): Promise<string | null>
 }
 
 /**
- * Retrieves all 4 master customer lists for a representative (plus global items)
+ * Resolves representative ownership strictly from the authenticated server session.
+ * Never trusts or relies on browser input.
  */
-export async function getMasterListsForRep(repIdOrName?: string): Promise<MasterListsPayload> {
+export async function resolveRepOwnership(session: UserSessionPayload): Promise<string> {
+  // If user is a manager without personal sales assignment, they cannot own representative lists
+  if ((session.role === 'MANAGER' || session.systemRole === 'MANAGER') && !session.hasPersonalSalesAssignment) {
+    throw new AppError('Forbidden: Managers without personal territory assignment cannot own representative lists', 403);
+  }
+
+  if (session.hasPersonalSalesAssignment && session.personalSalesAssignment?.repId) {
+    return session.personalSalesAssignment.repId;
+  }
+
+  if (session.repId) {
+    try {
+      const existing = await db
+        .select()
+        .from(representatives)
+        .where(eq(representatives.id, session.repId))
+        .get();
+      if (existing) return existing.id;
+    } catch {
+      return session.repId;
+    }
+  }
+
+  const byName = await db
+    .select()
+    .from(representatives)
+    .where(eq(representatives.name, session.name))
+    .get();
+  if (byName) return byName.id;
+
+  // If representative row does not exist yet (e.g. test accounts), provision it securely
+  const newRepId = session.repId || `rep-${session.username.toLowerCase()}`;
+  const inserted = await db
+    .insert(representatives)
+    .values({
+      id: newRepId,
+      name: session.name,
+      area: session.primarySalesAssignment?.territoryName || 'Unassigned',
+      isActive: true,
+    })
+    .onConflictDoUpdate({
+      target: representatives.id,
+      set: { name: session.name, isActive: true },
+    })
+    .returning();
+
+  return inserted[0]?.id || newRepId;
+}
+
+/**
+ * Retrieves all 4 master customer lists for a representative
+ */
+export async function getMasterListsForRep(
+  repIdOrName?: string,
+  strictOwnership = false
+): Promise<MasterListsPayload> {
   const repId = await resolveRepId(repIdOrName);
 
   const [hList, pList, dList, bList] = await Promise.all([
@@ -32,7 +91,7 @@ export async function getMasterListsForRep(repIdOrName?: string): Promise<Master
       ? db
           .select()
           .from(hospitals)
-          .where(or(eq(hospitals.repId, repId), isNull(hospitals.repId)))
+          .where(strictOwnership ? eq(hospitals.repId, repId) : or(eq(hospitals.repId, repId), isNull(hospitals.repId)))
           .orderBy(desc(hospitals.createdAt))
           .all()
       : db.select().from(hospitals).orderBy(desc(hospitals.createdAt)).all(),
@@ -41,7 +100,7 @@ export async function getMasterListsForRep(repIdOrName?: string): Promise<Master
       ? db
           .select()
           .from(pharmacies)
-          .where(or(eq(pharmacies.repId, repId), isNull(pharmacies.repId)))
+          .where(strictOwnership ? eq(pharmacies.repId, repId) : or(eq(pharmacies.repId, repId), isNull(pharmacies.repId)))
           .orderBy(desc(pharmacies.createdAt))
           .all()
       : db.select().from(pharmacies).orderBy(desc(pharmacies.createdAt)).all(),
@@ -50,7 +109,7 @@ export async function getMasterListsForRep(repIdOrName?: string): Promise<Master
       ? db
           .select()
           .from(doctors)
-          .where(or(eq(doctors.repId, repId), isNull(doctors.repId)))
+          .where(strictOwnership ? eq(doctors.repId, repId) : or(eq(doctors.repId, repId), isNull(doctors.repId)))
           .orderBy(desc(doctors.createdAt))
           .all()
       : db.select().from(doctors).orderBy(desc(doctors.createdAt)).all(),
@@ -59,7 +118,7 @@ export async function getMasterListsForRep(repIdOrName?: string): Promise<Master
       ? db
           .select()
           .from(distributionBranches)
-          .where(or(eq(distributionBranches.repId, repId), isNull(distributionBranches.repId)))
+          .where(strictOwnership ? eq(distributionBranches.repId, repId) : or(eq(distributionBranches.repId, repId), isNull(distributionBranches.repId)))
           .orderBy(desc(distributionBranches.createdAt))
           .all()
       : db.select().from(distributionBranches).orderBy(desc(distributionBranches.createdAt)).all(),
@@ -125,26 +184,89 @@ export async function getMasterListsForRep(repIdOrName?: string): Promise<Master
 }
 
 /**
- * Hospital Operations
+ * Retrieves master customer lists for a manager within their authorized hierarchy scope.
+ * Rejects with 403 if target rep is outside manager scope.
  */
-export async function saveMasterHospital(data: Partial<MasterHospital> & { name: string; rep?: string }) {
-  const repId = await resolveRepId(data.rep || data.repId);
+export async function getScopedMasterListsForManager(
+  managerSession: UserSessionPayload,
+  targetRepIdOrName?: string
+): Promise<{ lists: MasterListsPayload; targetRep?: { id: string; name: string; area: string } | null; readOnly: boolean }> {
+  // If target rep specified, verify scope
+  if (targetRepIdOrName) {
+    const isAllowed = await organizationService.isRepInScope(
+      managerSession.id,
+      targetRepIdOrName,
+      managerSession.systemRole,
+      managerSession.positionCode
+    );
+
+    if (!isAllowed) {
+      throw new AppError('غير مصرح لك بالوصول لقوائم هذا المندوب خارج نطاقك الإشرافي', 403);
+    }
+
+    const lists = await getMasterListsForRep(targetRepIdOrName);
+    const rep = await db
+      .select()
+      .from(representatives)
+      .where(or(eq(representatives.id, targetRepIdOrName), eq(representatives.name, targetRepIdOrName)))
+      .get();
+
+    return {
+      lists,
+      targetRep: rep ? { id: rep.id, name: rep.name, area: rep.area } : null,
+      readOnly: true,
+    };
+  }
+
+  // If no target specified, return first scoped rep or empty lists
+  const scopedReps = await organizationService.getScopedRepresentatives(
+    managerSession.id,
+    managerSession.systemRole,
+    managerSession.positionCode
+  );
+
+  if (scopedReps.length === 0) {
+    return {
+      lists: { hospitals: [], pharmacies: [], doctors: [], branches: [] },
+      targetRep: null,
+      readOnly: true,
+    };
+  }
+
+  const firstRep = scopedReps[0];
+  const lists = await getMasterListsForRep(firstRep.id);
+  return {
+    lists,
+    targetRep: firstRep,
+    readOnly: true,
+  };
+}
+
+/**
+ * Hospital Operations with server-authoritative ownership check
+ */
+export async function saveMasterHospital(
+  data: Partial<MasterHospital> & { name: string; rep?: string },
+  enforcedRepId?: string
+) {
   const cleanName = data.name.trim();
   const cleanArea = (data.area || '').trim();
+  const repId = enforcedRepId || (await resolveRepId(data.rep || data.repId));
 
   let targetId = data.id;
-  if (!targetId) {
+
+  if (targetId) {
+    // Validate existing record ownership
     const existing = await db
       .select()
       .from(hospitals)
-      .where(and(eq(hospitals.name, cleanName), eq(hospitals.area, cleanArea)))
+      .where(eq(hospitals.id, targetId))
       .get();
-    if (existing) {
-      targetId = existing.id;
-    }
-  }
 
-  if (targetId) {
+    if (existing && enforcedRepId && existing.repId && existing.repId !== enforcedRepId) {
+      throw new AppError('غير مصرح لك بتعديل بيانات مستشفى تابعة لمندوب آخر', 403);
+    }
+
     const [updated] = await db
       .update(hospitals)
       .set({
@@ -184,26 +306,29 @@ export async function saveMasterHospital(data: Partial<MasterHospital> & { name:
 }
 
 /**
- * Pharmacy Operations
+ * Pharmacy Operations with server-authoritative ownership check
  */
-export async function saveMasterPharmacy(data: Partial<MasterPharmacy> & { name: string; rep?: string }) {
-  const repId = await resolveRepId(data.rep || data.repId);
+export async function saveMasterPharmacy(
+  data: Partial<MasterPharmacy> & { name: string; rep?: string },
+  enforcedRepId?: string
+) {
   const cleanName = data.name.trim();
   const cleanArea = (data.area || '').trim();
+  const repId = enforcedRepId || (await resolveRepId(data.rep || data.repId));
 
   let targetId = data.id;
-  if (!targetId) {
+
+  if (targetId) {
     const existing = await db
       .select()
       .from(pharmacies)
-      .where(and(eq(pharmacies.name, cleanName), eq(pharmacies.area, cleanArea)))
+      .where(eq(pharmacies.id, targetId))
       .get();
-    if (existing) {
-      targetId = existing.id;
-    }
-  }
 
-  if (targetId) {
+    if (existing && enforcedRepId && existing.repId && existing.repId !== enforcedRepId) {
+      throw new AppError('غير مصرح لك بتعديل بيانات صيدلية تابعة لمندوب آخر', 403);
+    }
+
     const [updated] = await db
       .update(pharmacies)
       .set({
@@ -241,26 +366,29 @@ export async function saveMasterPharmacy(data: Partial<MasterPharmacy> & { name:
 }
 
 /**
- * Doctor Operations
+ * Doctor Operations with server-authoritative ownership check
  */
-export async function saveMasterDoctor(data: Partial<MasterDoctor> & { name: string; rep?: string }) {
-  const repId = await resolveRepId(data.rep || data.repId);
+export async function saveMasterDoctor(
+  data: Partial<MasterDoctor> & { name: string; rep?: string },
+  enforcedRepId?: string
+) {
   const cleanName = data.name.trim();
   const cleanArea = (data.area || '').trim();
+  const repId = enforcedRepId || (await resolveRepId(data.rep || data.repId));
 
   let targetId = data.id;
-  if (!targetId) {
+
+  if (targetId) {
     const existing = await db
       .select()
       .from(doctors)
-      .where(and(eq(doctors.name, cleanName), eq(doctors.area, cleanArea)))
+      .where(eq(doctors.id, targetId))
       .get();
-    if (existing) {
-      targetId = existing.id;
-    }
-  }
 
-  if (targetId) {
+    if (existing && enforcedRepId && existing.repId && existing.repId !== enforcedRepId) {
+      throw new AppError('غير مصرح لك بتعديل بيانات طبيب تابع لمندوب آخر', 403);
+    }
+
     const [updated] = await db
       .update(doctors)
       .set({
@@ -304,26 +432,29 @@ export async function saveMasterDoctor(data: Partial<MasterDoctor> & { name: str
 }
 
 /**
- * Distribution Branch Operations
+ * Distribution Branch Operations with server-authoritative ownership check
  */
-export async function saveMasterBranch(data: Partial<MasterBranch> & { name: string; rep?: string }) {
-  const repId = await resolveRepId(data.rep || data.repId);
+export async function saveMasterBranch(
+  data: Partial<MasterBranch> & { name: string; rep?: string },
+  enforcedRepId?: string
+) {
   const cleanName = data.name.trim();
   const cleanCoverage = (data.coverageArea || '').trim();
+  const repId = enforcedRepId || (await resolveRepId(data.rep || data.repId));
 
   let targetId = data.id;
-  if (!targetId) {
+
+  if (targetId) {
     const existing = await db
       .select()
       .from(distributionBranches)
-      .where(and(eq(distributionBranches.name, cleanName), eq(distributionBranches.coverageArea, cleanCoverage)))
+      .where(eq(distributionBranches.id, targetId))
       .get();
-    if (existing) {
-      targetId = existing.id;
-    }
-  }
 
-  if (targetId) {
+    if (existing && enforcedRepId && existing.repId && existing.repId !== enforcedRepId) {
+      throw new AppError('غير مصرح لك بتعديل بيانات فرع موزع تابع لمندوب آخر', 403);
+    }
+
     const [updated] = await db
       .update(distributionBranches)
       .set({
@@ -359,16 +490,40 @@ export async function saveMasterBranch(data: Partial<MasterBranch> & { name: str
 }
 
 /**
- * Delete Master Item
+ * Delete Master Item with server-authoritative ownership verification
  */
-export async function deleteMasterItem(category: 'hospitals' | 'pharmacies' | 'doctors' | 'branches', id: string) {
+export async function deleteMasterItem(
+  category: 'hospitals' | 'pharmacies' | 'doctors' | 'branches',
+  id: string,
+  enforcedRepId?: string
+) {
   if (category === 'hospitals') {
+    const existing = await db.select().from(hospitals).where(eq(hospitals.id, id)).get();
+    if (!existing) return { success: true };
+    if (enforcedRepId && existing.repId && existing.repId !== enforcedRepId) {
+      throw new AppError('غير مصرح لك بحذف هذا العميل التابع لمندوب آخر', 403);
+    }
     await db.delete(hospitals).where(eq(hospitals.id, id));
   } else if (category === 'pharmacies') {
+    const existing = await db.select().from(pharmacies).where(eq(pharmacies.id, id)).get();
+    if (!existing) return { success: true };
+    if (enforcedRepId && existing.repId && existing.repId !== enforcedRepId) {
+      throw new AppError('غير مصرح لك بحذف هذه الصيدلية التابعة لمندوب آخر', 403);
+    }
     await db.delete(pharmacies).where(eq(pharmacies.id, id));
   } else if (category === 'doctors') {
+    const existing = await db.select().from(doctors).where(eq(doctors.id, id)).get();
+    if (!existing) return { success: true };
+    if (enforcedRepId && existing.repId && existing.repId !== enforcedRepId) {
+      throw new AppError('غير مصرح لك بحذف هذا الطبيب التابع لمندوب آخر', 403);
+    }
     await db.delete(doctors).where(eq(doctors.id, id));
   } else if (category === 'branches') {
+    const existing = await db.select().from(distributionBranches).where(eq(distributionBranches.id, id)).get();
+    if (!existing) return { success: true };
+    if (enforcedRepId && existing.repId && existing.repId !== enforcedRepId) {
+      throw new AppError('غير مصرح لك بحذف هذا الفرع التابع لمندوب آخر', 403);
+    }
     await db.delete(distributionBranches).where(eq(distributionBranches.id, id));
   }
   return { success: true };

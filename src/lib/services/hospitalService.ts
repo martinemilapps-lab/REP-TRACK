@@ -57,6 +57,7 @@ export async function createHospitalVisit(
     dept: input.dept,
     contact: input.contact,
     phone: input.phone,
+    repId,
   });
 
   // 3. Insert Immutable Historical Visit

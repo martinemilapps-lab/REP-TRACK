@@ -1,4 +1,4 @@
-import { db, organizationRelationships, salesAssignments, hierarchyPaths, users, areas, positions } from '@/lib/db';
+import { db, organizationRelationships, salesAssignments, hierarchyPaths, users, areas, positions, representatives } from '@/lib/db';
 import { eq, and, inArray } from 'drizzle-orm';
 import { OrganizationRelationship, SalesAssignment, HierarchyPath, PositionCode } from '@/types';
 
@@ -377,5 +377,74 @@ export const organizationService = {
     }
 
     return unique;
+  },
+
+  /**
+   * Retrieves all representatives within a manager's hierarchy scope.
+   * If the manager is SMD / ADMIN, returns all active representatives.
+   */
+  async getScopedRepresentatives(
+    managerUserId: string,
+    systemRole?: string | null,
+    positionCode?: string | null
+  ): Promise<Array<{ id: string; name: string; area: string }>> {
+    if (systemRole === 'ADMIN' || positionCode === 'SMD') {
+      const all = await db
+        .select({ id: representatives.id, name: representatives.name, area: representatives.area })
+        .from(representatives)
+        .where(eq(representatives.isActive, true))
+        .all();
+      return all;
+    }
+
+    const scopedAssignments = await this.getScopedSalesAssignments(managerUserId);
+    const repIds = new Set<string>();
+    for (const a of scopedAssignments) {
+      if (a.repId) repIds.add(a.repId);
+    }
+
+    // Also find users for these assignments and their rep_ids
+    const userIds = Array.from(new Set(scopedAssignments.map(a => a.userId)));
+    if (userIds.length > 0) {
+      const userRows = await db
+        .select({ repId: users.repId })
+        .from(users)
+        .where(inArray(users.id, userIds))
+        .all();
+      for (const u of userRows) {
+        if (u.repId) repIds.add(u.repId);
+      }
+    }
+
+    if (repIds.size === 0) {
+      return [];
+    }
+
+    const matchedReps = await db
+      .select({ id: representatives.id, name: representatives.name, area: representatives.area })
+      .from(representatives)
+      .where(inArray(representatives.id, Array.from(repIds)))
+      .all();
+
+    return matchedReps;
+  },
+
+  /**
+   * Verifies if a given representative (by ID or name) is within the manager's hierarchy scope.
+   */
+  async isRepInScope(
+    managerUserId: string,
+    targetRepIdOrName: string,
+    systemRole?: string | null,
+    positionCode?: string | null
+  ): Promise<boolean> {
+    if (!targetRepIdOrName) return false;
+    if (systemRole === 'ADMIN' || positionCode === 'SMD') return true;
+
+    const scopedReps = await this.getScopedRepresentatives(managerUserId, systemRole, positionCode);
+    const targetClean = targetRepIdOrName.trim().toLowerCase();
+    return scopedReps.some(
+      r => r.id.toLowerCase() === targetClean || r.name.toLowerCase() === targetClean
+    );
   },
 };

@@ -11,6 +11,7 @@ import { runSecurityGatewayTests } from './securityGateway.test';
 import { runOrganizationFoundationTests } from './organizationFoundation.test';
 import { runPasswordLifecycleTests } from './passwordLifecycle.test';
 import { runUnifiedWorkspaceTests } from './unifiedWorkspace.test';
+import { runMrListsOwnershipTests } from './mrListsOwnership.test';
 
 async function main() {
   console.log('====================================================');
@@ -42,6 +43,17 @@ async function main() {
   }
   console.log(`  📊 Workspace Test Summary: ${workspaceResults.passed} Passed, ${workspaceResults.failed} Failed\n`);
 
+  console.log('📋 Running MR Lists Ownership & Autosave Tests (STEP 18)...');
+  const mrListsResults = await runMrListsOwnershipTests();
+  for (const check of mrListsResults.checks) {
+    if (check.startsWith('✓ PASS:')) {
+      console.log(`  ✓ ${check.replace('✓ PASS: ', '')}`);
+    } else {
+      console.error(`  ✗ ${check.replace('✗ FAIL: ', '')}`);
+    }
+  }
+  console.log(`  📊 MR Lists Test Summary: ${mrListsResults.passed} Passed, ${mrListsResults.failed} Failed\n`);
+
   const statusResults = runStatusTests();
   const coverageResults = runCoverageTests();
   const integrationResults = await runIntegrationTests();
@@ -53,6 +65,7 @@ async function main() {
     orgResults.passed +
     passwordResults.passed +
     workspaceResults.passed +
+    mrListsResults.passed +
     statusResults.passed +
     coverageResults.passed +
     integrationResults.passed +
@@ -63,6 +76,7 @@ async function main() {
     orgResults.failed +
     passwordResults.failed +
     workspaceResults.failed +
+    mrListsResults.failed +
     statusResults.failed +
     coverageResults.failed +
     integrationResults.failed +

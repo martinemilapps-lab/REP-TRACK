@@ -44,6 +44,7 @@ export async function createBranchVisit(
     contact: input.contact,
     phone: input.phone,
     distributedProducts: input.products,
+    repId,
   });
 
   const [visit] = await db

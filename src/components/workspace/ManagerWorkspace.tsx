@@ -14,6 +14,7 @@ import { EventForm } from '@/components/reports/EventForm';
 import { TrainingForm } from '@/components/reports/TrainingForm';
 import { SpecialTaskForm } from '@/components/reports/SpecialTaskForm';
 import { AvailabilityForm } from '@/components/reports/AvailabilityForm';
+import { MyListsView } from '@/components/my-lists/MyListsView';
 import { useTranslation } from '@/lib/i18nContext';
 import {
   Download,
@@ -58,6 +59,7 @@ export function ManagerWorkspace({
 }: ManagerWorkspaceProps) {
   const { language } = useTranslation();
   const [activeNav, setActiveNav] = useState<ManagerNavType>('team_reports');
+  const [selectedTeamRep, setSelectedTeamRep] = useState<string>(reps[0]?.name || '');
 
   // Activity submit form states (for manager co-visits / personal sales)
   const [selectedType, setSelectedType] = useState<ActivityType>('hospital');
@@ -289,23 +291,12 @@ export function ManagerWorkspace({
       {/* 6. Team Lists */}
       {activeNav === 'team_lists' && (
         <div className="animate-fade-in">
-          <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-8 shadow-card text-center">
-            <div className="w-16 h-16 rounded-2xl bg-[var(--gold-tint)] border border-[var(--gold-border)] flex items-center justify-center text-3xl mx-auto mb-4 text-[var(--gold-dark)]">
-              👥
-            </div>
-            <h2 className="text-lg font-black text-[var(--ink)] mb-2">
-              {language === 'ar' ? 'قوائم عملاء الفريق (المستشفيات، الصيدليات، الأطباء)' : 'Team Master Customer Directory'}
-            </h2>
-            <p className="text-xs text-[var(--ink-soft)] max-w-md mx-auto leading-relaxed mb-6">
-              {language === 'ar'
-                ? `مساحة عمل موحدة لاستعراض وتوزيع العملاء على مستوى خط العمل والمنطقة التابعة لـ (${currentUser.positionCode}). سيتم ربطها مباشرة بقاعدة بيانات D1 في الخطوة التالية.`
-                : `Unified directory to inspect and balance customer targets across your ${currentUser.positionCode} territory scope.`}
-            </p>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--surface-muted)] border border-[var(--line)] text-xs font-bold text-[var(--ink)]">
-              <span>🏛️ النطاق التنظيمي:</span>
-              <span className="font-mono text-[var(--gold-dark)]">{currentUser.positionCode} Scope</span>
-            </div>
-          </div>
+          <MyListsView
+            reps={reps}
+            selectedRep={selectedTeamRep || reps[0]?.name || ''}
+            onSelectRep={(repName) => setSelectedTeamRep(repName)}
+            readOnly={true}
+          />
         </div>
       )}
 

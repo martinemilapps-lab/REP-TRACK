@@ -46,6 +46,7 @@ export async function createPharmacyVisit(
     pharmacist: input.pharmacist,
     mobile: input.mobile,
     classification: input.cls,
+    repId,
   });
 
   const [visit] = await db

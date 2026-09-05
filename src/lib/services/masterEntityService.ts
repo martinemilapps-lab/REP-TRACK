@@ -17,6 +17,7 @@ export async function findOrCreateHospital(data: {
   dept?: string;
   contact?: string;
   phone?: string;
+  repId?: string | null;
 }) {
   const cleanName = normalizeText(data.name);
   const cleanArea = normalizeText(data.area);
@@ -41,6 +42,7 @@ export async function findOrCreateHospital(data: {
         dept: data.dept || null,
         contact: data.contact || null,
         phone: data.phone || null,
+        repId: data.repId || null,
         isActive: true,
       })
       .returning();
@@ -54,6 +56,7 @@ export async function findOrCreateHospital(data: {
         dept: data.dept || hospital.dept,
         contact: data.contact || hospital.contact,
         phone: data.phone || hospital.phone,
+        repId: hospital.repId || data.repId || null,
         updatedAt: new Date(),
       })
       .where(eq(hospitals.id, hospital.id));
@@ -72,6 +75,7 @@ export async function findOrCreatePharmacy(data: {
   pharmacist?: string;
   mobile?: string;
   classification?: string;
+  repId?: string | null;
 }) {
   const cleanName = normalizeText(data.name);
   const cleanArea = normalizeText(data.area);
@@ -96,6 +100,7 @@ export async function findOrCreatePharmacy(data: {
         pharmacist: data.pharmacist || null,
         mobile: data.mobile || null,
         classification: data.classification || 'A',
+        repId: data.repId || null,
         isActive: true,
       })
       .returning();
@@ -108,6 +113,7 @@ export async function findOrCreatePharmacy(data: {
         pharmacist: data.pharmacist || pharmacy.pharmacist,
         mobile: data.mobile || pharmacy.mobile,
         classification: data.classification || pharmacy.classification,
+        repId: pharmacy.repId || data.repId || null,
         updatedAt: new Date(),
       })
       .where(eq(pharmacies.id, pharmacy.id));
@@ -127,6 +133,7 @@ export async function findOrCreateDoctor(data: {
   workplace?: string;
   mobile?: string;
   classification?: string;
+  repId?: string | null;
 }) {
   const cleanName = normalizeText(data.name);
   const cleanArea = normalizeText(data.area);
@@ -152,6 +159,7 @@ export async function findOrCreateDoctor(data: {
         workplace: data.workplace || null,
         mobile: data.mobile || null,
         classification: data.classification || 'A',
+        repId: data.repId || null,
         isActive: true,
       })
       .returning();
@@ -165,6 +173,7 @@ export async function findOrCreateDoctor(data: {
         workplace: data.workplace || doctor.workplace,
         mobile: data.mobile || doctor.mobile,
         classification: data.classification || doctor.classification,
+        repId: doctor.repId || data.repId || null,
         updatedAt: new Date(),
       })
       .where(eq(doctors.id, doctor.id));
@@ -182,6 +191,7 @@ export async function findOrCreateBranch(data: {
   contact?: string;
   phone?: string;
   distributedProducts?: string;
+  repId?: string | null;
 }) {
   const cleanName = normalizeText(data.name);
   const cleanArea = normalizeText(data.coverageArea);
@@ -210,6 +220,7 @@ export async function findOrCreateBranch(data: {
         contact: data.contact || null,
         phone: data.phone || null,
         distributedProducts: data.distributedProducts || null,
+        repId: data.repId || null,
         isActive: true,
       })
       .returning();
@@ -221,6 +232,7 @@ export async function findOrCreateBranch(data: {
         contact: data.contact || branch.contact,
         phone: data.phone || branch.phone,
         distributedProducts: data.distributedProducts || branch.distributedProducts,
+        repId: branch.repId || data.repId || null,
         updatedAt: new Date(),
       })
       .where(eq(distributionBranches.id, branch.id));

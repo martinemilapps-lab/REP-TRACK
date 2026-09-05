@@ -13,6 +13,7 @@ interface MyListsViewProps {
   selectedRep: string;
   onSelectRep: (rep: string) => void;
   onLogVisitForCustomer?: (category: 'hospital' | 'pharmacy' | 'doctor' | 'branch', item: any) => void;
+  readOnly?: boolean;
 }
 
 type ListCategory = 'hospitals' | 'pharmacies' | 'doctors' | 'branches';
@@ -22,11 +23,13 @@ export function MyListsView({
   selectedRep,
   onSelectRep,
   onLogVisitForCustomer,
+  readOnly = false,
 }: MyListsViewProps) {
   const { t, language } = useTranslation();
   const [activeCategory, setActiveCategory] = useState<ListCategory>('hospitals');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [listsData, setListsData] = useState<MasterListsPayload>({
     hospitals: [],
     pharmacies: [],
@@ -131,19 +134,45 @@ export function MyListsView({
     setIsModalOpen(true);
   };
 
-  // Save Item (Create / Update)
+  // Save Item (Create / Update) with immediate D1 autosave & optimistic rollback
   const handleSaveModal = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (readOnly) return;
     if (!modalFormData.name?.trim()) {
       showNotification('اسم العميل / الجهة مطلوب', true);
       return;
     }
 
     setSaving(true);
+    setSyncStatus('saving');
+
+    const isEdit = Boolean(editingItem?.id);
+    const prevListsData = { ...listsData };
+
+    if (isEdit) {
+      // Optimistic update existing item
+      const updatedItem = { ...editingItem, ...modalFormData };
+      setListsData((prev) => ({
+        ...prev,
+        [activeCategory]: (prev[activeCategory] || []).map((it: any) =>
+          it.id === editingItem.id ? updatedItem : it
+        ),
+      }));
+    } else {
+      // Optimistic insert new item
+      const tempId = `temp-${Date.now()}`;
+      const optimisticItem = { ...modalFormData, id: tempId };
+      setListsData((prev) => ({
+        ...prev,
+        [activeCategory]: [optimisticItem, ...(prev[activeCategory] || [])],
+      }));
+    }
+
+    setIsModalOpen(false);
+
     try {
       const payload = {
         category: activeCategory,
-        rep: selectedRep,
         item: {
           ...modalFormData,
           id: editingItem?.id || undefined,
@@ -158,22 +187,37 @@ export function MyListsView({
 
       const resData = await res.json();
       if (res.ok && resData.success) {
+        setSyncStatus('saved');
         showNotification(t('lists.savedSuccess'));
-        setIsModalOpen(false);
         await loadLists(selectedRep);
       } else {
+        // Rollback optimistic state
+        setListsData(prevListsData);
+        setSyncStatus('error');
         showNotification(resData.message || t('msg.errorGeneric'), true);
       }
     } catch {
+      setListsData(prevListsData);
+      setSyncStatus('error');
       showNotification(t('msg.errorGeneric'), true);
     } finally {
       setSaving(false);
     }
   };
 
-  // Delete Item
+  // Delete Item with immediate D1 persistence & optimistic rollback
   const handleDeleteItem = async (id: string, name: string) => {
+    if (readOnly) return;
     if (!window.confirm(`${t('lists.deleteConfirm')} (${name})`)) return;
+
+    setSyncStatus('saving');
+    const prevListsData = { ...listsData };
+
+    // Optimistic removal
+    setListsData((prev) => ({
+      ...prev,
+      [activeCategory]: (prev[activeCategory] || []).filter((it: any) => it.id !== id),
+    }));
 
     try {
       const res = await fetch(`/api/lists?category=${activeCategory}&id=${encodeURIComponent(id)}`, {
@@ -181,12 +225,16 @@ export function MyListsView({
       });
       const resData = await res.json();
       if (res.ok && resData.success) {
+        setSyncStatus('saved');
         showNotification(t('lists.deletedSuccess'));
-        await loadLists(selectedRep);
       } else {
+        setListsData(prevListsData);
+        setSyncStatus('error');
         showNotification(resData.message || t('msg.errorGeneric'), true);
       }
     } catch {
+      setListsData(prevListsData);
+      setSyncStatus('error');
       showNotification(t('msg.errorGeneric'), true);
     }
   };
@@ -277,24 +325,87 @@ export function MyListsView({
 
       {/* Identity Selector Card */}
       <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 shadow-card">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-xl">📋</span>
-          <h2 className="text-base font-extrabold text-[var(--ink)]">
-            {t('lists.title')}
-          </h2>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xl">📋</span>
+              <h2 className="text-base font-extrabold text-[var(--ink)]">
+                {readOnly
+                  ? (language === 'ar' ? 'قوائم عملاء الفريق المعتمدة' : 'Team Master Customer Directory')
+                  : t('lists.title')}
+              </h2>
+            </div>
+            <p className="text-xs text-[var(--ink-soft)] leading-relaxed">
+              {readOnly
+                ? (language === 'ar'
+                    ? 'استعراض مستشفيات وصيدليات وأطباء وموزعي الفريق الخاضعين لنطاق إشرافك (للقراءة فقط)'
+                    : 'View scoped descendant customer lists (read-only)')
+                : t('lists.desc')}
+            </p>
+          </div>
+
+          {/* Sync Status Badge (for MR) or Read-Only Scoped Badge (for Manager) */}
+          <div className="flex items-center gap-2">
+            {readOnly ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-blue-50 text-blue-800 border border-blue-200 shadow-xs">
+                <span>🔒</span>
+                <span>{language === 'ar' ? 'وضع القراءة فقط للمدير' : 'Read-Only Manager Scope'}</span>
+              </span>
+            ) : (
+              <div>
+                {syncStatus === 'saving' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 shadow-xs">
+                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+                    <span>{language === 'ar' ? 'جارٍ الحفظ في D1...' : 'Syncing to D1...'}</span>
+                  </span>
+                )}
+                {syncStatus === 'saved' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-xs">
+                    <span>✓</span>
+                    <span>{language === 'ar' ? 'محفوظ في Cloudflare D1' : 'Saved to Cloudflare D1'}</span>
+                  </span>
+                )}
+                {syncStatus === 'error' && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-50 text-red-800 border border-red-200 shadow-xs">
+                    <span>⚠</span>
+                    <span>{language === 'ar' ? 'فشل الحفظ (تم استعادة الحالة)' : 'Save Error (Rolled back)'}</span>
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
-        <p className="text-xs text-[var(--ink-soft)] mb-3.5 leading-relaxed">
-          {t('lists.desc')}
-        </p>
-        <div className="max-w-xs md:max-w-sm">
-          <CustomSelect
-            options={repOptions}
-            value={selectedRep}
-            onChange={onSelectRep}
-            placeholder={t('rep.selector.placeholder')}
-            searchable={true}
-          />
-        </div>
+
+        {readOnly ? (
+          <div className="mt-4 max-w-xs md:max-w-sm">
+            <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
+              {language === 'ar' ? 'اختر المندوب من نطاق إشرافك:' : 'Select Team Representative:'}
+            </label>
+            <CustomSelect
+              options={repOptions}
+              value={selectedRep}
+              onChange={onSelectRep}
+              placeholder={t('rep.selector.placeholder')}
+              searchable={true}
+            />
+          </div>
+        ) : (
+          <div className="mt-4 flex items-center gap-3 p-3 bg-amber-50/50 rounded-xl border border-amber-200/60 max-w-md">
+            <div className="w-9 h-9 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-center text-base font-black text-amber-900">
+              👤
+            </div>
+            <div>
+              <div className="text-xs font-black text-[var(--ink)]">
+                {selectedRep || 'المندوب الحالي'}
+              </div>
+              <div className="text-[11px] font-bold text-amber-800">
+                {reps.find((r) => r.name === selectedRep)?.area
+                  ? `منطقة: ${reps.find((r) => r.name === selectedRep)?.area}`
+                  : 'المندوب المعتمد للمحافظة'}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* KPI Counters Bar */}
@@ -416,23 +527,25 @@ export function MyListsView({
               placeholder="بحث بالاسم أو المنطقة..."
               className="text-xs px-3 py-2 bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl outline-none w-48 font-medium"
             />
-            <Button
-              onClick={handleOpenCreateModal}
-              variant="primary"
-              size="sm"
-              className="font-extrabold whitespace-nowrap"
-            >
-              <span>+</span>
-              <span>
-                {activeCategory === 'hospitals'
-                  ? t('lists.addHospital')
-                  : activeCategory === 'pharmacies'
-                  ? t('lists.addPharmacy')
-                  : activeCategory === 'doctors'
-                  ? t('lists.addDoctor')
-                  : t('lists.addBranch')}
-              </span>
-            </Button>
+            {!readOnly && (
+              <Button
+                onClick={handleOpenCreateModal}
+                variant="primary"
+                size="sm"
+                className="font-extrabold whitespace-nowrap"
+              >
+                <span>+</span>
+                <span>
+                  {activeCategory === 'hospitals'
+                    ? t('lists.addHospital')
+                    : activeCategory === 'pharmacies'
+                    ? t('lists.addPharmacy')
+                    : activeCategory === 'doctors'
+                    ? t('lists.addDoctor')
+                    : t('lists.addBranch')}
+                </span>
+              </Button>
+            )}
           </div>
         </div>
 
@@ -487,7 +600,7 @@ export function MyListsView({
                     </>
                   )}
                   <th>دورة الزيارة</th>
-                  <th className="text-center">إجراءات</th>
+                  <th className="text-center">{readOnly ? (language === 'ar' ? 'الحالة' : 'Status') : 'إجراءات'}</th>
                 </tr>
               </thead>
               <tbody>
@@ -548,20 +661,26 @@ export function MyListsView({
                     </td>
 
                     <td className="whitespace-nowrap text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <button
-                          onClick={() => handleOpenEditModal(item)}
-                          className="px-2 py-1 text-[11px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-md cursor-pointer transition-colors"
-                        >
-                          ✏️ {t('lists.edit')}
-                        </button>
-                        <button
-                          onClick={() => handleDeleteItem(item.id, item.name)}
-                          className="px-2 py-1 text-[11px] font-bold text-red-700 bg-red-50 hover:bg-red-100 rounded-md cursor-pointer transition-colors"
-                        >
-                          🗑️ {t('lists.delete')}
-                        </button>
-                      </div>
+                      {readOnly ? (
+                        <span className="text-[11px] font-bold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 select-none">
+                          {language === 'ar' ? 'للقراءة فقط' : 'Read-only'}
+                        </span>
+                      ) : (
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => handleOpenEditModal(item)}
+                            className="px-2 py-1 text-[11px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-md cursor-pointer transition-colors"
+                          >
+                            ✏️ {t('lists.edit')}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteItem(item.id, item.name)}
+                            className="px-2 py-1 text-[11px] font-bold text-red-700 bg-red-50 hover:bg-red-100 rounded-md cursor-pointer transition-colors"
+                          >
+                            🗑️ {t('lists.delete')}
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -625,16 +744,19 @@ export function MyListsView({
                   type="number"
                   min="0"
                   step="0.5"
+                  disabled={readOnly}
                   value={currentDailyInputStr}
                   onChange={(e) => handleDailyInputChange(activeCategory, e.target.value)}
                   placeholder="0.0"
-                  className="w-24 px-2.5 py-1 text-lg font-black font-mono text-blue-950 bg-white border-2 border-rose-300 focus:border-rose-500 rounded-xl text-center focus:outline-none focus:ring-2 focus:ring-rose-400/40 shadow-inner"
+                  className={`w-24 px-2.5 py-1 text-lg font-black font-mono text-blue-950 bg-white border-2 border-rose-300 focus:border-rose-500 rounded-xl text-center focus:outline-none focus:ring-2 focus:ring-rose-400/40 shadow-inner ${
+                    readOnly ? 'opacity-70 cursor-not-allowed bg-gray-50' : ''
+                  }`}
                 />
                 <span className="text-xs font-black text-blue-950">زيارة / يوم</span>
               </div>
               <div className="text-[10px] text-rose-800/90 font-bold mt-1.5 flex items-center gap-1">
-                <span>✎</span>
-                <span>سجل المعدل اليومي المطلوب يدوياً</span>
+                <span>{readOnly ? '🔒' : '✎'}</span>
+                <span>{readOnly ? (language === 'ar' ? 'للقراءة فقط بنطاق الإشراف' : 'Read-only in scope') : 'سجل المعدل اليومي المطلوب يدوياً'}</span>
               </div>
             </div>
 

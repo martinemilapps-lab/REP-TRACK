@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import {
   getMasterListsForRep,
+  getScopedMasterListsForManager,
+  resolveRepOwnership,
   saveMasterHospital,
   saveMasterPharmacy,
   saveMasterDoctor,
@@ -14,34 +16,77 @@ import {
   MasterDoctorSchema,
   MasterBranchSchema,
 } from '@/lib/validation';
-import { AppError } from '@/lib/errors';
+import { AppError, handleApiError } from '@/lib/errors';
 import { z } from 'zod';
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession();
+    if (!session) {
+      return NextResponse.json(
+        { success: false, message: 'يجب تسجيل الدخول أولاً' },
+        { status: 401 }
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const repParam = searchParams.get('rep') || undefined;
 
-    const data = await getMasterListsForRep(repParam);
+    // 1. If user is an MR: strictly serve their own list, ignoring any spoofed ?rep param
+    if (session.positionCode === 'MR' || session.role === 'REPRESENTATIVE') {
+      const ownerRepId = await resolveRepOwnership(session);
+      const data = await getMasterListsForRep(ownerRepId);
+
+      return NextResponse.json({
+        success: true,
+        data,
+        readOnly: false,
+        rep: {
+          id: ownerRepId,
+          name: session.name,
+          territory: session.primarySalesAssignment?.territoryName || '',
+        },
+      });
+    }
+
+    // 2. If user is a Manager: serve scoped descendant lists (read-only)
+    const result = await getScopedMasterListsForManager(session, repParam);
 
     return NextResponse.json({
       success: true,
-      data,
+      data: result.lists,
+      targetRep: result.targetRep,
+      readOnly: true,
     });
   } catch (error) {
-    console.error('Error fetching master lists:', error);
-    return NextResponse.json(
-      { success: false, message: 'حدث خطأ أثناء جلب القوائم' },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession();
+    if (!session) {
+      return NextResponse.json(
+        { success: false, message: 'يجب تسجيل الدخول أولاً' },
+        { status: 401 }
+      );
+    }
+
+    // Managers cannot edit team lists unless they have a PERSONAL_MR sales assignment
+    const isMR = session.positionCode === 'MR' || session.role === 'REPRESENTATIVE';
+    if (!isMR && !session.hasPersonalSalesAssignment) {
+      return NextResponse.json(
+        { success: false, message: 'قوائم الفريق للقراءة فقط ولا يمكن تعديلها' },
+        { status: 403 }
+      );
+    }
+
+    // Resolve owner representative identity strictly from session
+    const ownerRepId = await resolveRepOwnership(session);
+
     const body = await request.json();
-    const { category, item, rep } = body;
+    const { category, item } = body;
 
     if (!category || !item) {
       return NextResponse.json(
@@ -51,20 +96,19 @@ export async function POST(request: NextRequest) {
     }
 
     let savedResult;
-    const repToUse = session?.role === 'REPRESENTATIVE' ? session.name : rep;
 
     if (category === 'hospitals') {
-      const validated = MasterHospitalSchema.parse({ ...item, rep: repToUse });
-      savedResult = await saveMasterHospital(validated);
+      const validated = MasterHospitalSchema.parse({ ...item, rep: session.name, repId: ownerRepId });
+      savedResult = await saveMasterHospital(validated, ownerRepId);
     } else if (category === 'pharmacies') {
-      const validated = MasterPharmacySchema.parse({ ...item, rep: repToUse });
-      savedResult = await saveMasterPharmacy(validated);
+      const validated = MasterPharmacySchema.parse({ ...item, rep: session.name, repId: ownerRepId });
+      savedResult = await saveMasterPharmacy(validated, ownerRepId);
     } else if (category === 'doctors') {
-      const validated = MasterDoctorSchema.parse({ ...item, rep: repToUse });
-      savedResult = await saveMasterDoctor(validated);
+      const validated = MasterDoctorSchema.parse({ ...item, rep: session.name, repId: ownerRepId });
+      savedResult = await saveMasterDoctor(validated, ownerRepId);
     } else if (category === 'branches') {
-      const validated = MasterBranchSchema.parse({ ...item, rep: repToUse });
-      savedResult = await saveMasterBranch(validated);
+      const validated = MasterBranchSchema.parse({ ...item, rep: session.name, repId: ownerRepId });
+      savedResult = await saveMasterBranch(validated, ownerRepId);
     } else {
       return NextResponse.json(
         { success: false, message: 'فئة عملاء غير صالحة' },
@@ -78,28 +122,36 @@ export async function POST(request: NextRequest) {
       item: savedResult,
     });
   } catch (error) {
-    console.error('Error saving master item:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, message: error.issues[0]?.message || 'بيانات العميل غير صالحة' },
         { status: 400 }
       );
     }
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { success: false, message: error.message },
-        { status: error.statusCode }
-      );
-    }
-    return NextResponse.json(
-      { success: false, message: 'حدث خطأ أثناء حفظ بيانات العميل' },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
+    const session = await getServerSession();
+    if (!session) {
+      return NextResponse.json(
+        { success: false, message: 'يجب تسجيل الدخول أولاً' },
+        { status: 401 }
+      );
+    }
+
+    const isMR = session.positionCode === 'MR' || session.role === 'REPRESENTATIVE';
+    if (!isMR && !session.hasPersonalSalesAssignment) {
+      return NextResponse.json(
+        { success: false, message: 'قوائم الفريق للقراءة فقط ولا يمكن حذف عناصر منها' },
+        { status: 403 }
+      );
+    }
+
+    const ownerRepId = await resolveRepOwnership(session);
+
     const searchParams = request.nextUrl.searchParams;
     const category = searchParams.get('category') as 'hospitals' | 'pharmacies' | 'doctors' | 'branches';
     const id = searchParams.get('id');
@@ -111,17 +163,13 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await deleteMasterItem(category, id);
+    await deleteMasterItem(category, id, ownerRepId);
 
     return NextResponse.json({
       success: true,
       message: 'تم حذف العميل من القائمة بنجاح',
     });
   } catch (error) {
-    console.error('Error deleting master item:', error);
-    return NextResponse.json(
-      { success: false, message: 'حدث خطأ أثناء الحذف' },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }

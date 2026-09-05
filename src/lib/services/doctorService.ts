@@ -47,6 +47,7 @@ export async function createDoctorVisit(
     workplace: input.workplace,
     mobile: input.mobile,
     classification: input.cls,
+    repId,
   });
 
   const [visit] = await db
