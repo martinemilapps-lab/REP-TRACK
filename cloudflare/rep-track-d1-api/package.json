@@ -1,0 +1,16 @@
+{
+  "name": "rep-track-d1-api-dev",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "dry-run": "wrangler deploy --dry-run"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260905.1",
+    "typescript": "^5.7.3",
+    "wrangler": "^4.127.1"
+  }
+}

@@ -1,0 +1,83 @@
+﻿source_row,employee_name,legacy_title_raw,normalized_position,proposed_username,territory,account_status,review_status,notes
+3,Awad Tmsah,MR1,MR,MR1,Nasr city,ACTIVE,CONFIRMED,
+4,Azza Karim,DM1,DM,DM1,Nasr city,ACTIVE,REQUIRES_CONFIRMATION,Proposed primary DM account; conflicts with legacy MR1 record at row 70
+5,Vacant Haram faisyal,MR1,MR,,Vacant Haram faisyal,VACANT,CONFIRMED,Vacant territory; preserve territory for territory master; no login account
+6,Kirollos Rizk,DM1,DM,DM2,Haram/Faisal,ACTIVE,CONFIRMED,Confirmed primary DM account for Kirollos Rizk (Haram/Faisal); supersedes legacy MR1 duplicate at row 71
+7,Christena Roshdy,MR1,MR,MR2,October,ACTIVE,CONFIRMED,
+8,Peter Emad,MR1,MR,MR3,Shobra /Shobra el Khema,ACTIVE,CONFIRMED,
+9,Esraa el shimy,DM1,DM,DM3,"Down Town, Maadi/Helwan",ACTIVE,REQUIRES_CONFIRMATION,Proposed primary DM account; conflicts with legacy MR1 record at row 73
+10,Vacant Maadi/Helwan,MR1,MR,,Vacant Maadi/Helwan,VACANT,CONFIRMED,Vacant territory; preserve territory for territory master; no login account
+11,Vacant Maadi/Helwan,MR2,MR,,Vacant Maadi/Helwan,VACANT,CONFIRMED,Vacant territory; preserve territory for territory master; no login account
+12,Vacant Cairo East,MR1,MR,,Vacant Cairo East,VACANT,CONFIRMED,Vacant territory; preserve territory for territory master; no login account
+13,shady Gamal,MR1,MR,MR4,Fayoum/Benisuef,ACTIVE,CONFIRMED,
+14,Maher Khamis,MR1,MR,,Vacant Behira,DUPLICATE_INACTIVE,REQUIRES_CONFIRMATION,Duplicate MR1 record for Maher Khamis; superseded by active DM record at row 66
+15,Kirollos Girgis,MR1,MR,MR5,Minya,ACTIVE,CONFIRMED,
+16,Yasser Yosry,MR1,MR,MR6,Alex 1,ACTIVE,CONFIRMED,
+17,Eman -Alex,MR1,MR,MR7,Eman Alex 1,ACTIVE,CONFIRMED,
+18,Vacant Alex 2,MR2,MR,,Vacant Alex 2,VACANT,CONFIRMED,Vacant territory; preserve territory for territory master; no login account
+19,Vacant Alex 2,MR3,MR,,Vacant Alex 2,VACANT,CONFIRMED,Vacant territory; preserve territory for territory master; no login account
+20,Ayman Younes,MR1,MR,MR8,Mansoura,ACTIVE,CONFIRMED,
+21,Sameh,MR1,MR,MR9,sharkya,ACTIVE,CONFIRMED,
+22,Philip Nayer,MR2,MR,MR10,Masr El gedida,ACTIVE,CONFIRMED,
+23,Fawzy Nasser,MR2,MR,MR11,Cairo East,ACTIVE,CONFIRMED,
+24,Esraa shehata,MR2,MR,MR12,Down Town,ACTIVE,CONFIRMED,
+25,Engy Hosny,MR2,MR,MR13,Shobra /Shobra el Khema,ACTIVE,CONFIRMED,
+26,Sara Adel,MR2,MR,MR14,Doki/Mohandseen,ACTIVE,CONFIRMED,
+27,Mostafa Ahmed,MR2,MR,MR15,October,ACTIVE,CONFIRMED,
+28,Mohamed Baiomy,MR2,MR,MR16,Haram/Faisal,ACTIVE,CONFIRMED,
+29,Vacant Nasr city,MR2,MR,,Vacant Nasr city,VACANT,CONFIRMED,Vacant territory; preserve territory for territory master; no login account
+30,Amanda Medhat,MR2,MR,MR17,Fayoum/Benisuef,ACTIVE,CONFIRMED,
+31,Helana Alex 1,MR2,MR,MR18,Alex 1,ACTIVE,CONFIRMED,
+32,Marina Sameh,MR2,MR,MR19,Tanta,ACTIVE,CONFIRMED,
+33,Ahmed Hassan,MR2,MR,MR20,Menofya/Qalubia,ACTIVE,CONFIRMED,
+34,Ahmed el Mesalamy,MR2,MR,MR21,Sharkya /Portsaid,ACTIVE,CONFIRMED,
+35,Emad Latif,MR2,MR,MR22,Mansoura,ACTIVE,CONFIRMED,
+36,Katrin Hosny,MR3,MR,MR23,Fayoum/Benisuef,ACTIVE,CONFIRMED,
+37,Martina Micheel,MR3,MR,MR24,Masr El gedida,ACTIVE,CONFIRMED,
+38,Silvia Medhat,MR3,MR,MR25,Maadi/Helwan,ACTIVE,CONFIRMED,
+39,Yara,MR3,MR,MR26,Imbaba,ACTIVE,CONFIRMED,
+40,Ahmed el Behiry,MR3,MR,MR27,Haram/Faisal,ACTIVE,CONFIRMED,
+41,Vacant october,MR3,MR,,October,VACANT,CONFIRMED,Vacant territory; preserve territory for territory master; no login account
+42,Mohamed Ezzat,MR3,MR,MR28,Alex 1,ACTIVE,CONFIRMED,
+43,Mina Nabil,MR3,MR,MR29,Mansoura,ACTIVE,CONFIRMED,
+44,Peter william,MR3,MR,MR30,Tanta,ACTIVE,CONFIRMED,
+45,John Amin,MR 1,MR,MR31,Assuit,ACTIVE,CONFIRMED,
+46,Vacant Minya,MR2,MR,,Minya,VACANT,CONFIRMED,Vacant territory; preserve territory for territory master; no login account
+47,Randa Magdy,MR,MR,MR32,Qena /Red Sea,ACTIVE,CONFIRMED,
+48,Kirollos Adel,MR,MR,MR33,Sohag,ACTIVE,CONFIRMED,
+49,Fady Nassif,BUM1,BUM,BUM1,National,ACTIVE,CONFIRMED,
+50,Osama Bert,BUM2,BUM,BUM2,National,ACTIVE,CONFIRMED,
+51,Noha samir,BUM3,BUM,BUM3,National,ACTIVE,CONFIRMED,
+52,Michael Raafat,AM1,AM,AM1,Masr El gedida / Nasr City,ACTIVE,CONFIRMED,
+53,Michael Antonyo,AM,AM,AM2,Giza / Behira / Kafr el sheikh / Delta 1,ACTIVE,CONFIRMED,
+54,Rafik Maged,DM,DM,DM4,Fayoum/Benisuef,ACTIVE,CONFIRMED,
+55,Peter Basily,DM,DM,DM5,"Sharkia /Mansoura, Mansoura /Sharkia",ACTIVE,CONFIRMED,
+56,Peter Abdel Nour,OM,OM,OM1,"Gharbia / Menofya, Tanta / Menofya",ACTIVE,CONFIRMED,
+57,Mina Michel,OM,OM,OM2,Alex,ACTIVE,CONFIRMED,
+58,Ashraf Shawky,DM,DM,DM6,"Sohag , Qena , Red Sea, Sohag, Qena , Red Sea",ACTIVE,CONFIRMED,
+59,Wael Atef,OM,OM,OM3,"Mina , Assuit, Minya / Assuit",ACTIVE,CONFIRMED,
+60,Bassem Hanna,DM 2,DM,DM7,Giza,ACTIVE,CONFIRMED,
+61,Marwa shaaban,DM2,DM,DM8,Down Town / Maadi,ACTIVE,CONFIRMED,
+62,Ramy Yousef,DM3,DM,DM9,Masr El Gedida / Nasr City / Shobra,ACTIVE,CONFIRMED,
+63,Naguib Mahfouz,DM3,DM,DM10,Giza,ACTIVE,CONFIRMED,
+64,Marian Adel,DM,DM,DM11,Menofya /Qalubia,ACTIVE,REQUIRES_CONFIRMATION,Proposed primary DM account; conflicts with legacy MR1 record at row 72
+65,Milad Mikhaeel,DM3,DM,DM12,Alex,ACTIVE,CONFIRMED,
+66,Maher Khamis,DM,DM,DM13,Behira/Kafr el shiekh,ACTIVE,REQUIRES_CONFIRMATION,Proposed primary DM account; conflicts with legacy MR1 record at row 14
+67,Beshoy Samy,DM3,DM,DM14,Shobra /Shobra el Khema,ACTIVE,REQUIRES_CONFIRMATION,Proposed primary DM account; conflicts with legacy MR3 record at row 74
+68,Neven,MR3,MR,MR34,Doki/Mohandseen,ACTIVE,CONFIRMED,
+69,Vacant Minya,MR3,MR,,,VACANT,CONFIRMED,Vacant territory; preserve territory for territory master; no login account; Territory unassigned in source sheet
+70,Azza Karim,MR1,MR,,Masr El gedida,DUPLICATE_INACTIVE,REQUIRES_CONFIRMATION,Duplicate MR1 record for Azza Karim; superseded by active DM record at row 4
+71,Kiollos Rizk,MR1,MR,,Doki/Mohandseen,DUPLICATE_INACTIVE,REQUIRES_CONFIRMATION,Duplicate MR1 record for Kirollos Rizk (spelled Kiollos in sheet); superseded by active DM record at row 6
+72,Marian Adel,MR1,MR,,,DUPLICATE_INACTIVE,REQUIRES_CONFIRMATION,Duplicate MR1 record for Marian Adel; superseded by active DM record at row 64; Territory unassigned in source sheet
+73,Esraa El shimy,MR1,MR,,,DUPLICATE_INACTIVE,REQUIRES_CONFIRMATION,Duplicate MR1 record for Esraa el shimy; superseded by active DM record at row 9; Territory unassigned in source sheet
+74,Beshoy Samy,MR3,MR,,,DUPLICATE_INACTIVE,REQUIRES_CONFIRMATION,Duplicate MR3 record for Beshoy Samy; superseded by active DM record at row 67; Territory unassigned in source sheet
+75,Fady Kamal,MR3,MR,MR35,,ACTIVE,CONFIRMED,Territory unassigned in source sheet
+76,Ahmed El Kot,MR2,MR,MR36,,ACTIVE,CONFIRMED,Territory unassigned in source sheet
+77,Vacant Behira,MR3,MR,,,VACANT,CONFIRMED,Vacant territory; preserve territory for territory master; no login account; Territory unassigned in source sheet
+78,Vacant Menofya 3,MR3,MR,,,VACANT,CONFIRMED,Vacant territory; preserve territory for territory master; no login account; Territory unassigned in source sheet
+79,Vacant Nasr city,MR3,MR,,,VACANT,CONFIRMED,Vacant territory; preserve territory for territory master; no login account; Territory unassigned in source sheet
+80,Mario Nader,,PM,PM1,,ACTIVE,REQUIRES_CONFIRMATION,"INFERRED_FROM_HIERARCHY (reports to MM Magdy Nassif, SMD Maged Raouf); Territory unassigned in source sheet"
+81,Wael Morad,,PM,PM2,,ACTIVE,REQUIRES_CONFIRMATION,"INFERRED_FROM_HIERARCHY (reports to MM Magdy Nassif, SMD Maged Raouf); Territory unassigned in source sheet"
+82,Amr El Hoseny,,PM,PM3,,ACTIVE,REQUIRES_CONFIRMATION,"INFERRED_FROM_HIERARCHY (reports to MM Magdy Nassif, SMD Maged Raouf); Territory unassigned in source sheet"
+83,Magdy Nassif,,MM,MM1,,ACTIVE,REQUIRES_CONFIRMATION,INFERRED_FROM_HIERARCHY (Marketing Manager heading PM team); Territory unassigned in source sheet
+84,Maged Raouf,,SMD,SMD1,,ACTIVE,REQUIRES_CONFIRMATION,INFERRED_FROM_HIERARCHY (Senior Managing Director); Territory unassigned in source sheet

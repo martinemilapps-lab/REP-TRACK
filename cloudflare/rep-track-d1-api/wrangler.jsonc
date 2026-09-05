@@ -1,0 +1,13 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "rep-track-d1-api-dev",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "rep-track-dev",
+      "database_id": "0e35f1e7-70be-494b-ab20-eb8f649010fb"
+    }
+  ]
+}

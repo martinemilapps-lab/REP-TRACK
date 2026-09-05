@@ -33,7 +33,7 @@ export async function GET() {
       );
     }
 
-    // 2. Fetch all datasets from Turso
+    // 2. Fetch all datasets from database
     const allReps = await db.select().from(representatives).all();
 
     const [

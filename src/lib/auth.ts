@@ -19,7 +19,7 @@ export interface UserSessionPayload {
 }
 
 /**
- * Creates a database-backed session row in Turso and returns the session token.
+ * Creates a database-backed session row and returns the session token.
  */
 export async function createDbSession(userId: string): Promise<string> {
   const token = crypto.randomUUID();
@@ -35,7 +35,7 @@ export async function createDbSession(userId: string): Promise<string> {
 }
 
 /**
- * Destroys a database-backed session from Turso.
+ * Destroys a database-backed session.
  */
 export async function destroyDbSession(token: string): Promise<void> {
   try {
@@ -46,7 +46,7 @@ export async function destroyDbSession(token: string): Promise<void> {
 }
 
 /**
- * Reads the session cookie and verifies the session against the Turso database.
+ * Reads the session cookie and verifies the session against the database.
  */
 export async function getServerSession(): Promise<UserSessionPayload | null> {
   try {

@@ -73,14 +73,14 @@ export async function runIntegrationTests() {
     // ----------------------------------------------------
     if (manager) {
       const token = await createDbSession(manager.id);
-      assert(typeof token === 'string' && token.length > 10, 'Session token generated in Turso');
+      assert(typeof token === 'string' && token.length > 10, 'Session token generated in database');
 
       const sessionRow = await db.select().from(sessions).where(eq(sessions.id, token)).get();
-      assert(!!sessionRow, 'Session successfully found in Turso database');
+      assert(!!sessionRow, 'Session successfully found in database');
 
       await destroyDbSession(token);
       const destroyedRow = await db.select().from(sessions).where(eq(sessions.id, token)).get();
-      assert(!destroyedRow, 'Session successfully destroyed and revoked from Turso');
+      assert(!destroyedRow, 'Session successfully destroyed and revoked from database');
     }
 
     // ----------------------------------------------------

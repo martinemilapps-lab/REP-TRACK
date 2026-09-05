@@ -2,10 +2,9 @@ import { createClient, Client } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
 import * as schema from './schema';
 
-const url = process.env.TURSO_DATABASE_URL || 'file:local.db';
-const authToken = process.env.TURSO_AUTH_TOKEN;
+const url = 'file:local.db';
 
-// Singleton LibSQL Client across serverless invocations and dev hot-reloads
+// Singleton local client across invocations and dev hot-reloads
 const globalForDb = global as unknown as {
   libsqlClient?: Client;
   drizzleDb?: ReturnType<typeof drizzle<typeof schema>>;
@@ -15,7 +14,6 @@ export const client =
   globalForDb.libsqlClient ??
   createClient({
     url,
-    authToken,
   });
 
 export const db =

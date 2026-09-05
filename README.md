@@ -1,13 +1,13 @@
 # REP TRACK 🏢
 
-**REP TRACK** is a high-performance, enterprise-grade Medical Representative Activity & Performance Tracking System built with **Next.js 16 (Turbopack)**, **Drizzle ORM**, and **Turso (libSQL)**.
+**REP TRACK** is a high-performance, enterprise-grade Medical Representative Activity & Performance Tracking System built with **Next.js 16 (Turbopack)**, **Drizzle ORM**, and **Cloudflare D1**.
 
 ---
 
 ## 🌟 Key Features
 
 - **Multi-Role Authentication & Security**:
-  - Database-backed secure sessions stored in Turso.
+  - Database-backed secure sessions.
   - Granular role isolation between **Managers** and **Representatives**.
   - Persistent IP-based rate limiting (locks after 5 failed attempts for 15 minutes).
   - Strict server-derived identity (`session.repId` cannot be spoofed from client).
@@ -27,7 +27,7 @@
 ## 🛠️ Technology Stack
 
 - **Framework**: Next.js 16.3.2 (App Router & Turbopack)
-- **Database**: Turso (libSQL / SQLite)
+- **Database Backend**: Cloudflare D1 (`rep-track-dev`) & Cloudflare Workers
 - **ORM & Migrations**: Drizzle ORM & Drizzle Kit
 - **Validation**: Zod
 - **Styling**: Tailwind CSS & Lucide Icons
@@ -50,19 +50,17 @@ npm install
 Create a `.env` file in the root directory:
 
 ```env
-TURSO_DATABASE_URL=libsql://...
-TURSO_AUTH_TOKEN=...
+REP_TRACK_DATA_API_URL=https://rep-track-d1-api.your-subdomain.workers.dev
+REP_TRACK_DATA_API_SECRET=your-secure-internal-api-secret-min-32-chars
 MANAGER_DEFAULT_PASSWORD=...
 ```
 
 ### 3. Database Migrations & Seeding
 
 ```bash
-# Push schema to Turso
-npm run db:push
-
-# Seed representative quotas, products, and manager accounts
-npm run db:seed
+# Apply D1 migrations to Cloudflare D1 local database
+cd cloudflare/rep-track-d1-api
+npm run db:migrate:local
 ```
 
 ### 4. Running the Development Server

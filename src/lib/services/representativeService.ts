@@ -4,7 +4,7 @@ import { calculateCoverage, RepCoverageResult } from '@/lib/business/coverage';
 import { INITIAL_REPRESENTATIVES } from '@/lib/constants';
 
 /**
- * Retrieves all active representatives from Turso.
+ * Retrieves all active representatives from the database.
  * If database is newly provisioned, automatically populates INITIAL_REPRESENTATIVES.
  */
 export async function getAllRepresentatives() {

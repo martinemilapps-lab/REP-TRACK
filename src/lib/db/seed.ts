@@ -8,7 +8,7 @@ import { INITIAL_REPRESENTATIVES, PRODUCTS_LIST } from '../constants';
 import { eq } from 'drizzle-orm';
 
 async function seed() {
-  console.log('🌱 Starting database seed on Turso / libSQL...');
+  console.log('🌱 Starting database seed...');
 
   // 1. Seed Manager Account
   const managerUsername = 'manager';
