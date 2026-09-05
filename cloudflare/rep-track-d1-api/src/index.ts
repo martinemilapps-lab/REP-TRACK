@@ -1,19 +1,34 @@
+export type D1DatabaseLike = {
+  prepare: (query: string) => {
+    bind: (...values: unknown[]) => any;
+    first: <T = unknown>(colName?: string) => Promise<T | null>;
+    run: <T = unknown>() => Promise<{ success: boolean; meta?: unknown }>;
+    all: <T = unknown>() => Promise<{ success: boolean; results?: T[]; meta?: unknown }>;
+    raw: <T = unknown[]>() => Promise<T[]>;
+  };
+  batch: (statements: unknown[]) => Promise<{ results?: unknown[] }[]>;
+};
+
 export interface Env {
-  DB: D1Database;
-  REP_TRACK_DATA_API_SECRET?: string;
+  DB: D1DatabaseLike;
+  REP_TRACK_INTERNAL_API_SECRET?: string;
 }
 
-const DEFAULT_SECRET = 'rep-track-dev-internal-secret-2026';
+function jsonResponse(data: unknown, status = 200, isPublic = false): Response {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
 
-function jsonResponse(data: unknown, status = 200): Response {
+  // Only public endpoints (like /health) provide open CORS headers for browser monitoring
+  if (isPublic) {
+    headers['Access-Control-Allow-Origin'] = '*';
+    headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS';
+    headers['Access-Control-Allow-Headers'] = 'Content-Type';
+  }
+
   return new Response(JSON.stringify(data), {
     status,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
+    headers,
   });
 }
 
@@ -22,9 +37,20 @@ function errorResponse(message: string, status = 400): Response {
 }
 
 function verifyAuth(request: Request, env: Env): boolean {
+  const expectedSecret = env.REP_TRACK_INTERNAL_API_SECRET;
+
+  // FAIL CLOSED: If the internal API secret is not configured or empty, reject all protected requests
+  if (!expectedSecret || typeof expectedSecret !== 'string' || expectedSecret.trim() === '') {
+    return false;
+  }
+
   const authHeader = request.headers.get('Authorization');
-  const expectedSecret = env.REP_TRACK_DATA_API_SECRET || DEFAULT_SECRET;
-  return Boolean(authHeader && authHeader === `Bearer ${expectedSecret}`);
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return false;
+  }
+
+  const token = authHeader.slice(7).trim();
+  return token === expectedSecret;
 }
 
 export default {
@@ -32,17 +58,20 @@ export default {
     const url = new URL(request.url);
     const pathname = url.pathname.replace(/\/+$/, '');
 
-    // Handle CORS preflight
+    // Handle CORS preflight: only permitted on public endpoints
     if (request.method === 'OPTIONS') {
-      return new Response(null, {
-        status: 204,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-          'Access-Control-Max-Age': '86400',
-        },
-      });
+      if (pathname === '/health' || pathname === '') {
+        return new Response(null, {
+          status: 204,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Max-Age': '86400',
+          },
+        });
+      }
+      return errorResponse('CORS preflight not permitted for protected server-to-server endpoints', 403);
     }
 
     // 1. Unauthenticated Health Check Endpoint
@@ -55,12 +84,12 @@ export default {
         service: 'running',
         environment: 'dev',
         d1_binding: d1Available ? 'available' : 'unavailable',
-      });
+      }, 200, true);
     }
 
     // 2. Strict Authentication on all other API endpoints
     if (!verifyAuth(request, env)) {
-      return errorResponse('Unauthorized: Invalid or missing data API secret', 401);
+      return errorResponse('Unauthorized: Invalid or missing internal API secret', 401);
     }
 
     try {
@@ -120,11 +149,11 @@ export default {
         const batchResults = await env.DB.batch(stmts);
         return jsonResponse({
           success: true,
-          results: batchResults.map((r) => r.results || []),
-          batchRows: batchResults.map((r) => {
+          results: batchResults.map((r: { results?: unknown[] }) => r.results || []),
+          batchRows: batchResults.map((r: { results?: unknown[] }) => {
             const res = r.results || [];
             return {
-              rows: res.map((row) => (typeof row === 'object' && row !== null ? Object.values(row) : row)),
+              rows: res.map((row: unknown) => (typeof row === 'object' && row !== null ? Object.values(row) : row)),
             };
           }),
         });
@@ -348,9 +377,9 @@ export default {
         ]);
 
         const actual = {
-          hospitals: (hosp.results[0] as { count: number })?.count || 0,
-          pharmacies: (pharm.results[0] as { count: number })?.count || 0,
-          doctors: (dr.results[0] as { count: number })?.count || 0,
+          hospitals: ((hosp?.results?.[0] as { count?: number })?.count) || 0,
+          pharmacies: ((pharm?.results?.[0] as { count?: number })?.count) || 0,
+          doctors: ((dr?.results?.[0] as { count?: number })?.count) || 0,
         };
 
         return jsonResponse({

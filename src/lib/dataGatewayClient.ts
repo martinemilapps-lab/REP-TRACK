@@ -9,16 +9,23 @@ if (typeof window !== 'undefined') {
   throw new Error('dataGatewayClient can only be imported in a server-side environment.');
 }
 
-const DEFAULT_API_URL = 'https://rep-track-d1-api-dev.martinemilapps.workers.dev';
-const DEFAULT_API_SECRET = 'rep-track-dev-internal-secret-2026';
-
 function getApiUrl(): string {
-  const url = process.env.REP_TRACK_DATA_API_URL || DEFAULT_API_URL;
-  return url.replace(/\/+$/, '');
+  const url = process.env.REP_TRACK_DATA_API_URL;
+  if (!url || typeof url !== 'string' || url.trim() === '') {
+    if (process.env.NODE_ENV !== 'production') {
+      return 'https://rep-track-d1-api-dev.martinemilapps.workers.dev';
+    }
+    throw new Error('Configuration error: REP_TRACK_DATA_API_URL is required but not configured.');
+  }
+  return url.trim().replace(/\/+$/, '');
 }
 
 function getApiSecret(): string {
-  return process.env.REP_TRACK_DATA_API_SECRET || DEFAULT_API_SECRET;
+  const secret = process.env.REP_TRACK_DATA_API_SECRET;
+  if (!secret || typeof secret !== 'string' || secret.trim() === '') {
+    throw new Error('Configuration error: REP_TRACK_DATA_API_SECRET is required but not configured.');
+  }
+  return secret.trim();
 }
 
 interface WorkerApiResponse<T = unknown> {

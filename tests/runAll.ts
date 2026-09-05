@@ -1,14 +1,20 @@
+import * as dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
+dotenv.config();
+
 import { runStatusTests } from './status.test';
 import { runCoverageTests } from './coverage.test';
 import { runIntegrationTests } from './integration.test';
 import { runWeeklyPlanTests } from './weeklyPlan.test';
 import { runMyListsTests } from './myLists.test';
+import { runSecurityGatewayTests } from './securityGateway.test';
 
 async function main() {
   console.log('====================================================');
   console.log('🚀 REP TRACK: Comprehensive Test Suite');
   console.log('====================================================\n');
 
+  const securityResults = await runSecurityGatewayTests();
   const statusResults = runStatusTests();
   const coverageResults = runCoverageTests();
   const integrationResults = await runIntegrationTests();
@@ -16,12 +22,14 @@ async function main() {
   const myListsResults = await runMyListsTests();
 
   const totalPassed =
+    securityResults.passed +
     statusResults.passed +
     coverageResults.passed +
     integrationResults.passed +
     weeklyPlanResults.passed +
     myListsResults.passed;
   const totalFailed =
+    securityResults.failed +
     statusResults.failed +
     coverageResults.failed +
     integrationResults.failed +
