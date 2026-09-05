@@ -8,6 +8,9 @@ import { runIntegrationTests } from './integration.test';
 import { runWeeklyPlanTests } from './weeklyPlan.test';
 import { runMyListsTests } from './myLists.test';
 import { runSecurityGatewayTests } from './securityGateway.test';
+import { runOrganizationFoundationTests } from './organizationFoundation.test';
+import { runPasswordLifecycleTests } from './passwordLifecycle.test';
+import { runUnifiedWorkspaceTests } from './unifiedWorkspace.test';
 
 async function main() {
   console.log('====================================================');
@@ -15,6 +18,30 @@ async function main() {
   console.log('====================================================\n');
 
   const securityResults = await runSecurityGatewayTests();
+  const orgResults = await runOrganizationFoundationTests();
+
+  console.log('\n🔐 Running Password Lifecycle & Security Tests (STEP 16)...');
+  const passwordResults = await runPasswordLifecycleTests();
+  for (const check of passwordResults.checks) {
+    if (check.startsWith('✓ PASS:')) {
+      console.log(`  ✓ ${check.replace('✓ PASS: ', '')}`);
+    } else {
+      console.error(`  ✗ ${check.replace('✗ FAIL: ', '')}`);
+    }
+  }
+  console.log(`  📊 Password Test Summary: ${passwordResults.passed} Passed, ${passwordResults.failed} Failed\n`);
+
+  console.log('🏢 Running Unified Authentication Entry & Workspace Tests (STEP 17)...');
+  const workspaceResults = runUnifiedWorkspaceTests();
+  for (const check of workspaceResults.checks) {
+    if (check.startsWith('✓ PASS:')) {
+      console.log(`  ✓ ${check.replace('✓ PASS: ', '')}`);
+    } else {
+      console.error(`  ✗ ${check.replace('✗ FAIL: ', '')}`);
+    }
+  }
+  console.log(`  📊 Workspace Test Summary: ${workspaceResults.passed} Passed, ${workspaceResults.failed} Failed\n`);
+
   const statusResults = runStatusTests();
   const coverageResults = runCoverageTests();
   const integrationResults = await runIntegrationTests();
@@ -23,6 +50,9 @@ async function main() {
 
   const totalPassed =
     securityResults.passed +
+    orgResults.passed +
+    passwordResults.passed +
+    workspaceResults.passed +
     statusResults.passed +
     coverageResults.passed +
     integrationResults.passed +
@@ -30,6 +60,9 @@ async function main() {
     myListsResults.passed;
   const totalFailed =
     securityResults.failed +
+    orgResults.failed +
+    passwordResults.failed +
+    workspaceResults.failed +
     statusResults.failed +
     coverageResults.failed +
     integrationResults.failed +
@@ -41,10 +74,10 @@ async function main() {
   console.log('====================================================');
 
   if (totalFailed > 0) {
-    process.exit(1);
+    process.exitCode = 1;
   } else {
     console.log('🎉 All tests PASSED successfully!');
-    process.exit(0);
+    process.exitCode = 0;
   }
 }
 

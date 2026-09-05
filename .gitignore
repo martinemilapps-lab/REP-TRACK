@@ -43,8 +43,11 @@ next-env.d.ts
 # local databases
 local.db*
 
-# cloudflare / wrangler / dev credentials
+# cloudflare / wrangler / dev credentials & sensitive exports
 .wrangler/
 .dev.vars
 .dev-credentials*
+*.credentials.csv
+*credentials*.csv
+secrets/
 

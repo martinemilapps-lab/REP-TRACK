@@ -8,7 +8,7 @@ import {
   resetRateLimit,
 } from '@/lib/auth';
 import { db, users } from '@/lib/db';
-import { eq, sql } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 
 function getClientIp(req: NextRequest): string {
   const forwarded = req.headers.get('x-forwarded-for');
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: 'كلمة السر مطلوبة' }, { status: 400 });
     }
 
-    // 2. Authenticate User
+    // 2. Authenticate User with Username
     if (username && typeof username === 'string') {
       const cleanUsername = username.toLowerCase().trim();
       const user = await db
@@ -58,17 +58,29 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      if (user.isActive === false) {
+        await recordFailedLogin(ip);
+        return NextResponse.json(
+          { success: false, message: 'هذا الحساب معطل حالياً. يرجى التواصل مع إدارة النظام.' },
+          { status: 403 }
+        );
+      }
+
       await resetRateLimit(ip);
       const sessionToken = await createDbSession(user.id);
 
       const response = NextResponse.json({
         success: true,
+        mustChangePassword: user.mustChangePassword === true,
         user: {
           id: user.id,
           username: user.username,
           name: user.name,
           role: user.role,
           repId: user.repId,
+          positionCode: user.positionCode,
+          systemRole: user.systemRole,
+          mustChangePassword: user.mustChangePassword === true,
         },
       });
 
@@ -76,19 +88,16 @@ export async function POST(req: NextRequest) {
       return response;
     }
 
-    // 3. Fallback: Manager Password Direct Entry (Manager Auth Gate)
+    // 3. Fallback: Manager Password Direct Entry (Legacy Gate - BCrypt verification only)
     const managerUser = await db
       .select()
       .from(users)
-      .where(eq(users.role, 'MANAGER'))
+      .where(and(eq(users.role, 'MANAGER'), eq(users.isActive, true)))
       .get();
 
     let isManagerValid = false;
-    if (managerUser) {
+    if (managerUser && managerUser.passwordHash) {
       isManagerValid = verifyPassword(password, managerUser.passwordHash);
-    }
-    if (!isManagerValid && password === (process.env.MANAGER_DEFAULT_PASSWORD || '22515215monna')) {
-      isManagerValid = true;
     }
 
     if (!isManagerValid || !managerUser) {
@@ -104,12 +113,16 @@ export async function POST(req: NextRequest) {
 
     const response = NextResponse.json({
       success: true,
+      mustChangePassword: managerUser.mustChangePassword === true,
       user: {
         id: managerUser.id,
         username: managerUser.username,
         name: managerUser.name,
         role: managerUser.role,
         repId: managerUser.repId,
+        positionCode: managerUser.positionCode,
+        systemRole: managerUser.systemRole,
+        mustChangePassword: managerUser.mustChangePassword === true,
       },
     });
 

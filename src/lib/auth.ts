@@ -1,9 +1,21 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { compareSync } from 'bcrypt-ts';
-import { db, users, sessions, loginAttempts } from '@/lib/db';
+import { db, users, sessions, loginAttempts, salesAssignments } from '@/lib/db';
 import { eq, and, gt } from 'drizzle-orm';
 import { AppError } from '@/lib/errors';
+import {
+  generateSecureTemporaryPassword,
+  validatePasswordQuality,
+  hashPassword,
+  verifyPassword,
+} from '@/lib/services/passwordService';
+
+export {
+  generateSecureTemporaryPassword,
+  validatePasswordQuality,
+  hashPassword,
+  verifyPassword,
+};
 
 export const SESSION_COOKIE_NAME = 'rep_track_session';
 export const SESSION_DURATION_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
@@ -16,6 +28,24 @@ export interface UserSessionPayload {
   name: string;
   role: 'MANAGER' | 'REPRESENTATIVE';
   repId: string | null;
+  positionCode?: string | null;
+  systemRole?: 'REPRESENTATIVE' | 'MANAGER' | 'ADMIN' | null;
+  mustChangePassword?: boolean;
+  hasPersonalSalesAssignment?: boolean;
+  personalSalesAssignment?: {
+    id: string;
+    titleRaw: string;
+    businessLine: number | null;
+    territoryName: string;
+    repId: string | null;
+  } | null;
+  primarySalesAssignment?: {
+    id: string;
+    titleRaw: string;
+    businessLine: number | null;
+    territoryName: string;
+    repId: string | null;
+  } | null;
 }
 
 /**
@@ -46,6 +76,17 @@ export async function destroyDbSession(token: string): Promise<void> {
 }
 
 /**
+ * Revokes all active database sessions for a specific user.
+ */
+export async function revokeAllUserSessions(userId: string): Promise<void> {
+  try {
+    await db.delete(sessions).where(eq(sessions.userId, userId));
+  } catch (error) {
+    console.error('Error revoking user sessions:', error);
+  }
+}
+
+/**
  * Reads the session cookie and verifies the session against the database.
  */
 export async function getServerSession(): Promise<UserSessionPayload | null> {
@@ -65,22 +106,62 @@ export async function getServerSession(): Promise<UserSessionPayload | null> {
         name: users.name,
         role: users.role,
         repId: users.repId,
+        positionCode: users.positionCode,
+        systemRole: users.systemRole,
+        mustChangePassword: users.mustChangePassword,
+        isActive: users.isActive,
       })
       .from(sessions)
       .innerJoin(users, eq(sessions.userId, users.id))
       .where(and(eq(sessions.id, token), gt(sessions.expiresAt, now)))
       .get();
 
-    if (!sessionRecord) {
+    if (!sessionRecord || sessionRecord.isActive === false) {
       return null;
     }
+
+    // Resolve sales assignments for this user
+    let personalAssign: typeof salesAssignments.$inferSelect | null = null;
+    let primaryAssign: typeof salesAssignments.$inferSelect | null = null;
+    try {
+      const userAssignments = await db
+        .select()
+        .from(salesAssignments)
+        .where(and(eq(salesAssignments.userId, sessionRecord.userId), eq(salesAssignments.isActive, true)))
+        .all();
+
+      personalAssign = userAssignments.find(a => a.assignmentType === 'PERSONAL_MR') || null;
+      primaryAssign = userAssignments.find(a => a.assignmentType === 'PRIMARY_REP') || null;
+    } catch {
+      // Graceful fallback if table is not yet populated
+    }
+
+    const effectiveRepId = sessionRecord.repId || primaryAssign?.repId || personalAssign?.repId || null;
 
     return {
       id: sessionRecord.userId,
       username: sessionRecord.username,
       name: sessionRecord.name,
       role: sessionRecord.role as 'MANAGER' | 'REPRESENTATIVE',
-      repId: sessionRecord.repId,
+      repId: effectiveRepId,
+      positionCode: sessionRecord.positionCode,
+      systemRole: sessionRecord.systemRole as 'REPRESENTATIVE' | 'MANAGER' | 'ADMIN' | null,
+      mustChangePassword: sessionRecord.mustChangePassword === true,
+      hasPersonalSalesAssignment: !!personalAssign,
+      personalSalesAssignment: personalAssign ? {
+        id: personalAssign.id,
+        titleRaw: personalAssign.titleRaw || 'MR',
+        businessLine: personalAssign.businessLine,
+        territoryName: personalAssign.territoryName,
+        repId: personalAssign.repId,
+      } : null,
+      primarySalesAssignment: primaryAssign ? {
+        id: primaryAssign.id,
+        titleRaw: primaryAssign.titleRaw || 'MR',
+        businessLine: primaryAssign.businessLine,
+        territoryName: primaryAssign.territoryName,
+        repId: primaryAssign.repId,
+      } : null,
     };
   } catch (error) {
     console.error('Session retrieval error:', error);
@@ -90,11 +171,15 @@ export async function getServerSession(): Promise<UserSessionPayload | null> {
 
 /**
  * Authorization Guard: Requires an authenticated user session.
+ * Throws 403 if mustChangePassword === true unless allowPendingPasswordChange is true.
  */
-export async function requireAuthenticatedUser(): Promise<UserSessionPayload> {
+export async function requireAuthenticatedUser(allowPendingPasswordChange = false): Promise<UserSessionPayload> {
   const session = await getServerSession();
   if (!session) {
     throw new AppError('يجب تسجيل الدخول أولاً للمتابعة', 401);
+  }
+  if (!allowPendingPasswordChange && session.mustChangePassword) {
+    throw new AppError('يجب تغيير كلمة المرور المؤقتة أولاً للوصول إلى النظام', 403);
   }
   return session;
 }
@@ -119,6 +204,18 @@ export async function requireRepresentative(): Promise<UserSessionPayload & { re
     throw new AppError('هذا الإجراء مخصص للمندوبين المعتمدين فقط', 403);
   }
   return session as UserSessionPayload & { repId: string };
+}
+
+/**
+ * Authorization Guard: Requires an ADMIN system role (e.g. SMD executive administration).
+ * Normal managers are rejected with 403.
+ */
+export async function requireAdmin(): Promise<UserSessionPayload> {
+  const session = await requireAuthenticatedUser();
+  if (session.systemRole !== 'ADMIN') {
+    throw new AppError('هذا الإجراء مخصص لإدارة النظام والمدير التنفيذي فقط', 403);
+  }
+  return session;
 }
 
 /**
@@ -168,17 +265,6 @@ export function clearSessionCookie(response: NextResponse) {
     path: '/',
     maxAge: 0,
   });
-}
-
-/**
- * Verifies plain password against bcrypt hash.
- */
-export function verifyPassword(password: string, hash: string): boolean {
-  try {
-    return compareSync(password, hash);
-  } catch {
-    return false;
-  }
 }
 
 /**

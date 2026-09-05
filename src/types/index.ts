@@ -336,12 +336,111 @@ export interface RepOverviewStats {
   overdueCount: number;
 }
 
+export type PositionCode = 'MR' | 'DM' | 'AM' | 'OM' | 'BUM' | 'PM' | 'MM' | 'SMD';
+
+export type SystemRole = 'USER' | 'MANAGER' | 'ADMIN';
+
+export type AssignmentType = 'PRIMARY_REP' | 'PERSONAL_MR' | 'TERRITORY_COVERAGE';
+
+export type RelationshipType = 'DIRECT' | 'MULTI_BUM' | 'FUNCTIONAL' | 'SKIP_LEVEL';
+
+export interface Position {
+  code: PositionCode;
+  titleEn: string;
+  titleAr: string;
+  hierarchyLevel: number;
+}
+
+export interface Area {
+  id: string;
+  name: string;
+  region?: string | null;
+  isActive: boolean;
+  createdAt?: string;
+}
+
+export interface VisitObjective {
+  id: string;
+  positionCode: PositionCode;
+  objectiveCode: string;
+  nameAr: string;
+  nameEn: string;
+  displayOrder: number;
+  isActive: boolean;
+}
+
+export interface SalesAssignment {
+  id: string;
+  userId: string;
+  assignmentType: AssignmentType;
+  titleRaw: string;
+  businessLine?: number | null;
+  areaId?: string | null;
+  territoryName: string;
+  repId?: string | null;
+  sourceRow?: number | null;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface OrganizationRelationship {
+  id: string;
+  subordinateUserId: string;
+  managerUserId: string;
+  relationshipType: RelationshipType | string;
+  sourcePosition: PositionCode | string;
+  managerPosition: PositionCode | string;
+  subordinateAssignmentId?: string | null;
+  isActive: boolean;
+  sourceMetadata?: {
+    sourceRow?: number;
+    territory?: string;
+    notes?: string;
+    crmSequence?: string;
+    canonicalName?: string;
+    rawSpelling?: string;
+    [key: string]: unknown;
+  } | string | null;
+  createdAt?: string;
+}
+
+export interface HierarchyPath {
+  id: string;
+  sourceAssignmentId?: string | null;
+  sourceUserId: string;
+  ancestorUserId: string;
+  ancestorPosition: PositionCode | string;
+  depth: number;
+  createdAt?: string;
+}
+
 export interface AuthSession {
   user: {
     id: string;
     username: string;
     name: string;
     role: 'MANAGER' | 'REPRESENTATIVE';
-    repId?: string;
+    repId?: string | null;
+    positionCode?: PositionCode | string | null;
+    systemRole?: SystemRole | string | null;
+    businessLine?: number | null;
+    mustChangePassword?: boolean;
+    hasPersonalSalesAssignment?: boolean;
+    personalSalesAssignment?: {
+      id: string;
+      titleRaw: string;
+      businessLine?: number | null;
+      territoryName: string;
+      repId?: string | null;
+    } | null;
+    primarySalesAssignment?: {
+      id: string;
+      titleRaw: string;
+      businessLine?: number | null;
+      territoryName: string;
+      repId?: string | null;
+    } | null;
   } | null;
 }
+

@@ -1,0 +1,386 @@
+'use client';
+
+import React, { useState } from 'react';
+import { Representative, ActivityType, VisitEntityType } from '@/types';
+import { ManagerDashboardView } from '@/components/manager/ManagerDashboardView';
+import { WeeklyPlanView } from '@/components/weekly-plan/WeeklyPlanView';
+import { MyReportsView } from '@/components/my-reports/MyReportsView';
+import { TypePicker } from '@/components/reports/TypePicker';
+import { HospitalForm } from '@/components/reports/HospitalForm';
+import { PharmacyForm } from '@/components/reports/PharmacyForm';
+import { DoctorForm } from '@/components/reports/DoctorForm';
+import { BranchForm } from '@/components/reports/BranchForm';
+import { EventForm } from '@/components/reports/EventForm';
+import { TrainingForm } from '@/components/reports/TrainingForm';
+import { SpecialTaskForm } from '@/components/reports/SpecialTaskForm';
+import { AvailabilityForm } from '@/components/reports/AvailabilityForm';
+import { useTranslation } from '@/lib/i18nContext';
+import {
+  Download,
+  Award,
+  Sparkles,
+} from 'lucide-react';
+
+export type ManagerNavType =
+  | 'submit_activity'
+  | 'weekly_plan'
+  | 'my_reports'
+  | 'team_reports'
+  | 'team_plans'
+  | 'team_lists'
+  | 'product_analysis'
+  | 'compliance'
+  | 'export';
+
+interface ManagerWorkspaceProps {
+  currentUser: {
+    id: string;
+    name: string;
+    username: string;
+    positionCode?: string | null;
+    systemRole?: string | null;
+    hasPersonalSalesAssignment?: boolean;
+    personalSalesAssignment?: {
+      territoryName: string;
+      titleRaw?: string;
+    } | null;
+  };
+  reps: Representative[];
+  onShowToast: (text: string, isError?: boolean) => void;
+  onLogout: () => void;
+}
+
+export function ManagerWorkspace({
+  currentUser,
+  reps,
+  onShowToast,
+  onLogout,
+}: ManagerWorkspaceProps) {
+  const { language } = useTranslation();
+  const [activeNav, setActiveNav] = useState<ManagerNavType>('team_reports');
+
+  // Activity submit form states (for manager co-visits / personal sales)
+  const [selectedType, setSelectedType] = useState<ActivityType>('hospital');
+  const [visitSubtype, setVisitSubtype] = useState<VisitEntityType>('hospital');
+
+  const navItems = [
+    { id: 'submit_activity', label: language === 'ar' ? 'تسجيل نشاط' : 'Submit Activity', icon: '📝' },
+    { id: 'weekly_plan', label: language === 'ar' ? 'خطتي الأسبوعية' : 'Weekly Plan', icon: '📅' },
+    { id: 'my_reports', label: language === 'ar' ? 'تقاريري الخاصة' : 'My Reports', icon: '📄' },
+    { id: 'team_reports', label: language === 'ar' ? 'تقارير الفريق' : 'Received / Team Reports', icon: '📥' },
+    { id: 'team_plans', label: language === 'ar' ? 'خطط الفريق' : 'Team Plans', icon: '📋' },
+    { id: 'team_lists', label: language === 'ar' ? 'قوائم الفريق' : 'Team Lists', icon: '👥' },
+    { id: 'product_analysis', label: language === 'ar' ? 'تحليل المنتجات' : 'Product Analysis', icon: '📈' },
+    { id: 'compliance', label: language === 'ar' ? 'متابعة الالتزام' : 'Submission Compliance', icon: '🎯' },
+    { id: 'export', label: language === 'ar' ? 'تصدير البيانات' : 'Export', icon: '📤' },
+  ];
+
+  return (
+    <div className="w-full animate-fade-in">
+      {/* Position Header & Dual-Role Banner */}
+      <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-5 mb-5 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className="px-3 py-1 rounded-lg text-xs font-black bg-[var(--gold-tint)] text-[var(--gold-dark)] border border-[var(--gold-border)]">
+              {currentUser.positionCode || 'MANAGER'}
+            </span>
+            <h1 className="text-base sm:text-lg font-black text-[var(--ink)]">
+              {currentUser.name}
+            </h1>
+            <span className="font-mono text-xs font-bold text-[var(--ink-muted)]">
+              ({currentUser.username})
+            </span>
+            {currentUser.hasPersonalSalesAssignment && currentUser.personalSalesAssignment && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400">
+                <Award className="w-3.5 h-3.5" />
+                <span>{language === 'ar' ? 'مكلف بمبيعات ميدانية شخصية:' : 'Personal Sales Assignment:'} {currentUser.personalSalesAssignment.territoryName}</span>
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-[var(--ink-soft)] mt-1">
+            {language === 'ar'
+              ? 'مساحة العمل الإدارية والرقابية — الرؤية والتقارير محددة بنطاق الإشراف المعتمد'
+              : 'Managerial & Executive Workspace — Scoped to your authorized organizational hierarchy'}
+          </p>
+        </div>
+
+        <div className="text-xs font-bold text-[var(--ink-muted)] flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-[var(--gold-dark)]" />
+          <span>{reps.length} {language === 'ar' ? 'مندوب متاح بالنظام' : 'Reps in System'}</span>
+        </div>
+      </div>
+
+      {/* 9-Item Navigation Shell */}
+      <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-1.5 mb-6 shadow-xs overflow-x-auto scrollbar-none">
+        <nav className="flex items-center gap-1 min-w-max">
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveNav(item.id as ManagerNavType)}
+              className={`px-3.5 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 select-none ${
+                activeNav === item.id
+                  ? 'bg-gradient-to-r from-[var(--gold)] to-[var(--gold-light)] text-white shadow-xs font-black'
+                  : 'text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--surface-hover)]'
+              }`}
+            >
+              <span>{item.icon}</span>
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* ============ NAVIGATION CONTENT ============ */}
+
+      {/* 1. Submit Activity */}
+      {activeNav === 'submit_activity' && (
+        <div className="animate-fade-in">
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 mb-4 text-xs text-amber-700 dark:text-amber-300 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span>ℹ️</span>
+              <span>
+                {currentUser.hasPersonalSalesAssignment
+                  ? (language === 'ar' ? `تسجيل زيارات ميدانية شخصية لمنطقة (${currentUser.personalSalesAssignment?.territoryName}) أو زيارات مرافقة مع المندوبين` : `Logging personal sales visits for (${currentUser.personalSalesAssignment?.territoryName}) or companion visits`)
+                  : (language === 'ar' ? 'تسجيل زيارات الإشراف والمرافقة الميدانية مع المندوبين' : 'Logging supervisory / companion visits')}
+              </span>
+            </div>
+          </div>
+
+          <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 mb-4 shadow-card">
+            <TypePicker
+              selectedType={selectedType}
+              onSelect={setSelectedType}
+              visitSubtype={visitSubtype}
+              onSelectVisitSubtype={setVisitSubtype}
+            />
+          </div>
+
+          {(selectedType === 'hospital' || (selectedType === 'visit' && visitSubtype === 'hospital')) && (
+            <HospitalForm
+              selectedRep={currentUser.name}
+              onSuccess={(msg) => onShowToast(msg)}
+              onError={(msg) => onShowToast(msg, true)}
+            />
+          )}
+
+          {(selectedType === 'pharmacy' || (selectedType === 'visit' && visitSubtype === 'pharmacy')) && (
+            <PharmacyForm
+              selectedRep={currentUser.name}
+              onSuccess={(msg) => onShowToast(msg)}
+              onError={(msg) => onShowToast(msg, true)}
+            />
+          )}
+
+          {(selectedType === 'doctor' || (selectedType === 'visit' && visitSubtype === 'doctor')) && (
+            <DoctorForm
+              selectedRep={currentUser.name}
+              onSuccess={(msg) => onShowToast(msg)}
+              onError={(msg) => onShowToast(msg, true)}
+            />
+          )}
+
+          {(selectedType === 'branch' || (selectedType === 'visit' && visitSubtype === 'branch')) && (
+            <BranchForm
+              selectedRep={currentUser.name}
+              onSuccess={(msg) => onShowToast(msg)}
+              onError={(msg) => onShowToast(msg, true)}
+            />
+          )}
+
+          {selectedType === 'event' && (
+            <EventForm
+              selectedRep={currentUser.name}
+              onSuccess={(msg) => onShowToast(msg)}
+              onError={(msg) => onShowToast(msg, true)}
+            />
+          )}
+
+          {selectedType === 'training' && (
+            <TrainingForm
+              selectedRep={currentUser.name}
+              onSuccess={(msg) => onShowToast(msg)}
+              onError={(msg) => onShowToast(msg, true)}
+            />
+          )}
+
+          {selectedType === 'special_task' && (
+            <SpecialTaskForm
+              selectedRep={currentUser.name}
+              onSuccess={(msg) => onShowToast(msg)}
+              onError={(msg) => onShowToast(msg, true)}
+            />
+          )}
+
+          {(selectedType === 'availability' || selectedType === 'product_analysis') && (
+            <AvailabilityForm
+              selectedRep={currentUser.name}
+              onSuccess={(msg) => onShowToast(msg)}
+              onError={(msg) => onShowToast(msg, true)}
+            />
+          )}
+        </div>
+      )}
+
+      {/* 2. Weekly Plan */}
+      {activeNav === 'weekly_plan' && (
+        <div className="animate-fade-in">
+          <WeeklyPlanView
+            reps={reps}
+            selectedRep={currentUser.name}
+            onSelectRep={() => {}}
+            onSuccess={(msg) => onShowToast(msg)}
+            onError={(msg) => onShowToast(msg, true)}
+          />
+        </div>
+      )}
+
+      {/* 3. My Reports */}
+      {activeNav === 'my_reports' && (
+        <div className="animate-fade-in">
+          <MyReportsView
+            reps={reps}
+            selectedRep={currentUser.name}
+            onSelectRep={() => {}}
+          />
+        </div>
+      )}
+
+      {/* 4. Received / Team Reports */}
+      {activeNav === 'team_reports' && (
+        <div className="animate-fade-in">
+          <ManagerDashboardView
+            reps={reps}
+            onLock={onLogout}
+            onError={(msg) => onShowToast(msg, true)}
+            onSuccess={(msg) => onShowToast(msg)}
+          />
+        </div>
+      )}
+
+      {/* 5. Team Plans */}
+      {activeNav === 'team_plans' && (
+        <div className="animate-fade-in">
+          <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-6 shadow-card">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-2xl">📋</span>
+              <div>
+                <h2 className="text-base font-extrabold text-[var(--ink)]">
+                  {language === 'ar' ? 'مراجعة واعتماد خطط الفريق الأسبوعية' : 'Team Weekly Plans Review & Approval'}
+                </h2>
+                <p className="text-xs text-[var(--ink-soft)] mt-0.5">
+                  {language === 'ar'
+                    ? 'استعراض الخطط الأسبوعية المرسلة من المندوبين ضمن نطاق إشرافك لاعتمادها أو إضافة ملاحظات'
+                    : 'Inspect and approve weekly plan submissions from representatives in your managerial scope'}
+                </p>
+              </div>
+            </div>
+
+            <WeeklyPlanView
+              reps={reps}
+              selectedRep={reps[0]?.name || currentUser.name}
+              isManager={true}
+              onSuccess={(msg) => onShowToast(msg)}
+              onError={(msg) => onShowToast(msg, true)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* 6. Team Lists */}
+      {activeNav === 'team_lists' && (
+        <div className="animate-fade-in">
+          <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-8 shadow-card text-center">
+            <div className="w-16 h-16 rounded-2xl bg-[var(--gold-tint)] border border-[var(--gold-border)] flex items-center justify-center text-3xl mx-auto mb-4 text-[var(--gold-dark)]">
+              👥
+            </div>
+            <h2 className="text-lg font-black text-[var(--ink)] mb-2">
+              {language === 'ar' ? 'قوائم عملاء الفريق (المستشفيات، الصيدليات، الأطباء)' : 'Team Master Customer Directory'}
+            </h2>
+            <p className="text-xs text-[var(--ink-soft)] max-w-md mx-auto leading-relaxed mb-6">
+              {language === 'ar'
+                ? `مساحة عمل موحدة لاستعراض وتوزيع العملاء على مستوى خط العمل والمنطقة التابعة لـ (${currentUser.positionCode}). سيتم ربطها مباشرة بقاعدة بيانات D1 في الخطوة التالية.`
+                : `Unified directory to inspect and balance customer targets across your ${currentUser.positionCode} territory scope.`}
+            </p>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--surface-muted)] border border-[var(--line)] text-xs font-bold text-[var(--ink)]">
+              <span>🏛️ النطاق التنظيمي:</span>
+              <span className="font-mono text-[var(--gold-dark)]">{currentUser.positionCode} Scope</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 7. Product Analysis */}
+      {activeNav === 'product_analysis' && (
+        <div className="animate-fade-in">
+          <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-8 shadow-card text-center">
+            <div className="w-16 h-16 rounded-2xl bg-[var(--gold-tint)] border border-[var(--gold-border)] flex items-center justify-center text-3xl mx-auto mb-4 text-[var(--gold-dark)]">
+              📈
+            </div>
+            <h2 className="text-lg font-black text-[var(--ink)] mb-2">
+              {language === 'ar' ? 'التحليل التراكمي للمنتجات والمنافسين' : 'Aggregate Product & Market Analysis'}
+            </h2>
+            <p className="text-xs text-[var(--ink-soft)] max-w-md mx-auto leading-relaxed mb-6">
+              {language === 'ar'
+                ? `مؤشرات توافر الأصناف (Nitrong, Sugammadex, etc.) ومعدلات الحصة السوقية والمنافسين لكافة المناطق التابعة لموقع (${currentUser.positionCode}).`
+                : `Comprehensive product availability and competitor dynamics across your supervised territories.`}
+            </p>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--surface-muted)] border border-[var(--line)] text-xs font-bold text-[var(--ink)]">
+              <span>📊 التحليل الشامل:</span>
+              <span className="font-mono text-[var(--gold-dark)]">Ready for STEP 18 aggregation</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 8. Submission Compliance */}
+      {activeNav === 'compliance' && (
+        <div className="animate-fade-in">
+          <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-8 shadow-card text-center">
+            <div className="w-16 h-16 rounded-2xl bg-[var(--gold-tint)] border border-[var(--gold-border)] flex items-center justify-center text-3xl mx-auto mb-4 text-[var(--gold-dark)]">
+              🎯
+            </div>
+            <h2 className="text-lg font-black text-[var(--ink)] mb-2">
+              {language === 'ar' ? 'متابعة معدلات التغطية ونسب الإنجاز' : 'Submission Compliance & Call Rate Monitoring'}
+            </h2>
+            <p className="text-xs text-[var(--ink-soft)] max-w-md mx-auto leading-relaxed mb-6">
+              {language === 'ar'
+                ? `مؤشرات التغطية الحقيقية (Coverage %) والزيارات المنجزة مقابل المستهدف للمندوبين المباشرين وغير المباشرين حسب الهرم الإداري.`
+                : `Real-time call rate adherence and coverage tracking across direct and indirect team reports.`}
+            </p>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--surface-muted)] border border-[var(--line)] text-xs font-bold text-[var(--ink)]">
+              <span>🛡️ محرك التغطية:</span>
+              <span className="font-mono text-[var(--gold-dark)]">Active Engine Integrated</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 9. Export */}
+      {activeNav === 'export' && (
+        <div className="animate-fade-in">
+          <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-8 shadow-card text-center">
+            <div className="w-16 h-16 rounded-2xl bg-[var(--gold-tint)] border border-[var(--gold-border)] flex items-center justify-center text-3xl mx-auto mb-4 text-[var(--gold-dark)]">
+              📤
+            </div>
+            <h2 className="text-lg font-black text-[var(--ink)] mb-2">
+              {language === 'ar' ? 'تصدير تقارير وبيانات الفريق (Excel)' : 'Export Team Data & Workbooks'}
+            </h2>
+            <p className="text-xs text-[var(--ink-soft)] max-w-md mx-auto leading-relaxed mb-6">
+              {language === 'ar'
+                ? 'تحميل ملف Excel متكامل يحتوي على كافة تقارير الزيارات، التوافر، الفعاليات، وخطط العمل الأسبوعية مصنفة حسب الشيتات الرسمية.'
+                : 'Download complete consolidated Excel workbooks containing visits, availability, and weekly plans.'}
+            </p>
+            <a
+              href="/api/export/excel"
+              download
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[var(--gold)] to-[var(--gold-light)] text-white text-sm font-extrabold shadow-card hover:scale-[1.02] transition-all cursor-pointer"
+            >
+              <Download className="w-4 h-4" />
+              <span>{language === 'ar' ? 'تحميل شيت التقارير المجمع (.xlsx)' : 'Download Consolidated Excel (.xlsx)'}</span>
+            </a>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

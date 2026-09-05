@@ -2,6 +2,44 @@ import { sqliteTable, text, integer, uniqueIndex, index } from 'drizzle-orm/sqli
 import { sql, relations } from 'drizzle-orm';
 
 // ----------------------------------------------------
+// 0. ORGANIZATION STRUCTURE & LOOKUPS
+// ----------------------------------------------------
+export const positions = sqliteTable('positions', {
+  code: text('code').primaryKey(), // 'MR', 'DM', 'AM', 'OM', 'BUM', 'PM', 'MM', 'SMD'
+  titleEn: text('title_en').notNull(),
+  titleAr: text('title_ar').notNull(),
+  hierarchyLevel: integer('hierarchy_level').notNull(),
+});
+
+export const areas = sqliteTable('areas', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  name: text('name').notNull().unique(),
+  region: text('region'),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
+}, (table) => [
+  uniqueIndex('idx_areas_name').on(table.name),
+  index('idx_areas_active').on(table.isActive),
+]);
+
+export const visitObjectives = sqliteTable('visit_objectives', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  positionCode: text('position_code').notNull(),
+  objectiveCode: text('objective_code').notNull(),
+  nameAr: text('name_ar').notNull(),
+  nameEn: text('name_en').notNull(),
+  displayOrder: integer('display_order').notNull().default(0),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
+}, (table) => [
+  uniqueIndex('idx_visit_obj_unique').on(table.positionCode, table.objectiveCode),
+  index('idx_visit_obj_position').on(table.positionCode),
+  index('idx_visit_obj_active').on(table.isActive),
+]);
+
+// ----------------------------------------------------
 // 1. IDENTITY, AUTHENTICATION & SECURITY
 // ----------------------------------------------------
 export const users = sqliteTable('users', {
@@ -11,9 +49,19 @@ export const users = sqliteTable('users', {
   name: text('name').notNull(),
   role: text('role', { enum: ['MANAGER', 'REPRESENTATIVE'] }).notNull().default('REPRESENTATIVE'),
   repId: text('rep_id').references(() => representatives.id, { onDelete: 'set null' }),
+  positionCode: text('position_code').references(() => positions.code),
+  systemRole: text('system_role'),
+  legacyTitleRaw: text('legacy_title_raw'),
+  businessLine: integer('business_line'),
+  usernameNumber: integer('username_number').default(1),
+  mustChangePassword: integer('must_change_password', { mode: 'boolean' }).default(false),
+  isActive: integer('is_active', { mode: 'boolean' }).default(true),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
-});
+}, (table) => [
+  index('idx_users_position').on(table.positionCode),
+  index('idx_users_is_active').on(table.isActive),
+]);
 
 export const sessions = sqliteTable('sessions', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -24,6 +72,7 @@ export const sessions = sqliteTable('sessions', {
   index('idx_sessions_user').on(table.userId),
   index('idx_sessions_expires').on(table.expiresAt),
 ]);
+
 
 export const loginAttempts = sqliteTable('login_attempts', {
   ipAddress: text('ip_address').primaryKey(),
@@ -43,6 +92,87 @@ export const representatives = sqliteTable('representatives', {
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
 });
+
+// ----------------------------------------------------
+// 1.1 SALES ASSIGNMENTS & DUAL ROLES
+// ----------------------------------------------------
+export const salesAssignments = sqliteTable('sales_assignments', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  assignmentType: text('assignment_type', { enum: ['PRIMARY_REP', 'PERSONAL_MR', 'TERRITORY_COVERAGE'] }).notNull().default('PRIMARY_REP'),
+  titleRaw: text('title_raw').notNull(),
+  businessLine: integer('business_line'),
+  areaId: text('area_id').references(() => areas.id, { onDelete: 'set null' }),
+  territoryName: text('territory_name').notNull(),
+  repId: text('rep_id').references(() => representatives.id, { onDelete: 'set null' }),
+  sourceRow: integer('source_row'),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
+}, (table) => [
+  index('idx_sales_assign_user').on(table.userId),
+  index('idx_sales_assign_area').on(table.areaId),
+  index('idx_sales_assign_line').on(table.businessLine),
+]);
+
+// ----------------------------------------------------
+// 1.2 GENERAL ORGANIZATION MODEL & RELATIONSHIPS
+// ----------------------------------------------------
+export const organizationRelationships = sqliteTable('organization_relationships', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  subordinateUserId: text('subordinate_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  managerUserId: text('manager_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  relationshipType: text('relationship_type').notNull().default('DIRECT'),
+  sourcePosition: text('source_position').notNull(),
+  managerPosition: text('manager_position').notNull(),
+  subordinateAssignmentId: text('subordinate_assignment_id').references(() => salesAssignments.id, { onDelete: 'set null' }),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  sourceMetadata: text('source_metadata'),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
+}, (table) => [
+  uniqueIndex('idx_org_rel_unique').on(table.subordinateUserId, table.managerUserId, table.relationshipType),
+  index('idx_org_rel_mgr_sub').on(table.managerUserId, table.subordinateUserId),
+  index('idx_org_rel_sub').on(table.subordinateUserId),
+]);
+
+export const hierarchyPaths = sqliteTable('hierarchy_paths', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  sourceAssignmentId: text('source_assignment_id').references(() => salesAssignments.id, { onDelete: 'cascade' }),
+  sourceUserId: text('source_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  ancestorUserId: text('ancestor_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  ancestorPosition: text('ancestor_position').notNull(),
+  depth: integer('depth').notNull().default(1),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
+}, (table) => [
+  uniqueIndex('idx_hier_unique_path').on(table.ancestorUserId, table.sourceAssignmentId, table.sourceUserId),
+  index('idx_hier_ancestor').on(table.ancestorUserId),
+  index('idx_hier_source_assign').on(table.sourceAssignmentId),
+]);
+
+// ----------------------------------------------------
+// 1.3 BACKWARD COMPATIBILITY: MANAGER SCOPES
+// ----------------------------------------------------
+export const managerRepScopes = sqliteTable('manager_rep_scopes', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  managerUserId: text('manager_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  repId: text('rep_id').notNull().references(() => representatives.id, { onDelete: 'cascade' }),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
+}, (table) => [
+  uniqueIndex('idx_mgr_rep_scopes_unique').on(table.managerUserId, table.repId),
+  index('idx_mgr_rep_scopes_mgr').on(table.managerUserId),
+  index('idx_mgr_rep_scopes_rep').on(table.repId),
+]);
+
+export const managerAreaScopes = sqliteTable('manager_area_scopes', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  managerUserId: text('manager_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  areaId: text('area_id').notNull().references(() => areas.id, { onDelete: 'cascade' }),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
+}, (table) => [
+  uniqueIndex('idx_mgr_area_scopes_unique').on(table.managerUserId, table.areaId),
+  index('idx_mgr_area_scopes_mgr').on(table.managerUserId),
+  index('idx_mgr_area_scopes_area').on(table.areaId),
+]);
 
 // ----------------------------------------------------
 // 2. MASTER ENTITIES (DIMENSIONS)
@@ -344,7 +474,16 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     fields: [users.repId],
     references: [representatives.id],
   }),
+  position: one(positions, {
+    fields: [users.positionCode],
+    references: [positions.code],
+  }),
   sessions: many(sessions),
+  salesAssignments: many(salesAssignments),
+  directReports: many(organizationRelationships, { relationName: 'manager' }),
+  supervisors: many(organizationRelationships, { relationName: 'subordinate' }),
+  managerRepScopes: many(managerRepScopes),
+  managerAreaScopes: many(managerAreaScopes),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -477,3 +616,62 @@ export const productAvailabilitiesRelations = relations(productAvailabilities, (
     references: [products.id],
   }),
 }));
+
+export const positionsRelations = relations(positions, ({ many }) => ({
+  users: many(users),
+  visitObjectives: many(visitObjectives),
+}));
+
+export const areasRelations = relations(areas, ({ many }) => ({
+  salesAssignments: many(salesAssignments),
+  managerAreaScopes: many(managerAreaScopes),
+}));
+
+export const salesAssignmentsRelations = relations(salesAssignments, ({ one, many }) => ({
+  user: one(users, {
+    fields: [salesAssignments.userId],
+    references: [users.id],
+  }),
+  area: one(areas, {
+    fields: [salesAssignments.areaId],
+    references: [areas.id],
+  }),
+  representative: one(representatives, {
+    fields: [salesAssignments.repId],
+    references: [representatives.id],
+  }),
+  hierarchyPaths: many(hierarchyPaths),
+}));
+
+export const organizationRelationshipsRelations = relations(organizationRelationships, ({ one }) => ({
+  subordinateUser: one(users, {
+    fields: [organizationRelationships.subordinateUserId],
+    references: [users.id],
+    relationName: 'subordinate',
+  }),
+  managerUser: one(users, {
+    fields: [organizationRelationships.managerUserId],
+    references: [users.id],
+    relationName: 'manager',
+  }),
+  subordinateAssignment: one(salesAssignments, {
+    fields: [organizationRelationships.subordinateAssignmentId],
+    references: [salesAssignments.id],
+  }),
+}));
+
+export const hierarchyPathsRelations = relations(hierarchyPaths, ({ one }) => ({
+  sourceAssignment: one(salesAssignments, {
+    fields: [hierarchyPaths.sourceAssignmentId],
+    references: [salesAssignments.id],
+  }),
+  sourceUser: one(users, {
+    fields: [hierarchyPaths.sourceUserId],
+    references: [users.id],
+  }),
+  ancestorUser: one(users, {
+    fields: [hierarchyPaths.ancestorUserId],
+    references: [users.id],
+  }),
+}));
+
