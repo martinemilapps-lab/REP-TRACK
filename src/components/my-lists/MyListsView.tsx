@@ -218,29 +218,37 @@ export function MyListsView({
     branches: '',
   });
 
-  // Load manual rates from localStorage on mount and when selectedRep changes
+  // Load manual rates from D1-backed representative fields when selectedRep changes
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const repKey = selectedRep || 'default';
+    const repObj = reps.find((r) => r.name === selectedRep);
     setDailyInputs({
-      hospitals: localStorage.getItem(`reptrack_daily_target_${repKey}_hospitals`) || localStorage.getItem('reptrack_daily_target_global_hospitals') || '',
-      pharmacies: localStorage.getItem(`reptrack_daily_target_${repKey}_pharmacies`) || localStorage.getItem('reptrack_daily_target_global_pharmacies') || '',
-      doctors: localStorage.getItem(`reptrack_daily_target_${repKey}_doctors`) || localStorage.getItem('reptrack_daily_target_global_doctors') || '',
-      branches: localStorage.getItem(`reptrack_daily_target_${repKey}_branches`) || localStorage.getItem('reptrack_daily_target_global_branches') || '',
+      hospitals: repObj && repObj.assignedHospitals > 0 ? String(repObj.assignedHospitals) : '',
+      pharmacies: repObj && repObj.assignedPharmacies > 0 ? String(repObj.assignedPharmacies) : '',
+      doctors: repObj && repObj.assignedDrs > 0 ? String(repObj.assignedDrs) : '',
+      branches: '',
     });
-  }, [selectedRep]);
+  }, [selectedRep, reps]);
 
-  const handleDailyInputChange = (category: string, value: string) => {
+  const handleDailyInputChange = async (category: string, value: string) => {
     setDailyInputs((prev) => ({ ...prev, [category]: value }));
-    if (typeof window !== 'undefined') {
-      const repKey = selectedRep || 'default';
-      const num = parseFloat(value);
-      if (!isNaN(num) && num >= 0) {
-        localStorage.setItem(`reptrack_daily_target_${repKey}_${category}`, value);
-        localStorage.setItem(`reptrack_daily_target_global_${category}`, value);
-      } else if (value.trim() === '') {
-        localStorage.removeItem(`reptrack_daily_target_${repKey}_${category}`);
-      }
+    if (!selectedRep) return;
+
+    const num = parseFloat(value);
+    const validNum = !isNaN(num) && num >= 0 ? Math.round(num) : 0;
+
+    const patchPayload: Record<string, any> = { repName: selectedRep };
+    if (category === 'hospitals') patchPayload.assignedHospitals = validNum;
+    if (category === 'pharmacies') patchPayload.assignedPharmacies = validNum;
+    if (category === 'doctors') patchPayload.assignedDrs = validNum;
+
+    try {
+      await fetch('/api/reps', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patchPayload),
+      });
+    } catch (e) {
+      console.error('Failed to sync target to D1:', e);
     }
   };
 

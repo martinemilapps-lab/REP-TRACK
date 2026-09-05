@@ -131,7 +131,7 @@ export async function getWeeklyPlans(
 ): Promise<WeeklyPlanRecord[]> {
   const targetRepId = resolveAuthorizedRepId(session, options.repId);
 
-  let query = db
+  const query = db
     .select({
       id: weeklyPlans.id,
       repId: weeklyPlans.repId,

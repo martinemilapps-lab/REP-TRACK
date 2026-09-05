@@ -120,17 +120,10 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
     const mP = (data.masterLists?.pharmacies || []) as any[];
     const mD = (data.masterLists?.doctors || []) as any[];
 
-    // Read manual daily targets configured in My Lists (if set)
-    const repKey = selectedRep || 'default';
-    const manualHDay = typeof window !== 'undefined'
-      ? (parseFloat(localStorage.getItem(`reptrack_daily_target_${repKey}_hospitals`) || localStorage.getItem('reptrack_daily_target_global_hospitals') || '0') || 0)
-      : 0;
-    const manualPDay = typeof window !== 'undefined'
-      ? (parseFloat(localStorage.getItem(`reptrack_daily_target_${repKey}_pharmacies`) || localStorage.getItem('reptrack_daily_target_global_pharmacies') || '0') || 0)
-      : 0;
-    const manualDDay = typeof window !== 'undefined'
-      ? (parseFloat(localStorage.getItem(`reptrack_daily_target_${repKey}_doctors`) || localStorage.getItem('reptrack_daily_target_global_doctors') || '0') || 0)
-      : 0;
+    // Read targets directly from D1-backed representative record
+    const manualHDay = repObj && repObj.assignedHospitals > 0 ? Number(repObj.assignedHospitals) : 0;
+    const manualPDay = repObj && repObj.assignedPharmacies > 0 ? Number(repObj.assignedPharmacies) : 0;
+    const manualDDay = repObj && repObj.assignedDrs > 0 ? Number(repObj.assignedDrs) : 0;
 
     // Target from My Lists (fallback to cycle formula: month based on 30 days, day based on 26 working days)
     const fallbackHMonth = mH.reduce((acc, it) => acc + 30 / (Number(it.defaultCycle) > 0 ? Number(it.defaultCycle) : 7), 0);
@@ -198,7 +191,7 @@ export function MyReportsView({ reps, selectedRep, onSelectRep }: MyReportsViewP
       sd,
       achievementPct: totalTargetMonth > 0 ? Math.round((totalActual / totalTargetMonth) * 100) : 0,
     };
-  }, [data, selectedRep]);
+  }, [data, selectedRep, repObj]);
 
   const repOptions: SelectOption[] = useMemo(() => {
     return reps.map((r) => ({

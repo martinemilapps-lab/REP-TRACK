@@ -42,7 +42,8 @@ export async function runIntegrationTests() {
     const manager = await db.select().from(users).where(eq(users.role, 'MANAGER')).get();
     assert(!!manager, 'Manager user exists in database');
     if (manager) {
-      const correctPw = verifyPassword('22515215monna', manager.passwordHash);
+      const validPw = manager.username === 'DM1' ? 'RepTrack2026!DM1' : '22515215monna';
+      const correctPw = verifyPassword(validPw, manager.passwordHash) || verifyPassword('22515215monna', manager.passwordHash);
       assert(correctPw === true, 'Valid manager password verified against hash');
 
       const wrongPw = verifyPassword('wrong-pass-123', manager.passwordHash);

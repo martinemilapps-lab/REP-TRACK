@@ -1,30 +1,27 @@
-import { createClient, Client } from '@libsql/client';
-import { drizzle } from 'drizzle-orm/libsql';
+import { drizzle } from 'drizzle-orm/sqlite-proxy';
 import * as schema from './schema';
+import { dataGatewayClient } from '@/lib/dataGatewayClient';
 
-const url = 'file:local.db';
+/**
+ * Primary Drizzle ORM database instance for REP TRACK.
+ * Powered by the Cloudflare D1 Data Gateway via Cloudflare Worker.
+ *
+ * Cloudflare D1 is the FIRST and ONLY persistent database for REP TRACK.
+ */
+export const db = drizzle(
+  async (sql, params, method) => {
+    return (await dataGatewayClient.executeDrizzleProxy(sql, params, method)) as { rows: any[] };
+  },
+  async (queries) => {
+    return (await dataGatewayClient.executeDrizzleProxyBatch(queries)) as { rows: any[] }[];
+  },
+  { schema }
+);
 
-// Singleton local client across invocations and dev hot-reloads
-const globalForDb = global as unknown as {
-  libsqlClient?: Client;
-  drizzleDb?: ReturnType<typeof drizzle<typeof schema>>;
+export const client = {
+  async execute(sql: string, params: unknown[] = []) {
+    return dataGatewayClient.query(sql, params);
+  },
 };
-
-export const client =
-  globalForDb.libsqlClient ??
-  createClient({
-    url,
-  });
-
-export const db =
-  globalForDb.drizzleDb ??
-  drizzle(client, {
-    schema,
-  });
-
-if (process.env.NODE_ENV !== 'production') {
-  globalForDb.libsqlClient = client;
-  globalForDb.drizzleDb = db;
-}
 
 export * from './schema';

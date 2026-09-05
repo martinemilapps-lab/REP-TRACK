@@ -8,7 +8,7 @@ import {
   resetRateLimit,
 } from '@/lib/auth';
 import { db, users } from '@/lib/db';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 function getClientIp(req: NextRequest): string {
   const forwarded = req.headers.get('x-forwarded-for');
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       const user = await db
         .select()
         .from(users)
-        .where(eq(users.username, cleanUsername))
+        .where(sql`lower(${users.username}) = ${cleanUsername}`)
         .get();
 
       if (!user || !verifyPassword(password, user.passwordHash)) {

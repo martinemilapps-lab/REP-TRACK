@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { compareSync } from 'bcrypt-ts';
-import { db, users, sessions, representatives, loginAttempts } from '@/lib/db';
+import { db, users, sessions, loginAttempts } from '@/lib/db';
 import { eq, and, gt } from 'drizzle-orm';
 import { AppError } from '@/lib/errors';
 

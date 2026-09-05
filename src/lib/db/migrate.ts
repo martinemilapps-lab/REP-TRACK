@@ -34,12 +34,14 @@ async function migrate() {
 
   // doctors
   await safeAddColumn('doctors', 'rep_id', 'TEXT');
+  await safeAddColumn('doctors', 'address', 'TEXT');
   await safeAddColumn('doctors', 'best_time', 'TEXT');
   await safeAddColumn('doctors', 'default_cycle', 'INTEGER DEFAULT 7');
   await safeAddColumn('doctors', 'target_products', 'TEXT');
 
   // distribution_branches
   await safeAddColumn('distribution_branches', 'rep_id', 'TEXT');
+  await safeAddColumn('distribution_branches', 'address', 'TEXT');
   await safeAddColumn('distribution_branches', 'default_cycle', 'INTEGER DEFAULT 7');
 
   // branch_visits
@@ -52,6 +54,9 @@ async function migrate() {
   await safeAddColumn('doctor_visits', 'objective', 'TEXT');
   await safeAddColumn('branch_visits', 'objective', 'TEXT');
   await safeAddColumn('product_availabilities', 'objective', 'TEXT');
+  await safeAddColumn('product_availabilities', 'annual_target', 'INTEGER DEFAULT 0');
+  await safeAddColumn('product_availabilities', 'avg_monthly_target', 'INTEGER DEFAULT 0');
+  await safeAddColumn('product_availabilities', 'potentiality', 'INTEGER DEFAULT 0');
 
   console.log('✨ All migrations completed successfully!');
 }
