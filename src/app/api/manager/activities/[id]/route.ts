@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth';
+import { requireAuthenticatedUser } from '@/lib/auth';
 import { getManagerActivityById, deleteManagerActivity } from '@/lib/services/managerActivityService';
-import { AppError } from '@/lib/errors';
+import { handleApiError } from '@/lib/errors';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession();
+    const session = await requireAuthenticatedUser();
     if (!session) {
       return NextResponse.json({ success: false, message: 'يجب تسجيل الدخول أولاً' }, { status: 401 });
     }
@@ -22,11 +22,7 @@ export async function GET(
 
     return NextResponse.json({ success: true, activity });
   } catch (error) {
-    console.error('Error fetching manager activity:', error);
-    if (error instanceof AppError) {
-      return NextResponse.json({ success: false, message: error.message }, { status: error.statusCode });
-    }
-    return NextResponse.json({ success: false, message: 'حدث خطأ أثناء جلب تقرير النشاط' }, { status: 500 });
+    return handleApiError(error);
   }
 }
 
@@ -35,7 +31,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession();
+    const session = await requireAuthenticatedUser();
     if (!session) {
       return NextResponse.json({ success: false, message: 'يجب تسجيل الدخول أولاً' }, { status: 401 });
     }
@@ -45,10 +41,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, message: 'تم حذف تقرير النشاط بنجاح ✓' });
   } catch (error) {
-    console.error('Error deleting manager activity:', error);
-    if (error instanceof AppError) {
-      return NextResponse.json({ success: false, message: error.message }, { status: error.statusCode });
-    }
-    return NextResponse.json({ success: false, message: 'حدث خطأ أثناء حذف تقرير النشاط' }, { status: 500 });
+    return handleApiError(error);
   }
 }

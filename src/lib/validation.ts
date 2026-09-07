@@ -207,13 +207,21 @@ export const SpecialTaskSchema = z.object({
   rep: z.string().optional(),
 });
 
+export const CalendarDateSchema = z.string().trim().date('تاريخ غير صالح (YYYY-MM-DD)');
+export const WeeklyPlanStatusSchema = z.enum(['Draft', 'Submitted', 'Approved']);
+export const ManagerPlanStatusSchema = z.literal('Submitted');
+export const WeeklyPlanStatusUpdateSchema = z.object({
+  status: WeeklyPlanStatusSchema,
+  managerNotes: z.string().optional(),
+}).strict();
+
 export const WeeklyPlanSchema = z.object({
   rep: z.string().optional(),
   repId: z.string().optional(),
   userId: z.string().optional(),
   isManagerPersonal: z.boolean().optional(),
-  startDate: z.string().min(1, 'تاريخ بداية الأسبوع مطلوب').trim(),
-  endDate: z.string().min(1, 'تاريخ نهاية الأسبوع مطلوب').trim(),
+  startDate: CalendarDateSchema,
+  endDate: CalendarDateSchema,
   weekLabel: z.string().optional().default(''),
   saturdayAm: z.string().optional().default(''),
   saturdayPm: z.string().optional().default(''),
@@ -229,57 +237,68 @@ export const WeeklyPlanSchema = z.object({
   thursdayPm: z.string().optional().default(''),
   fridayAm: z.string().optional().default(''),
   fridayPm: z.string().optional().default(''),
-  status: z.string().optional().default('Submitted'),
+  status: WeeklyPlanStatusSchema.optional().default('Submitted'),
   managerNotes: z.string().optional().default(''),
+}).refine(data => data.endDate >= data.startDate, {
+  message: 'تاريخ نهاية الأسبوع يجب ألا يسبق بدايته', path: ['endDate'],
+});
+
+export const ManagerActivityTypeSchema = z.enum(['Visit', 'Event', 'Training', 'Office Working', 'Others']);
+export const ManagerActivityFiltersSchema = z.object({
+  startDate: CalendarDateSchema.optional(),
+  endDate: CalendarDateSchema.optional(),
+  activityType: ManagerActivityTypeSchema.or(z.literal('All')).optional(),
+}).refine(data => !data.startDate || !data.endDate || data.endDate >= data.startDate, {
+  message: 'نطاق التاريخ غير صالح', path: ['endDate'],
 });
 
 export const ManagerActivitySchema = z.object({
   activityType: z.enum(['Visit', 'Event', 'Training', 'Office Working', 'Others'], {
     message: 'نوع النشاط غير صالح',
   }),
-  activityDate: z.string().min(1, 'تاريخ النشاط مطلوب').trim(),
+  activityDate: CalendarDateSchema,
 
   // Visit specific
   visitType: z.enum(['Single', 'Double']).optional().default('Single'),
-  accompaniedPerson: z.string().optional().default(''),
+  accompaniedPerson: z.string().trim().optional().default(''),
 
   // Morning / AM block
-  morningHospitalName: z.string().optional().default(''),
-  morningDoctorNames: z.string().optional().default(''),
-  morningSpecialty: z.string().optional().default(''),
-  morningHospitalComment: z.string().optional().default(''),
+  morningHospitalName: z.string().trim().optional().default(''),
+  morningDoctorNames: z.string().trim().optional().default(''),
+  morningSpecialty: z.string().trim().optional().default(''),
+  morningHospitalComment: z.string().trim().optional().default(''),
 
   // Afternoon / PM block
-  afternoonDoctorNames: z.string().optional().default(''),
-  afternoonSpecialty: z.string().optional().default(''),
-  afternoonDoctorComment: z.string().optional().default(''),
-  afternoonPharmacyName: z.string().optional().default(''),
-  afternoonPharmacyComment: z.string().optional().default(''),
+  afternoonDoctorNames: z.string().trim().optional().default(''),
+  afternoonSpecialty: z.string().trim().optional().default(''),
+  afternoonDoctorComment: z.string().trim().optional().default(''),
+  afternoonPharmacyName: z.string().trim().optional().default(''),
+  afternoonPharmacyComment: z.string().trim().optional().default(''),
 
   // General
-  generalComment: z.string().optional().default(''),
+  generalComment: z.string().trim().optional().default(''),
 
   // Event specific
-  eventName: z.string().optional().default(''),
-  eventType: z.string().optional().default(''),
-  location: z.string().optional().default(''),
-  attendees: z.string().optional().default(''),
-  budget: z.string().optional().default(''),
+  eventName: z.string().trim().optional().default(''),
+  eventType: z.string().trim().optional().default(''),
+  location: z.string().trim().optional().default(''),
+  attendees: z.string().trim().optional().default(''),
+  budget: z.string().trim().optional().default(''),
 
   // Training specific
-  trainingType: z.string().optional().default(''),
-  trainingTopic: z.string().optional().default(''),
-  trainingLocation: z.string().optional().default(''),
-  participants: z.string().optional().default(''),
+  trainingType: z.string().trim().optional().default(''),
+  trainingTopic: z.string().trim().optional().default(''),
+  trainingLocation: z.string().trim().optional().default(''),
+  participants: z.string().trim().optional().default(''),
 
   // Office Working specific
-  workSummary: z.string().optional().default(''),
+  workSummary: z.string().trim().optional().default(''),
 
   // Others specific
-  description: z.string().optional().default(''),
+  description: z.string().trim().optional().default(''),
 
   // Universal notes
-  notes: z.string().optional().default(''),
+  notes: z.string().trim().optional().default(''),
 }).refine(
   (data) => {
     if (data.activityType === 'Visit' && data.visitType === 'Double') {
@@ -291,5 +310,15 @@ export const ManagerActivitySchema = z.object({
     message: 'اسم الشخص المرافق مطلوب عند اختيار زيارة مشتركة (Double Visit)',
     path: ['accompaniedPerson'],
   }
-);
-
+).superRefine((data, ctx) => {
+  const required = {
+    Event: ['eventName', 'اسم الفعالية مطلوب'],
+    Training: ['trainingTopic', 'موضوع التدريب مطلوب'],
+    'Office Working': ['workSummary', 'ملخص العمل المكتبي مطلوب'],
+    Others: ['description', 'وصف النشاط مطلوب'],
+  } as const;
+  if (data.activityType !== 'Visit') {
+    const [field, message] = required[data.activityType];
+    if (!data[field]) ctx.addIssue({ code: 'custom', path: [field], message });
+  }
+});

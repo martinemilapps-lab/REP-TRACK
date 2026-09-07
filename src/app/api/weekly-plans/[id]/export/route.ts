@@ -1,3 +1,5 @@
+import { handleApiError } from '@/lib/errors';
+import { requireAuthenticatedUser } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { getWeeklyPlanById } from '@/lib/services/weeklyPlanService';
 import { generateWeeklyPlanWorkbook } from '@/lib/excel';
@@ -8,7 +10,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const plan = await getWeeklyPlanById(id);
+    const session = await requireAuthenticatedUser();
+    const plan = await getWeeklyPlanById(id, session);
 
     if (!plan) {
       return NextResponse.json(
@@ -31,10 +34,6 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('Error exporting weekly plan:', error);
-    return NextResponse.json(
-      { success: false, message: 'فشل في تصدير الخطة كملف إكسل' },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }

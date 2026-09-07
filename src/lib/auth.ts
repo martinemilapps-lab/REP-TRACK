@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { db, users, sessions, loginAttempts, salesAssignments } from '@/lib/db';
 import { eq, and, gt } from 'drizzle-orm';
 import { AppError } from '@/lib/errors';
+import { assertAuthenticatedSession } from '@/lib/authPolicy';
 import {
   generateSecureTemporaryPassword,
   validatePasswordQuality,
@@ -175,12 +176,7 @@ export async function getServerSession(): Promise<UserSessionPayload | null> {
  */
 export async function requireAuthenticatedUser(allowPendingPasswordChange = false): Promise<UserSessionPayload> {
   const session = await getServerSession();
-  if (!session) {
-    throw new AppError('يجب تسجيل الدخول أولاً للمتابعة', 401);
-  }
-  if (!allowPendingPasswordChange && session.mustChangePassword) {
-    throw new AppError('يجب تغيير كلمة المرور المؤقتة أولاً للوصول إلى النظام', 403);
-  }
+  assertAuthenticatedSession(session, allowPendingPasswordChange);
   return session;
 }
 

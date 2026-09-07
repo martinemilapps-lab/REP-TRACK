@@ -1,7 +1,8 @@
+import { WeeklyPlanStatusUpdateSchema } from '@/lib/validation';
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth';
+import { requireAuthenticatedUser } from '@/lib/auth';
 import { getWeeklyPlanById, updateWeeklyPlanStatus, deleteWeeklyPlan } from '@/lib/services/weeklyPlanService';
-import { AppError } from '@/lib/errors';
+import { handleApiError } from '@/lib/errors';
 
 export async function GET(
   request: NextRequest,
@@ -9,7 +10,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const plan = await getWeeklyPlanById(id);
+    const session = await requireAuthenticatedUser();
+    const plan = await getWeeklyPlanById(id, session);
 
     if (!plan) {
       return NextResponse.json(
@@ -23,11 +25,7 @@ export async function GET(
       plan,
     });
   } catch (error) {
-    console.error('Error fetching plan:', error);
-    return NextResponse.json(
-      { success: false, message: 'حدث خطأ أثناء جلب الخطة' },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }
 
@@ -36,14 +34,14 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession();
+    const session = await requireAuthenticatedUser();
     const { id } = await params;
-    const body = await request.json();
+    const body = WeeklyPlanStatusUpdateSchema.parse(await request.json());
 
     const plan = await updateWeeklyPlanStatus(
       session,
       id,
-      body.status || 'Submitted',
+      body.status,
       body.managerNotes
     );
 
@@ -53,17 +51,7 @@ export async function PATCH(
       plan,
     });
   } catch (error) {
-    console.error('Error updating plan status:', error);
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { success: false, message: error.message },
-        { status: error.statusCode }
-      );
-    }
-    return NextResponse.json(
-      { success: false, message: 'حدث خطأ أثناء تحديث الخطة' },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }
 
@@ -72,7 +60,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession();
+    const session = await requireAuthenticatedUser();
     const { id } = await params;
 
     await deleteWeeklyPlan(session, id);
@@ -82,16 +70,6 @@ export async function DELETE(
       message: 'تم حذف الخطة بنجاح',
     });
   } catch (error) {
-    console.error('Error deleting plan:', error);
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { success: false, message: error.message },
-        { status: error.statusCode }
-      );
-    }
-    return NextResponse.json(
-      { success: false, message: 'حدث خطأ أثناء حذف الخطة' },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }

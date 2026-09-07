@@ -10,7 +10,7 @@ interface ManagerActivityFormProps {
     id: string;
     name: string;
     username: string;
-    position?: string;
+    positionCode?: string | null;
     role?: string;
   } | null;
   onSuccess?: (msg: string) => void;
@@ -221,9 +221,9 @@ export function ManagerActivityForm({
           {currentUser && (
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 border border-white/20 text-xs font-bold text-white self-start md:self-auto backdrop-blur-xs">
               <span>👤 {currentUser.name || currentUser.username}</span>
-              {currentUser.position && (
+              {currentUser.positionCode && (
                 <span className="px-1.5 py-0.5 rounded bg-white/20 text-[10px] font-black uppercase">
-                  {currentUser.position}
+                  {currentUser.positionCode}
                 </span>
               )}
             </div>

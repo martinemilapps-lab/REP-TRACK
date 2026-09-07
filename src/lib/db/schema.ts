@@ -551,6 +551,7 @@ export const managerWeeklyPlans = sqliteTable('manager_weekly_plans', {
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
 }, (table) => [
   index('idx_mgr_weekly_plans_user').on(table.userId),
+  uniqueIndex('idx_mgr_weekly_plans_user_week').on(table.userId, table.startDate),
   index('idx_mgr_weekly_plans_dates').on(table.startDate, table.endDate),
 ]);
 

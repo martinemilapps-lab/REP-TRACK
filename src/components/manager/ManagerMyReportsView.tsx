@@ -10,7 +10,7 @@ interface ManagerMyReportsViewProps {
     id: string;
     name: string;
     username: string;
-    position?: string;
+    positionCode?: string | null;
     role?: string;
   } | null;
   onOpenPlan?: (plan: WeeklyPlanRecord) => void;
@@ -28,7 +28,7 @@ export function ManagerMyReportsView({
   const isAr = language === 'ar';
 
   const [activeTab, setActiveTab] = useState<'activities' | 'plans'>('activities');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // Filters
   const [startDate, setStartDate] = useState('');
@@ -42,34 +42,35 @@ export function ManagerMyReportsView({
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Load Manager Activities
-  const loadActivities = useCallback(async () => {
-    setLoading(true);
+  const loadActivities = useCallback(async (signal?: AbortSignal) => {
     try {
       const params = new URLSearchParams();
       if (startDate) params.set('startDate', startDate);
       if (endDate) params.set('endDate', endDate);
       if (activityTypeFilter && activityTypeFilter !== 'All') params.set('activityType', activityTypeFilter);
 
-      const res = await fetch(`/api/manager/activities?${params.toString()}`);
+      const res = await fetch(`/api/manager/activities?${params.toString()}`, { signal });
       const data = await res.json();
+      if (signal?.aborted) return;
       if (res.ok && data.activities) {
         setActivities(data.activities);
       } else {
         onError?.(data.message || (isAr ? 'فشل جلب الأنشطة' : 'Failed to load activities'));
       }
     } catch {
+      if (signal?.aborted) return;
       onError?.(isAr ? 'خطأ في الاتصال بالخادم' : 'Server connection error');
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   }, [startDate, endDate, activityTypeFilter, isAr, onError]);
 
   // Load Manager Personal Weekly Plans
-  const loadPlans = useCallback(async () => {
-    setLoading(true);
+  const loadPlans = useCallback(async (signal?: AbortSignal) => {
     try {
-      const res = await fetch('/api/weekly-plans?personal=true');
+      const res = await fetch('/api/weekly-plans?personal=true', { signal });
       const data = await res.json();
+      if (signal?.aborted) return;
       if (res.ok && data.plans) {
         let filtered = data.plans as WeeklyPlanRecord[];
         if (startDate) {
@@ -86,18 +87,23 @@ export function ManagerMyReportsView({
         onError?.(data.message || (isAr ? 'فشل جلب الخطط' : 'Failed to load weekly plans'));
       }
     } catch {
+      if (signal?.aborted) return;
       onError?.(isAr ? 'خطأ في الاتصال بالخادم' : 'Server connection error');
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   }, [startDate, endDate, planStatusFilter, isAr, onError]);
 
   useEffect(() => {
+    const controller = new AbortController();
     if (activeTab === 'activities') {
-      loadActivities();
+      // The loader updates state only after its external fetch resolves.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      loadActivities(controller.signal);
     } else {
-      loadPlans();
+      loadPlans(controller.signal);
     }
+    return () => controller.abort();
   }, [activeTab, loadActivities, loadPlans]);
 
   // Delete an activity
@@ -180,9 +186,9 @@ export function ManagerMyReportsView({
           {currentUser && (
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--surface-subtle)] border border-[var(--line)] text-xs font-bold text-[var(--ink)] self-start md:self-auto">
               <span>👤 {currentUser.name || currentUser.username}</span>
-              {currentUser.position && (
+              {currentUser.positionCode && (
                 <span className="px-1.5 py-0.5 rounded bg-[#1D5E99]/10 text-[#1D5E99] text-[10px] font-black uppercase">
-                  {currentUser.position}
+                  {currentUser.positionCode}
                 </span>
               )}
             </div>
@@ -304,7 +310,7 @@ export function ManagerMyReportsView({
             </button>
             <button
               type="button"
-              onClick={activeTab === 'activities' ? loadActivities : loadPlans}
+              onClick={() => { setLoading(true); if (activeTab === 'activities') loadActivities(); else loadPlans(); }}
               className="text-xs font-bold px-3 py-1.5 bg-[#1D5E99] hover:bg-[#154673] text-white rounded-lg transition-colors cursor-pointer shadow-2xs"
             >
               🔄 {isAr ? 'تحديث' : 'Refresh'}
@@ -419,7 +425,7 @@ export function ManagerMyReportsView({
                           )}
                           {act.morningHospitalComment && (
                             <p className="text-[var(--ink-soft)] italic mt-1 bg-white/70 p-1.5 rounded">
-                              "{act.morningHospitalComment}"
+                              &quot;{act.morningHospitalComment}&quot;
                             </p>
                           )}
                         </div>
@@ -447,7 +453,7 @@ export function ManagerMyReportsView({
                           )}
                           {act.afternoonDoctorComment && (
                             <p className="text-[var(--ink-soft)] italic mt-1 bg-white/70 p-1.5 rounded">
-                              "{act.afternoonDoctorComment}"
+                              &quot;{act.afternoonDoctorComment}&quot;
                             </p>
                           )}
                         </div>

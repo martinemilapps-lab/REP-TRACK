@@ -1,21 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Representative, ActivityType, VisitEntityType } from '@/types';
+import React, { useCallback, useState } from 'react';
+import { Representative, WeeklyPlanRecord } from '@/types';
 import { ManagerDashboardView } from '@/components/manager/ManagerDashboardView';
 import { ManagerActivityForm } from '@/components/manager/ManagerActivityForm';
 import { ManagerMyReportsView } from '@/components/manager/ManagerMyReportsView';
 import { WeeklyPlanView } from '@/components/weekly-plan/WeeklyPlanView';
-import { MyReportsView } from '@/components/my-reports/MyReportsView';
-import { TypePicker } from '@/components/reports/TypePicker';
-import { HospitalForm } from '@/components/reports/HospitalForm';
-import { PharmacyForm } from '@/components/reports/PharmacyForm';
-import { DoctorForm } from '@/components/reports/DoctorForm';
-import { BranchForm } from '@/components/reports/BranchForm';
-import { EventForm } from '@/components/reports/EventForm';
-import { TrainingForm } from '@/components/reports/TrainingForm';
-import { SpecialTaskForm } from '@/components/reports/SpecialTaskForm';
-import { AvailabilityForm } from '@/components/reports/AvailabilityForm';
 import { MyListsView } from '@/components/my-lists/MyListsView';
 import { useTranslation } from '@/lib/i18nContext';
 import {
@@ -63,9 +53,9 @@ export function ManagerWorkspace({
   const [activeNav, setActiveNav] = useState<ManagerNavType>('team_reports');
   const [selectedTeamRep, setSelectedTeamRep] = useState<string>(reps[0]?.name || '');
 
-  // Activity submit form states (for manager co-visits / personal sales)
-  const [selectedType, setSelectedType] = useState<ActivityType>('hospital');
-  const [visitSubtype, setVisitSubtype] = useState<VisitEntityType>('hospital');
+  const [selectedPlan, setSelectedPlan] = useState<WeeklyPlanRecord | null>(null);
+  const showSuccess = useCallback((msg: string) => onShowToast(msg), [onShowToast]);
+  const showError = useCallback((msg: string) => onShowToast(msg, true), [onShowToast]);
 
   const navItems = [
     { id: 'submit_activity', label: language === 'ar' ? 'تسجيل نشاط' : 'Submit Activity', icon: '📝' },
@@ -120,7 +110,10 @@ export function ManagerWorkspace({
           {navItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => setActiveNav(item.id as ManagerNavType)}
+              onClick={() => {
+                if (item.id === 'weekly_plan') setSelectedPlan(null);
+                setActiveNav(item.id as ManagerNavType);
+              }}
               className={`px-3.5 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 select-none ${
                 activeNav === item.id
                   ? 'bg-gradient-to-r from-[var(--gold)] to-[var(--gold-light)] text-white shadow-xs font-black'
@@ -154,8 +147,8 @@ export function ManagerWorkspace({
 
           <ManagerActivityForm
             currentUser={currentUser}
-            onSuccess={(msg) => onShowToast(msg)}
-            onError={(msg) => onShowToast(msg, true)}
+            onSuccess={showSuccess}
+            onError={showError}
             onSubmitted={() => {
               setActiveNav('my_reports');
             }}
@@ -167,13 +160,15 @@ export function ManagerWorkspace({
       {activeNav === 'weekly_plan' && (
         <div className="animate-fade-in">
           <WeeklyPlanView
+            key={selectedPlan?.id ?? 'new-personal-plan'}
+            initialPlan={selectedPlan}
             reps={reps}
             selectedRep={currentUser.name}
             isManager={true}
             isManagerPersonal={true}
             currentUser={currentUser}
-            onSuccess={(msg) => onShowToast(msg)}
-            onError={(msg) => onShowToast(msg, true)}
+            onSuccess={showSuccess}
+            onError={showError}
           />
         </div>
       )}
@@ -183,11 +178,12 @@ export function ManagerWorkspace({
         <div className="animate-fade-in">
           <ManagerMyReportsView
             currentUser={currentUser}
-            onOpenPlan={() => {
+            onOpenPlan={(plan) => {
+              setSelectedPlan(plan);
               setActiveNav('weekly_plan');
             }}
-            onSuccess={(msg) => onShowToast(msg)}
-            onError={(msg) => onShowToast(msg, true)}
+            onSuccess={showSuccess}
+            onError={showError}
           />
         </div>
       )}
@@ -198,38 +194,21 @@ export function ManagerWorkspace({
           <ManagerDashboardView
             reps={reps}
             onLock={onLogout}
-            onError={(msg) => onShowToast(msg, true)}
-            onSuccess={(msg) => onShowToast(msg)}
+            onError={showError}
+            onSuccess={showSuccess}
           />
         </div>
       )}
 
-      {/* 5. Team Plans */}
+      {/* STEP 20 will supply actual hierarchy scope; do not select a fabricated team rep. */}
       {activeNav === 'team_plans' && (
-        <div className="animate-fade-in">
-          <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-6 shadow-card">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-2xl">📋</span>
-              <div>
-                <h2 className="text-base font-extrabold text-[var(--ink)]">
-                  {language === 'ar' ? 'مراجعة واعتماد خطط الفريق الأسبوعية' : 'Team Weekly Plans Review & Approval'}
-                </h2>
-                <p className="text-xs text-[var(--ink-soft)] mt-0.5">
-                  {language === 'ar'
-                    ? 'استعراض الخطط الأسبوعية المرسلة من المندوبين ضمن نطاق إشرافك لاعتمادها أو إضافة ملاحظات'
-                    : 'Inspect and approve weekly plan submissions from representatives in your managerial scope'}
-                </p>
-              </div>
-            </div>
-
-            <WeeklyPlanView
-              reps={reps}
-              selectedRep={reps[0]?.name || currentUser.name}
-              isManager={true}
-              onSuccess={(msg) => onShowToast(msg)}
-              onError={(msg) => onShowToast(msg, true)}
-            />
-          </div>
+        <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-6 shadow-card">
+          <h2 className="text-base font-extrabold text-[var(--ink)]">
+            {language === 'ar' ? 'خطط الفريق غير متاحة بعد' : 'Team Plans are not available yet'}
+          </h2>
+          <p className="text-xs text-[var(--ink-soft)] mt-2">
+            {language === 'ar' ? 'ستتاح بعد تفعيل نطاق الإشراف المعتمد.' : 'Available once authorized team access is configured.'}
+          </p>
         </div>
       )}
 

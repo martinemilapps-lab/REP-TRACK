@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth';
+import { requireAuthenticatedUser } from '@/lib/auth';
 import { saveWeeklyPlan, getWeeklyPlans } from '@/lib/services/weeklyPlanService';
-import { AppError } from '@/lib/errors';
-import { z } from 'zod';
+import { handleApiError } from '@/lib/errors';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await requireAuthenticatedUser();
     const searchParams = request.nextUrl.searchParams;
     const repParam = searchParams.get('rep');
     const repIdParam = searchParams.get('repId');
@@ -26,23 +25,13 @@ export async function GET(request: NextRequest) {
       total: plans.length,
     });
   } catch (error) {
-    console.error('Error fetching weekly plans:', error);
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { success: false, message: error.message },
-        { status: error.statusCode }
-      );
-    }
-    return NextResponse.json(
-      { success: false, message: 'حدث خطأ أثناء جلب الخطط الأسبوعية' },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await requireAuthenticatedUser();
     const body = await request.json();
 
     const plan = await saveWeeklyPlan(session, body);
@@ -53,22 +42,6 @@ export async function POST(request: NextRequest) {
       plan,
     });
   } catch (error) {
-    console.error('Error saving weekly plan:', error);
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { success: false, message: error.issues[0]?.message || 'بيانات الخطة غير صالحة' },
-        { status: 400 }
-      );
-    }
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { success: false, message: error.message },
-        { status: error.statusCode }
-      );
-    }
-    return NextResponse.json(
-      { success: false, message: 'حدث خطأ أثناء حفظ الخطة الأسبوعية' },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }

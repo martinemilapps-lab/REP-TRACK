@@ -14,7 +14,6 @@ import {
 } from '../src/lib/services/weeklyPlanService';
 import { generateWeeklyPlanWorkbook } from '../src/lib/excel';
 import { db, representatives } from '../src/lib/db';
-import { eq } from 'drizzle-orm';
 
 export async function runWeeklyPlanTests() {
   console.log('\n🧪 Running Single/Double Visits & Weekly Plan Test Suite...');
@@ -121,7 +120,7 @@ export async function runWeeklyPlanTests() {
       };
 
       // 3.1 Save / Create
-      const saved = await saveWeeklyPlan(null, {
+      const saved = await saveWeeklyPlan(managerSession, {
         rep: rep.name,
         repId: rep.id,
         startDate: '2026-08-22',
@@ -145,11 +144,11 @@ export async function runWeeklyPlanTests() {
       assert(!!saved && !!saved.id, 'Weekly plan saved successfully in database');
 
       // 3.2 Query List
-      const plansList = await getWeeklyPlans(null, { repId: rep.id });
+      const plansList = await getWeeklyPlans(managerSession, { repId: rep.id });
       assert(plansList.length > 0, 'getWeeklyPlans returns list containing saved plan');
 
       // 3.3 Query By ID
-      const fetched = await getWeeklyPlanById(saved.id);
+      const fetched = await getWeeklyPlanById(saved.id, managerSession);
       assert(
         !!fetched && fetched.saturdayAm === 'Line 1 meeting then office working',
         'getWeeklyPlanById retrieves matching plan details'
@@ -180,11 +179,8 @@ export async function runWeeklyPlanTests() {
       const deleted = await deleteWeeklyPlan(managerSession, saved.id);
       assert(deleted === true, 'Weekly plan deleted successfully');
     }
-  } catch (err: any) {
-    if (err?.message?.includes('Unauthorized') || err?.cause?.message?.includes('Unauthorized')) {
-      console.log('  ℹ️ Remote Data Gateway secret not configured in local environment (expected offline behavior). Skipping remote DB assertions.');
-      return { passed, failed: 0 };
-    }
+  } catch (err: unknown) {
+
     console.error('Error running weekly plan tests:', err);
     failed++;
   }

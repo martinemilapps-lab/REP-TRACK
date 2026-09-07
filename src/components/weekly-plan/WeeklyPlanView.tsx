@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Representative, WeeklyPlanRecord } from '@/types';
 import { useTranslation } from '@/lib/i18nContext';
 import { Button } from '@/components/ui/Button';
@@ -131,17 +131,18 @@ export function WeeklyPlanView({
   onError,
 }: WeeklyPlanViewProps) {
   const { t, language } = useTranslation();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [plansHistory, setPlansHistory] = useState<WeeklyPlanRecord[]>([]);
-  const [activePlanId, setActivePlanId] = useState<string | null>(null);
+  const [activePlanId, setActivePlanId] = useState<string | null>(initialPlan?.id ?? null);
 
   const initialRange = useMemo(() => getWeekRange(), []);
-  const [startDate, setStartDate] = useState(initialRange.startDate);
-  const [endDate, setEndDate] = useState(initialRange.endDate);
-  const [weekLabel, setWeekLabel] = useState(initialRange.label);
-  const [managerNotes, setManagerNotes] = useState('');
-  const [planStatus, setPlanStatus] = useState('Submitted');
+  const [startDate, setStartDate] = useState(initialPlan?.startDate ?? initialRange.startDate);
+  const [endDate, setEndDate] = useState(initialPlan?.endDate ?? initialRange.endDate);
+  const [weekLabel, setWeekLabel] = useState(initialPlan?.weekLabel ?? initialRange.label);
+  const [managerNotes, setManagerNotes] = useState(initialPlan?.managerNotes ?? '');
+  const [planStatus, setPlanStatus] = useState(initialPlan?.status ?? 'Submitted');
   const [focusedCell, setFocusedCell] = useState<keyof WeeklyPlanFormState>('saturdayAm');
 
   // Universal Smart Item Builder Modal State
@@ -153,7 +154,7 @@ export function WeeklyPlanView({
 
   // Single Visit Builder fields
   const [singlePrefix, setSinglePrefix] = useState<string>('');
-  const [singleArea, setSingleArea] = useState<string>('');
+  const [singleArea, setSingleArea] = useState<string>(() => reps.find(r => r.name === selectedRep)?.area ?? '');
   const [singleNotes, setSingleNotes] = useState<string>('');
 
   // Double Visit Builder fields
@@ -174,33 +175,26 @@ export function WeeklyPlanView({
   const [othersDetails, setOthersDetails] = useState<string>('');
 
   const [formData, setFormData] = useState<WeeklyPlanFormState>({
-    saturdayAm: 'Line 1 meeting then office working',
-    saturdayPm: 'Office working',
-    sundayAm: 'Line 2 meeting then Am double visit with Sara Adel',
-    sundayPm: 'Pm double visit with Sara Adel',
-    mondayAm: 'Line 3 meeting then Am single visits in Mohandseen',
-    mondayPm: 'Pm single visits in Mohandseen',
-    tuesdayAm: 'Line 1 meeting then Am double visit with Dr. Fawzy Nasser',
-    tuesdayPm: 'Pm double visit with Dr. Fawzy Nasser',
-    wednesdayAm: 'Line 2 meeting then office working',
-    wednesdayPm: 'Office working',
-    thursdayAm: 'Line 3 meeting then office working',
-    thursdayPm: 'Office working',
-    fridayAm: 'Field visits / Follow-up',
-    fridayPm: 'Off / Weekly summary',
+    saturdayAm: initialPlan ? (initialPlan.saturdayAm ?? '') : isManagerPersonal ? '' : 'Line 1 meeting then office working',
+    saturdayPm: initialPlan ? (initialPlan.saturdayPm ?? '') : isManagerPersonal ? '' : 'Office working',
+    sundayAm: initialPlan ? (initialPlan.sundayAm ?? '') : isManagerPersonal ? '' : 'Line 2 meeting then Am double visit with Sara Adel',
+    sundayPm: initialPlan ? (initialPlan.sundayPm ?? '') : isManagerPersonal ? '' : 'Pm double visit with Sara Adel',
+    mondayAm: initialPlan ? (initialPlan.mondayAm ?? '') : isManagerPersonal ? '' : 'Line 3 meeting then Am single visits in Mohandseen',
+    mondayPm: initialPlan ? (initialPlan.mondayPm ?? '') : isManagerPersonal ? '' : 'Pm single visits in Mohandseen',
+    tuesdayAm: initialPlan ? (initialPlan.tuesdayAm ?? '') : isManagerPersonal ? '' : 'Line 1 meeting then Am double visit with Dr. Fawzy Nasser',
+    tuesdayPm: initialPlan ? (initialPlan.tuesdayPm ?? '') : isManagerPersonal ? '' : 'Pm double visit with Dr. Fawzy Nasser',
+    wednesdayAm: initialPlan ? (initialPlan.wednesdayAm ?? '') : isManagerPersonal ? '' : 'Line 2 meeting then office working',
+    wednesdayPm: initialPlan ? (initialPlan.wednesdayPm ?? '') : isManagerPersonal ? '' : 'Office working',
+    thursdayAm: initialPlan ? (initialPlan.thursdayAm ?? '') : isManagerPersonal ? '' : 'Line 3 meeting then office working',
+    thursdayPm: initialPlan ? (initialPlan.thursdayPm ?? '') : isManagerPersonal ? '' : 'Office working',
+    fridayAm: initialPlan ? (initialPlan.fridayAm ?? '') : isManagerPersonal ? '' : 'Field visits / Follow-up',
+    fridayPm: initialPlan ? (initialPlan.fridayPm ?? '') : isManagerPersonal ? '' : 'Off / Weekly summary',
   });
 
   // Find rep details
   const currentRepObj = useMemo(() => {
     return (reps || []).find((r) => r.name === selectedRep);
   }, [reps, selectedRep]);
-
-  // Set default single area to rep area if available
-  useEffect(() => {
-    if (currentRepObj?.area && !singleArea) {
-      setSingleArea(currentRepObj.area);
-    }
-  }, [currentRepObj, singleArea]);
 
   const repOptions: SelectOption[] = useMemo(() => {
     return (reps || []).map((r) => ({
@@ -210,17 +204,14 @@ export function WeeklyPlanView({
     }));
   }, [reps]);
 
-  // If initialPlan is provided, populate it
-  useEffect(() => {
-    if (initialPlan) {
-      handleSelectHistoryPlan(initialPlan);
-    }
-  }, [initialPlan]);
+  // Parent keys this editor by initialPlan.id; initialize all fields together on mount.
+  const loadSequence = useRef(0);
+  const cancelPendingLoad = useCallback(() => { loadSequence.current++; }, []);
 
   // Load plans history for selected rep or manager personal
   const loadPlans = useCallback(async () => {
     if (!isManagerPersonal && !selectedRep && !isManager) return;
-    setLoading(true);
+    const sequence = ++loadSequence.current;
     try {
       const url = isManagerPersonal
         ? '/api/weekly-plans?personal=true'
@@ -229,7 +220,9 @@ export function WeeklyPlanView({
         : `/api/weekly-plans`;
       const res = await fetch(url);
       const data = await res.json();
+      if (sequence !== loadSequence.current) return;
       if (res.ok && data.plans) {
+        setLoadFailed(false);
         setPlansHistory(data.plans);
         // If there's a plan for the current week, populate it
         const currentMatch = data.plans.find(
@@ -238,6 +231,8 @@ export function WeeklyPlanView({
         );
         if (currentMatch) {
           setActivePlanId(currentMatch.id);
+          setEndDate(currentMatch.endDate);
+          setWeekLabel(currentMatch.weekLabel || `${currentMatch.startDate} to ${currentMatch.endDate}`);
           setPlanStatus(currentMatch.status || 'Submitted');
           setManagerNotes(currentMatch.managerNotes || '');
           setFormData({
@@ -256,20 +251,40 @@ export function WeeklyPlanView({
             fridayAm: currentMatch.fridayAm || '',
             fridayPm: currentMatch.fridayPm || '',
           });
+        } else {
+          setActivePlanId(null);
+          setPlanStatus('Submitted');
+          setManagerNotes('');
+          if (isManagerPersonal) {
+            setFormData({
+              saturdayAm: '', saturdayPm: '', sundayAm: '', sundayPm: '',
+              mondayAm: '', mondayPm: '', tuesdayAm: '', tuesdayPm: '',
+              wednesdayAm: '', wednesdayPm: '', thursdayAm: '', thursdayPm: '',
+              fridayAm: '', fridayPm: '',
+            });
+          }
         }
+      } else {
+        setLoadFailed(true);
       }
     } catch (err) {
+      if (sequence === loadSequence.current) setLoadFailed(true);
       console.error('Failed to load weekly plans:', err);
     } finally {
-      setLoading(false);
+      if (sequence === loadSequence.current) setLoading(false);
     }
   }, [selectedRep, isManager, isManagerPersonal, startDate]);
 
   useEffect(() => {
+    // The loader updates state only after its external fetch resolves.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadPlans();
-  }, [loadPlans]);
+    return cancelPendingLoad;
+  }, [loadPlans, cancelPendingLoad]);
 
   const handleStartDateChange = (newStart: string) => {
+    cancelPendingLoad();
+    setLoading(true);
     setStartDate(newStart);
     try {
       const d = new Date(newStart);
@@ -482,6 +497,8 @@ export function WeeklyPlanView({
   };
 
   const handleSelectHistoryPlan = (plan: WeeklyPlanRecord) => {
+    cancelPendingLoad();
+    if (plan.startDate !== startDate) setLoading(true);
     setActivePlanId(plan.id);
     setStartDate(plan.startDate);
     setEndDate(plan.endDate);
@@ -507,6 +524,7 @@ export function WeeklyPlanView({
   };
 
   const handleSavePlan = async () => {
+    if (loading || loadFailed || saving) return;
     if (!isManagerPersonal && !selectedRep && !isManager) {
       onError?.(t('msg.requiredRep'));
       return;
@@ -525,7 +543,7 @@ export function WeeklyPlanView({
           weekLabel,
           ...formData,
           status: 'Submitted',
-          managerNotes,
+          ...(isManagerPersonal ? {} : { managerNotes }),
         }),
       });
 
@@ -536,6 +554,7 @@ export function WeeklyPlanView({
           setActivePlanId(data.plan.id);
         }
         loadPlans();
+        return data.plan?.id as string | undefined;
       } else {
         onError?.(data.message || t('msg.errorGeneric'));
       }
@@ -554,8 +573,11 @@ export function WeeklyPlanView({
     }
 
     // If not saved yet, save first then export
-    await handleSavePlan();
-    onSuccess?.(t('msg.exportPlanSuccess'));
+    const savedId = await handleSavePlan();
+    if (savedId) {
+      window.open(`/api/weekly-plans/${savedId}/export`, '_blank');
+      onSuccess?.(t('msg.exportPlanSuccess'));
+    }
   };
 
   const handleCopyLastWeek = () => {
@@ -606,6 +628,15 @@ export function WeeklyPlanView({
 
   return (
     <div className="animate-fade-in space-y-5">
+      {loadFailed && (
+        <div role="alert" className="text-sm text-red-700">
+          {language === 'ar' ? 'تعذر تحميل الخطة. أعد المحاولة قبل التعديل.' : 'Could not load the plan. Retry before editing.'}
+          <Button variant="secondary" onClick={() => { setLoading(true); loadPlans(); }}>
+            {language === 'ar' ? 'إعادة المحاولة' : 'Retry'}
+          </Button>
+        </div>
+      )}
+      <fieldset disabled={loading || saving || loadFailed} className="contents">
       {/* Identity Selector */}
       {!isManagerPersonal && onSelectRep && (
         <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 shadow-card">
@@ -1024,7 +1055,7 @@ export function WeeklyPlanView({
             </div>
 
             {/* Manager Notes / Directives Box (If Any) */}
-            {(isManager || managerNotes) && (
+            {!isManagerPersonal && (isManager || managerNotes) && (
               <div className="bg-[#FFFDF7] border-t border-[var(--gold-border)] p-4">
                 <label className="block text-xs font-bold text-[var(--gold-deep)] mb-1.5 flex items-center gap-1.5">
                   <span>📝</span>
@@ -1071,7 +1102,7 @@ export function WeeklyPlanView({
               </div>
 
               <div className="flex items-center gap-2.5">
-                {isManager && planStatus !== 'Approved' && activePlanId && (
+                {isManager && !isManagerPersonal && planStatus !== 'Approved' && activePlanId && (
                   <Button
                     variant="primary"
                     size="md"
@@ -1087,7 +1118,7 @@ export function WeeklyPlanView({
                   variant="primary"
                   size="md"
                   onClick={handleSavePlan}
-                  isLoading={saving}
+                  isLoading={saving || loading}
                   className="font-extrabold text-xs md:text-sm px-6"
                 >
                   <span>💾</span>
@@ -1684,6 +1715,7 @@ export function WeeklyPlanView({
           )}
         </>
       )}
+      </fieldset>
     </div>
   );
 }

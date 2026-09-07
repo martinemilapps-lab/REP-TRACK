@@ -12,7 +12,10 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/lib/db/seed.ts",
-    "test": "tsx tests/runAll.ts"
+    "test": "tsx tests/runAll.ts",
+    "db:migrate:d1:step19": "tsx scripts/migrate_step19.ts",
+    "test:step19": "tsx tests/step19.test.ts",
+    "test:local": "tsx tests/runLocal.ts"
   },
   "dependencies": {
     "@libsql/client": "^0.17.4",

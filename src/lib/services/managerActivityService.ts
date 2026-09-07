@@ -1,8 +1,8 @@
 import { db, managerActivities, users } from '@/lib/db';
 import { eq, and, desc, gte, lte } from 'drizzle-orm';
 import { UserSessionPayload } from '@/lib/auth';
-import { AppError } from '@/lib/errors';
-import { ManagerActivitySchema } from '@/lib/validation';
+import { assertManagerSession, assertManagerOwner } from '@/lib/authPolicy';
+import { ManagerActivitySchema, ManagerActivityFiltersSchema } from '@/lib/validation';
 import { ManagerActivityRecord } from '@/types';
 import { z } from 'zod';
 
@@ -16,15 +16,7 @@ export async function saveManagerActivity(
   session: UserSessionPayload | null,
   rawInput: unknown
 ): Promise<ManagerActivityRecord> {
-  if (!session) {
-    throw new AppError('يجب تسجيل الدخول أولاً', 401);
-  }
-
-  // Validate managerial role
-  const isManager = session.role === 'MANAGER' || session.systemRole === 'MANAGER' || session.systemRole === 'ADMIN';
-  if (!isManager) {
-    throw new AppError('هذا الإجراء مخصص للمديرين والمشرفين فقط', 403);
-  }
+  assertManagerSession(session);
 
   const parsed = ManagerActivitySchema.parse(rawInput);
   const now = new Date();
@@ -78,10 +70,9 @@ export async function getManagerActivities(
     activityType?: string;
   } = {}
 ): Promise<ManagerActivityRecord[]> {
-  if (!session) {
-    throw new AppError('يجب تسجيل الدخول أولاً', 401);
-  }
+  assertManagerSession(session);
 
+  filters = ManagerActivityFiltersSchema.parse(filters);
   const conditions = [eq(managerActivities.userId, session.id)];
 
   if (filters.startDate) {
@@ -91,7 +82,7 @@ export async function getManagerActivities(
     conditions.push(lte(managerActivities.activityDate, filters.endDate));
   }
   if (filters.activityType && filters.activityType !== 'All') {
-    conditions.push(eq(managerActivities.activityType, filters.activityType as any));
+    conditions.push(eq(managerActivities.activityType, filters.activityType as ManagerActivityRecord['activityType']));
   }
 
   const rows = await db
@@ -111,9 +102,7 @@ export async function getManagerActivityById(
   session: UserSessionPayload | null,
   id: string
 ): Promise<ManagerActivityRecord | null> {
-  if (!session) {
-    throw new AppError('يجب تسجيل الدخول أولاً', 401);
-  }
+  assertManagerSession(session);
 
   const row = await db
     .select()
@@ -124,11 +113,11 @@ export async function getManagerActivityById(
   if (!row) return null;
 
   // Enforce access control
-  if (row.userId !== session.id && session.systemRole !== 'ADMIN') {
-    throw new AppError('غير مصرح لك باستعراض هذا التقرير', 403);
-  }
+  assertManagerOwner(session, row.userId);
 
-  return formatManagerActivity(row, session.name, session.positionCode ?? undefined);
+  const owner = await db.select({ name: users.name, positionCode: users.positionCode })
+    .from(users).where(eq(users.id, row.userId)).get();
+  return formatManagerActivity(row, owner?.name, owner?.positionCode ?? undefined);
 }
 
 /**
@@ -138,9 +127,7 @@ export async function deleteManagerActivity(
   session: UserSessionPayload | null,
   id: string
 ): Promise<boolean> {
-  if (!session) {
-    throw new AppError('يجب تسجيل الدخول أولاً', 401);
-  }
+  assertManagerSession(session);
 
   const existing = await db
     .select()
@@ -150,16 +137,14 @@ export async function deleteManagerActivity(
 
   if (!existing) return false;
 
-  if (existing.userId !== session.id && session.systemRole !== 'ADMIN') {
-    throw new AppError('غير مصرح لك بحذف هذا التقرير', 403);
-  }
+  assertManagerOwner(session, existing.userId);
 
-  await db.delete(managerActivities).where(eq(managerActivities.id, id)).run();
+  await db.delete(managerActivities).where(and(eq(managerActivities.id, id), eq(managerActivities.userId, session.id))).run();
   return true;
 }
 
 function formatManagerActivity(
-  row: any,
+  row: typeof managerActivities.$inferSelect,
   userName?: string,
   userPosition?: string
 ): ManagerActivityRecord {
