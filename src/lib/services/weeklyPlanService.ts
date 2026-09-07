@@ -1,4 +1,4 @@
-import { db, weeklyPlans, representatives } from '@/lib/db';
+import { db, weeklyPlans, representatives, managerWeeklyPlans, users } from '@/lib/db';
 import { eq, and, desc } from 'drizzle-orm';
 import { UserSessionPayload, resolveAuthorizedRepId } from '@/lib/auth';
 import { AppError } from '@/lib/errors';
@@ -9,13 +9,105 @@ import { WeeklyPlanRecord } from '@/types';
 export type WeeklyPlanInput = z.input<typeof WeeklyPlanSchema>;
 
 /**
- * Saves or updates a weekly plan for a representative.
+ * Saves or updates a weekly plan for a representative or a manager.
  */
 export async function saveWeeklyPlan(
   session: UserSessionPayload | null,
   rawInput: WeeklyPlanInput
 ): Promise<WeeklyPlanRecord> {
   const input = WeeklyPlanSchema.parse(rawInput);
+
+  const isManagerPlan = Boolean(
+    input.isManagerPersonal ||
+    (session && session.role === 'MANAGER' && !input.repId && (!input.rep || input.rep === session.name))
+  );
+
+  if (isManagerPlan) {
+    if (!session || !session.id) {
+      throw new AppError('يرجى تسجيل الدخول أولاً كمدير لحفظ الخطة', 401);
+    }
+    const userId = session.id;
+    const weekLabel = input.weekLabel || `${input.startDate} to ${input.endDate}`;
+
+    // Check if manager plan already exists for this user and startDate
+    const existingManagerPlan = await db
+      .select()
+      .from(managerWeeklyPlans)
+      .where(
+        and(
+          eq(managerWeeklyPlans.userId, userId),
+          eq(managerWeeklyPlans.startDate, input.startDate.trim())
+        )
+      )
+      .get();
+
+    let record;
+    if (existingManagerPlan) {
+      const [updated] = await db
+        .update(managerWeeklyPlans)
+        .set({
+          endDate: input.endDate.trim(),
+          weekLabel,
+          saturdayAm: input.saturdayAm ?? '',
+          saturdayPm: input.saturdayPm ?? '',
+          sundayAm: input.sundayAm ?? '',
+          sundayPm: input.sundayPm ?? '',
+          mondayAm: input.mondayAm ?? '',
+          mondayPm: input.mondayPm ?? '',
+          tuesdayAm: input.tuesdayAm ?? '',
+          tuesdayPm: input.tuesdayPm ?? '',
+          wednesdayAm: input.wednesdayAm ?? '',
+          wednesdayPm: input.wednesdayPm ?? '',
+          thursdayAm: input.thursdayAm ?? '',
+          thursdayPm: input.thursdayPm ?? '',
+          fridayAm: input.fridayAm ?? '',
+          fridayPm: input.fridayPm ?? '',
+          status: (input.status as 'Draft' | 'Submitted' | 'Approved') || 'Submitted',
+          managerNotes: input.managerNotes ?? existingManagerPlan.managerNotes,
+          updatedAt: new Date(),
+        })
+        .where(eq(managerWeeklyPlans.id, existingManagerPlan.id))
+        .returning();
+      record = updated;
+    } else {
+      const [inserted] = await db
+        .insert(managerWeeklyPlans)
+        .values({
+          userId,
+          startDate: input.startDate.trim(),
+          endDate: input.endDate.trim(),
+          weekLabel,
+          saturdayAm: input.saturdayAm ?? '',
+          saturdayPm: input.saturdayPm ?? '',
+          sundayAm: input.sundayAm ?? '',
+          sundayPm: input.sundayPm ?? '',
+          mondayAm: input.mondayAm ?? '',
+          mondayPm: input.mondayPm ?? '',
+          tuesdayAm: input.tuesdayAm ?? '',
+          tuesdayPm: input.tuesdayPm ?? '',
+          wednesdayAm: input.wednesdayAm ?? '',
+          wednesdayPm: input.wednesdayPm ?? '',
+          thursdayAm: input.thursdayAm ?? '',
+          thursdayPm: input.thursdayPm ?? '',
+          fridayAm: input.fridayAm ?? '',
+          fridayPm: input.fridayPm ?? '',
+          status: (input.status as 'Draft' | 'Submitted' | 'Approved') || 'Submitted',
+          managerNotes: input.managerNotes ?? '',
+        })
+        .returning();
+      record = inserted;
+    }
+
+    return {
+      ...record,
+      rep: session.name || session.username || 'Manager',
+      userId: session.id,
+      isManagerPlan: true,
+      submittedAt: record.submittedAt ? new Date(record.submittedAt).toISOString() : undefined,
+      updatedAt: record.updatedAt ? new Date(record.updatedAt).toISOString() : undefined,
+    } as WeeklyPlanRecord;
+  }
+
   let repId = session?.repId || input.repId || null;
 
   if (!repId && input.rep) {
@@ -127,8 +219,70 @@ export async function saveWeeklyPlan(
  */
 export async function getWeeklyPlans(
   session: UserSessionPayload | null,
-  options: { repId?: string | null; repName?: string | null; limit?: number; offset?: number } = {}
+  options: {
+    repId?: string | null;
+    repName?: string | null;
+    userId?: string | null;
+    personalOnly?: boolean;
+    limit?: number;
+    offset?: number;
+  } = {}
 ): Promise<WeeklyPlanRecord[]> {
+  // If requesting manager personal weekly plans:
+  if (
+    options.personalOnly ||
+    (session?.role === 'MANAGER' && options.userId === session.id) ||
+    (session?.role === 'MANAGER' && !options.repId && !options.repName && options.userId)
+  ) {
+    const targetUserId = options.userId || session?.id;
+    if (!targetUserId) {
+      return [];
+    }
+
+    const results = await db
+      .select({
+        id: managerWeeklyPlans.id,
+        userId: managerWeeklyPlans.userId,
+        userName: users.name,
+        startDate: managerWeeklyPlans.startDate,
+        endDate: managerWeeklyPlans.endDate,
+        weekLabel: managerWeeklyPlans.weekLabel,
+        saturdayAm: managerWeeklyPlans.saturdayAm,
+        saturdayPm: managerWeeklyPlans.saturdayPm,
+        sundayAm: managerWeeklyPlans.sundayAm,
+        sundayPm: managerWeeklyPlans.sundayPm,
+        mondayAm: managerWeeklyPlans.mondayAm,
+        mondayPm: managerWeeklyPlans.mondayPm,
+        tuesdayAm: managerWeeklyPlans.tuesdayAm,
+        tuesdayPm: managerWeeklyPlans.tuesdayPm,
+        wednesdayAm: managerWeeklyPlans.wednesdayAm,
+        wednesdayPm: managerWeeklyPlans.wednesdayPm,
+        thursdayAm: managerWeeklyPlans.thursdayAm,
+        thursdayPm: managerWeeklyPlans.thursdayPm,
+        fridayAm: managerWeeklyPlans.fridayAm,
+        fridayPm: managerWeeklyPlans.fridayPm,
+        status: managerWeeklyPlans.status,
+        managerNotes: managerWeeklyPlans.managerNotes,
+        submittedAt: managerWeeklyPlans.submittedAt,
+        updatedAt: managerWeeklyPlans.updatedAt,
+      })
+      .from(managerWeeklyPlans)
+      .leftJoin(users, eq(managerWeeklyPlans.userId, users.id))
+      .where(eq(managerWeeklyPlans.userId, targetUserId))
+      .orderBy(desc(managerWeeklyPlans.submittedAt))
+      .limit(options.limit || 500)
+      .offset(options.offset || 0)
+      .all();
+
+    return results.map((p) => ({
+      ...p,
+      rep: p.userName || session?.name || 'Manager',
+      isManagerPlan: true,
+      submittedAt: p.submittedAt ? new Date(p.submittedAt).toISOString() : undefined,
+      updatedAt: p.updatedAt ? new Date(p.updatedAt).toISOString() : undefined,
+    })) as WeeklyPlanRecord[];
+  }
+
   const targetRepId = resolveAuthorizedRepId(session, options.repId);
 
   const query = db
@@ -283,13 +437,58 @@ export async function getWeeklyPlanById(id: string): Promise<WeeklyPlanRecord | 
     .where(eq(weeklyPlans.id, id))
     .get();
 
-  if (!plan) return null;
+  if (plan) {
+    return {
+      ...plan,
+      submittedAt: plan.submittedAt ? new Date(plan.submittedAt).toISOString() : undefined,
+      updatedAt: plan.updatedAt ? new Date(plan.updatedAt).toISOString() : undefined,
+    } as WeeklyPlanRecord;
+  }
 
-  return {
-    ...plan,
-    submittedAt: plan.submittedAt ? new Date(plan.submittedAt).toISOString() : undefined,
-    updatedAt: plan.updatedAt ? new Date(plan.updatedAt).toISOString() : undefined,
-  } as WeeklyPlanRecord;
+  // Check managerWeeklyPlans
+  const mgrPlan = await db
+    .select({
+      id: managerWeeklyPlans.id,
+      userId: managerWeeklyPlans.userId,
+      userName: users.name,
+      startDate: managerWeeklyPlans.startDate,
+      endDate: managerWeeklyPlans.endDate,
+      weekLabel: managerWeeklyPlans.weekLabel,
+      saturdayAm: managerWeeklyPlans.saturdayAm,
+      saturdayPm: managerWeeklyPlans.saturdayPm,
+      sundayAm: managerWeeklyPlans.sundayAm,
+      sundayPm: managerWeeklyPlans.sundayPm,
+      mondayAm: managerWeeklyPlans.mondayAm,
+      mondayPm: managerWeeklyPlans.mondayPm,
+      tuesdayAm: managerWeeklyPlans.tuesdayAm,
+      tuesdayPm: managerWeeklyPlans.tuesdayPm,
+      wednesdayAm: managerWeeklyPlans.wednesdayAm,
+      wednesdayPm: managerWeeklyPlans.wednesdayPm,
+      thursdayAm: managerWeeklyPlans.thursdayAm,
+      thursdayPm: managerWeeklyPlans.thursdayPm,
+      fridayAm: managerWeeklyPlans.fridayAm,
+      fridayPm: managerWeeklyPlans.fridayPm,
+      status: managerWeeklyPlans.status,
+      managerNotes: managerWeeklyPlans.managerNotes,
+      submittedAt: managerWeeklyPlans.submittedAt,
+      updatedAt: managerWeeklyPlans.updatedAt,
+    })
+    .from(managerWeeklyPlans)
+    .leftJoin(users, eq(managerWeeklyPlans.userId, users.id))
+    .where(eq(managerWeeklyPlans.id, id))
+    .get();
+
+  if (mgrPlan) {
+    return {
+      ...mgrPlan,
+      rep: mgrPlan.userName || 'Manager',
+      isManagerPlan: true,
+      submittedAt: mgrPlan.submittedAt ? new Date(mgrPlan.submittedAt).toISOString() : undefined,
+      updatedAt: mgrPlan.updatedAt ? new Date(mgrPlan.updatedAt).toISOString() : undefined,
+    } as WeeklyPlanRecord;
+  }
+
+  return null;
 }
 
 /**
@@ -303,6 +502,20 @@ export async function updateWeeklyPlanStatus(
 ): Promise<WeeklyPlanRecord> {
   if (!session || session.role !== 'MANAGER') {
     throw new AppError('فقط مدير النظام يمكنه تغيير حالة الخطة أو إضافة ملاحظات إدارية', 403);
+  }
+
+  const existingMgr = await db.select().from(managerWeeklyPlans).where(eq(managerWeeklyPlans.id, id)).get();
+  if (existingMgr) {
+    await db
+      .update(managerWeeklyPlans)
+      .set({
+        status,
+        managerNotes: managerNotes !== undefined ? managerNotes : undefined,
+        updatedAt: new Date(),
+      })
+      .where(eq(managerWeeklyPlans.id, id));
+    const plan = await getWeeklyPlanById(id);
+    return plan!;
   }
 
   const [updated] = await db
@@ -330,6 +543,15 @@ export async function deleteWeeklyPlan(
   session: UserSessionPayload | null,
   id: string
 ): Promise<boolean> {
+  const existingMgr = await db.select().from(managerWeeklyPlans).where(eq(managerWeeklyPlans.id, id)).get();
+  if (existingMgr) {
+    if (session && session.id !== existingMgr.userId && session.role !== 'MANAGER') {
+      throw new AppError('غير مصرح لك بحذف هذه الخطة', 403);
+    }
+    await db.delete(managerWeeklyPlans).where(eq(managerWeeklyPlans.id, id));
+    return true;
+  }
+
   const existing = await db.select().from(weeklyPlans).where(eq(weeklyPlans.id, id)).get();
   if (!existing) {
     throw new AppError('الخطة غير موجودة', 404);

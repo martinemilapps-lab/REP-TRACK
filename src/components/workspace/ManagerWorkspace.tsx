@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { Representative, ActivityType, VisitEntityType } from '@/types';
 import { ManagerDashboardView } from '@/components/manager/ManagerDashboardView';
+import { ManagerActivityForm } from '@/components/manager/ManagerActivityForm';
+import { ManagerMyReportsView } from '@/components/manager/ManagerMyReportsView';
 import { WeeklyPlanView } from '@/components/weekly-plan/WeeklyPlanView';
 import { MyReportsView } from '@/components/my-reports/MyReportsView';
 import { TypePicker } from '@/components/reports/TypePicker';
@@ -134,115 +136,58 @@ export function ManagerWorkspace({
 
       {/* ============ NAVIGATION CONTENT ============ */}
 
-      {/* 1. Submit Activity */}
+      {/* 1. Submit Activity (Manager Activity Report: Visit, Event, Training, Office Working, Others) */}
       {activeNav === 'submit_activity' && (
-        <div className="animate-fade-in">
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 mb-4 text-xs text-amber-700 dark:text-amber-300 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span>ℹ️</span>
-              <span>
-                {currentUser.hasPersonalSalesAssignment
-                  ? (language === 'ar' ? `تسجيل زيارات ميدانية شخصية لمنطقة (${currentUser.personalSalesAssignment?.territoryName}) أو زيارات مرافقة مع المندوبين` : `Logging personal sales visits for (${currentUser.personalSalesAssignment?.territoryName}) or companion visits`)
-                  : (language === 'ar' ? 'تسجيل زيارات الإشراف والمرافقة الميدانية مع المندوبين' : 'Logging supervisory / companion visits')}
-              </span>
+        <div className="animate-fade-in space-y-4">
+          {currentUser.hasPersonalSalesAssignment && (
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 text-xs text-amber-700 dark:text-amber-300 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span>ℹ️</span>
+                <span>
+                  {language === 'ar'
+                    ? `ملاحظة: أنت مكلف بمبيعات ميدانية لمنطقة (${currentUser.personalSalesAssignment?.territoryName}) بالإضافة لمسؤولياتك الإدارية.`
+                    : `Note: You have personal sales assignment for (${currentUser.personalSalesAssignment?.territoryName}) alongside managerial duties.`}
+                </span>
+              </div>
             </div>
-          </div>
-
-          <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 mb-4 shadow-card">
-            <TypePicker
-              selectedType={selectedType}
-              onSelect={setSelectedType}
-              visitSubtype={visitSubtype}
-              onSelectVisitSubtype={setVisitSubtype}
-            />
-          </div>
-
-          {(selectedType === 'hospital' || (selectedType === 'visit' && visitSubtype === 'hospital')) && (
-            <HospitalForm
-              selectedRep={currentUser.name}
-              onSuccess={(msg) => onShowToast(msg)}
-              onError={(msg) => onShowToast(msg, true)}
-            />
           )}
 
-          {(selectedType === 'pharmacy' || (selectedType === 'visit' && visitSubtype === 'pharmacy')) && (
-            <PharmacyForm
-              selectedRep={currentUser.name}
-              onSuccess={(msg) => onShowToast(msg)}
-              onError={(msg) => onShowToast(msg, true)}
-            />
-          )}
-
-          {(selectedType === 'doctor' || (selectedType === 'visit' && visitSubtype === 'doctor')) && (
-            <DoctorForm
-              selectedRep={currentUser.name}
-              onSuccess={(msg) => onShowToast(msg)}
-              onError={(msg) => onShowToast(msg, true)}
-            />
-          )}
-
-          {(selectedType === 'branch' || (selectedType === 'visit' && visitSubtype === 'branch')) && (
-            <BranchForm
-              selectedRep={currentUser.name}
-              onSuccess={(msg) => onShowToast(msg)}
-              onError={(msg) => onShowToast(msg, true)}
-            />
-          )}
-
-          {selectedType === 'event' && (
-            <EventForm
-              selectedRep={currentUser.name}
-              onSuccess={(msg) => onShowToast(msg)}
-              onError={(msg) => onShowToast(msg, true)}
-            />
-          )}
-
-          {selectedType === 'training' && (
-            <TrainingForm
-              selectedRep={currentUser.name}
-              onSuccess={(msg) => onShowToast(msg)}
-              onError={(msg) => onShowToast(msg, true)}
-            />
-          )}
-
-          {selectedType === 'special_task' && (
-            <SpecialTaskForm
-              selectedRep={currentUser.name}
-              onSuccess={(msg) => onShowToast(msg)}
-              onError={(msg) => onShowToast(msg, true)}
-            />
-          )}
-
-          {(selectedType === 'availability' || selectedType === 'product_analysis') && (
-            <AvailabilityForm
-              selectedRep={currentUser.name}
-              onSuccess={(msg) => onShowToast(msg)}
-              onError={(msg) => onShowToast(msg, true)}
-            />
-          )}
+          <ManagerActivityForm
+            currentUser={currentUser}
+            onSuccess={(msg) => onShowToast(msg)}
+            onError={(msg) => onShowToast(msg, true)}
+            onSubmitted={() => {
+              setActiveNav('my_reports');
+            }}
+          />
         </div>
       )}
 
-      {/* 2. Weekly Plan */}
+      {/* 2. Weekly Plan (Manager Personal Weekly Plan) */}
       {activeNav === 'weekly_plan' && (
         <div className="animate-fade-in">
           <WeeklyPlanView
             reps={reps}
             selectedRep={currentUser.name}
-            onSelectRep={() => {}}
+            isManager={true}
+            isManagerPersonal={true}
+            currentUser={currentUser}
             onSuccess={(msg) => onShowToast(msg)}
             onError={(msg) => onShowToast(msg, true)}
           />
         </div>
       )}
 
-      {/* 3. My Reports */}
+      {/* 3. My Reports (Manager personal activities and weekly plans only) */}
       {activeNav === 'my_reports' && (
         <div className="animate-fade-in">
-          <MyReportsView
-            reps={reps}
-            selectedRep={currentUser.name}
-            onSelectRep={() => {}}
+          <ManagerMyReportsView
+            currentUser={currentUser}
+            onOpenPlan={() => {
+              setActiveNav('weekly_plan');
+            }}
+            onSuccess={(msg) => onShowToast(msg)}
+            onError={(msg) => onShowToast(msg, true)}
           />
         </div>
       )}

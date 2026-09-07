@@ -210,6 +210,8 @@ export const SpecialTaskSchema = z.object({
 export const WeeklyPlanSchema = z.object({
   rep: z.string().optional(),
   repId: z.string().optional(),
+  userId: z.string().optional(),
+  isManagerPersonal: z.boolean().optional(),
   startDate: z.string().min(1, 'تاريخ بداية الأسبوع مطلوب').trim(),
   endDate: z.string().min(1, 'تاريخ نهاية الأسبوع مطلوب').trim(),
   weekLabel: z.string().optional().default(''),
@@ -230,3 +232,64 @@ export const WeeklyPlanSchema = z.object({
   status: z.string().optional().default('Submitted'),
   managerNotes: z.string().optional().default(''),
 });
+
+export const ManagerActivitySchema = z.object({
+  activityType: z.enum(['Visit', 'Event', 'Training', 'Office Working', 'Others'], {
+    message: 'نوع النشاط غير صالح',
+  }),
+  activityDate: z.string().min(1, 'تاريخ النشاط مطلوب').trim(),
+
+  // Visit specific
+  visitType: z.enum(['Single', 'Double']).optional().default('Single'),
+  accompaniedPerson: z.string().optional().default(''),
+
+  // Morning / AM block
+  morningHospitalName: z.string().optional().default(''),
+  morningDoctorNames: z.string().optional().default(''),
+  morningSpecialty: z.string().optional().default(''),
+  morningHospitalComment: z.string().optional().default(''),
+
+  // Afternoon / PM block
+  afternoonDoctorNames: z.string().optional().default(''),
+  afternoonSpecialty: z.string().optional().default(''),
+  afternoonDoctorComment: z.string().optional().default(''),
+  afternoonPharmacyName: z.string().optional().default(''),
+  afternoonPharmacyComment: z.string().optional().default(''),
+
+  // General
+  generalComment: z.string().optional().default(''),
+
+  // Event specific
+  eventName: z.string().optional().default(''),
+  eventType: z.string().optional().default(''),
+  location: z.string().optional().default(''),
+  attendees: z.string().optional().default(''),
+  budget: z.string().optional().default(''),
+
+  // Training specific
+  trainingType: z.string().optional().default(''),
+  trainingTopic: z.string().optional().default(''),
+  trainingLocation: z.string().optional().default(''),
+  participants: z.string().optional().default(''),
+
+  // Office Working specific
+  workSummary: z.string().optional().default(''),
+
+  // Others specific
+  description: z.string().optional().default(''),
+
+  // Universal notes
+  notes: z.string().optional().default(''),
+}).refine(
+  (data) => {
+    if (data.activityType === 'Visit' && data.visitType === 'Double') {
+      return Boolean(data.accompaniedPerson && data.accompaniedPerson.trim().length > 0);
+    }
+    return true;
+  },
+  {
+    message: 'اسم الشخص المرافق مطلوب عند اختيار زيارة مشتركة (Double Visit)',
+    path: ['accompaniedPerson'],
+  }
+);
+

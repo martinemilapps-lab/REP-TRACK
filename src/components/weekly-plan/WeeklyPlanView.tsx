@@ -8,10 +8,19 @@ import { CustomSelect, SelectOption } from '@/components/ui/CustomSelect';
 import { EmptyState } from '@/components/ui/EmptyState';
 
 interface WeeklyPlanViewProps {
-  reps: Representative[];
-  selectedRep: string;
+  reps?: Representative[];
+  selectedRep?: string;
   onSelectRep?: (name: string) => void;
   isManager?: boolean;
+  isManagerPersonal?: boolean;
+  currentUser?: {
+    id: string;
+    name: string;
+    username: string;
+    position?: string;
+    role?: string;
+  } | null;
+  initialPlan?: WeeklyPlanRecord | null;
   onSuccess?: (msg: string) => void;
   onError?: (msg: string) => void;
 }
@@ -111,10 +120,13 @@ function getWeekRange(baseDate = new Date()): { startDate: string; endDate: stri
 }
 
 export function WeeklyPlanView({
-  reps,
-  selectedRep,
+  reps = [],
+  selectedRep = '',
   onSelectRep,
   isManager = false,
+  isManagerPersonal = false,
+  currentUser = null,
+  initialPlan = null,
   onSuccess,
   onError,
 }: WeeklyPlanViewProps) {
@@ -180,7 +192,7 @@ export function WeeklyPlanView({
 
   // Find rep details
   const currentRepObj = useMemo(() => {
-    return reps.find((r) => r.name === selectedRep);
+    return (reps || []).find((r) => r.name === selectedRep);
   }, [reps, selectedRep]);
 
   // Set default single area to rep area if available
@@ -191,19 +203,28 @@ export function WeeklyPlanView({
   }, [currentRepObj, singleArea]);
 
   const repOptions: SelectOption[] = useMemo(() => {
-    return reps.map((r) => ({
+    return (reps || []).map((r) => ({
       value: r.name,
       label: r.name,
       sublabel: r.area,
     }));
   }, [reps]);
 
-  // Load plans history for selected rep
+  // If initialPlan is provided, populate it
+  useEffect(() => {
+    if (initialPlan) {
+      handleSelectHistoryPlan(initialPlan);
+    }
+  }, [initialPlan]);
+
+  // Load plans history for selected rep or manager personal
   const loadPlans = useCallback(async () => {
-    if (!selectedRep && !isManager) return;
+    if (!isManagerPersonal && !selectedRep && !isManager) return;
     setLoading(true);
     try {
-      const url = selectedRep
+      const url = isManagerPersonal
+        ? '/api/weekly-plans?personal=true'
+        : selectedRep
         ? `/api/weekly-plans?rep=${encodeURIComponent(selectedRep)}`
         : `/api/weekly-plans`;
       const res = await fetch(url);
@@ -212,7 +233,8 @@ export function WeeklyPlanView({
         setPlansHistory(data.plans);
         // If there's a plan for the current week, populate it
         const currentMatch = data.plans.find(
-          (p: WeeklyPlanRecord) => p.startDate === startDate && (!selectedRep || p.rep === selectedRep)
+          (p: WeeklyPlanRecord) =>
+            p.startDate === startDate && (isManagerPersonal || !selectedRep || p.rep === selectedRep)
         );
         if (currentMatch) {
           setActivePlanId(currentMatch.id);
@@ -241,7 +263,7 @@ export function WeeklyPlanView({
     } finally {
       setLoading(false);
     }
-  }, [selectedRep, isManager, startDate]);
+  }, [selectedRep, isManager, isManagerPersonal, startDate]);
 
   useEffect(() => {
     loadPlans();
@@ -485,7 +507,7 @@ export function WeeklyPlanView({
   };
 
   const handleSavePlan = async () => {
-    if (!selectedRep && !isManager) {
+    if (!isManagerPersonal && !selectedRep && !isManager) {
       onError?.(t('msg.requiredRep'));
       return;
     }
@@ -496,7 +518,8 @@ export function WeeklyPlanView({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          rep: selectedRep,
+          rep: isManagerPersonal ? (currentUser?.name || currentUser?.username) : selectedRep,
+          isManagerPersonal: Boolean(isManagerPersonal),
           startDate,
           endDate,
           weekLabel,
@@ -584,7 +607,7 @@ export function WeeklyPlanView({
   return (
     <div className="animate-fade-in space-y-5">
       {/* Identity Selector */}
-      {onSelectRep && (
+      {!isManagerPersonal && onSelectRep && (
         <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 shadow-card">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xl">👤</span>
@@ -607,7 +630,7 @@ export function WeeklyPlanView({
         </div>
       )}
 
-      {!selectedRep && !isManager ? (
+      {!isManagerPersonal && !selectedRep && !isManager ? (
         <EmptyState
           title={t('rep.myReports.emptyPrompt')}
           description={t('weekly.desc')}
@@ -623,7 +646,9 @@ export function WeeklyPlanView({
                 WEEKLY PLAN
               </h1>
               <p className="text-xs text-[#6B5726] font-bold mt-0.5">
-                {language === 'ar' ? 'خطة العمل الأسبوعية للمندوب الطبي' : 'Medical Representative Weekly Field Schedule'}
+                {isManagerPersonal
+                  ? (language === 'ar' ? 'خطة العمل الأسبوعية للإدارة' : 'Managerial Weekly Work Schedule')
+                  : (language === 'ar' ? 'خطة العمل الأسبوعية للمندوب الطبي' : 'Medical Representative Weekly Field Schedule')}
               </p>
             </div>
 
@@ -634,7 +659,9 @@ export function WeeklyPlanView({
                   NAME :-
                 </span>
                 <span className="font-extrabold text-sm md:text-base text-[var(--ink)] px-3 py-1 bg-white border border-[#DDD5C0] rounded-lg shadow-xs">
-                  {selectedRep || (language === 'ar' ? 'المندوب الطبي' : 'Medical Rep')}
+                  {isManagerPersonal
+                    ? (currentUser?.name || currentUser?.username || 'Manager')
+                    : (selectedRep || (language === 'ar' ? 'المندوب الطبي' : 'Medical Rep'))}
                 </span>
               </div>
 

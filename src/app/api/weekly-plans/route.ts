@@ -10,10 +10,14 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const repParam = searchParams.get('rep');
     const repIdParam = searchParams.get('repId');
+    const personalParam = searchParams.get('personal') === 'true' || searchParams.get('isManagerPersonal') === 'true';
+    const userIdParam = searchParams.get('userId');
 
     const plans = await getWeeklyPlans(session, {
       repName: repParam,
       repId: repIdParam,
+      userId: userIdParam,
+      personalOnly: personalParam,
     });
 
     return NextResponse.json({

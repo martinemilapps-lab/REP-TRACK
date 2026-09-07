@@ -276,7 +276,9 @@ export type ProductAvailabilityRecord = ProductAnalysisRecord;
 
 export interface WeeklyPlanRecord {
   id: string;
-  repId: string;
+  repId?: string;
+  userId?: string;
+  isManagerPlan?: boolean;
   rep: string;
   startDate: string; // YYYY-MM-DD or DD-MM-YYYY
   endDate: string; // YYYY-MM-DD or DD-MM-YYYY
@@ -443,4 +445,73 @@ export interface AuthSession {
     } | null;
   } | null;
 }
+
+// ----------------------------------------------------
+// STEP 19: MANAGER ACTIVITIES & MANAGER WEEKLY PLANS
+// ----------------------------------------------------
+export type ManagerActivityType = 'Visit' | 'Event' | 'Training' | 'Office Working' | 'Others';
+
+export interface ManagerActivityRecord {
+  id: string;
+  userId: string;
+  userName?: string;
+  userPosition?: string;
+  activityType: ManagerActivityType;
+  activityDate: string; // YYYY-MM-DD
+  visitType?: 'Single' | 'Double' | string;
+  accompaniedPerson?: string;
+  morningHospitalName?: string;
+  morningDoctorNames?: string;
+  morningSpecialty?: string;
+  morningHospitalComment?: string;
+  afternoonDoctorNames?: string;
+  afternoonSpecialty?: string;
+  afternoonDoctorComment?: string;
+  afternoonPharmacyName?: string;
+  afternoonPharmacyComment?: string;
+  generalComment?: string;
+  eventName?: string;
+  eventType?: string;
+  location?: string;
+  attendees?: string;
+  budget?: string;
+  trainingType?: string;
+  trainingTopic?: string;
+  trainingLocation?: string;
+  participants?: string;
+  workSummary?: string;
+  description?: string;
+  notes?: string;
+  submittedAt?: string;
+  updatedAt?: string;
+}
+
+export interface ManagerWeeklyPlanRecord {
+  id: string;
+  userId: string;
+  userName?: string;
+  userPosition?: string;
+  startDate: string;
+  endDate: string;
+  weekLabel?: string;
+  saturdayAm?: string;
+  saturdayPm?: string;
+  sundayAm?: string;
+  sundayPm?: string;
+  mondayAm?: string;
+  mondayPm?: string;
+  tuesdayAm?: string;
+  tuesdayPm?: string;
+  wednesdayAm?: string;
+  wednesdayPm?: string;
+  thursdayAm?: string;
+  thursdayPm?: string;
+  fridayAm?: string;
+  fridayPm?: string;
+  status?: 'Draft' | 'Submitted' | 'Approved' | string;
+  managerNotes?: string;
+  submittedAt?: string;
+  updatedAt?: string;
+}
+
 

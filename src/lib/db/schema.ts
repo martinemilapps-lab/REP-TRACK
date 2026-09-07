@@ -467,6 +467,94 @@ export const weeklyPlans = sqliteTable('weekly_plans', {
 ]);
 
 // ----------------------------------------------------
+// 7. MANAGER ACTIVITIES (DM, AM, OM, BUM, PM, MM, SMD)
+// ----------------------------------------------------
+export const managerActivities = sqliteTable('manager_activities', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  activityType: text('activity_type', { enum: ['Visit', 'Event', 'Training', 'Office Working', 'Others'] }).notNull(),
+  activityDate: text('activity_date').notNull(), // YYYY-MM-DD
+
+  // Visit specific fields
+  visitType: text('visit_type', { enum: ['Single', 'Double'] }),
+  accompaniedPerson: text('accompanied_person'), // Required if visitType === 'Double'
+
+  // Morning / AM block
+  morningHospitalName: text('morning_hospital_name'),
+  morningDoctorNames: text('morning_doctor_names'),
+  morningSpecialty: text('morning_specialty'),
+  morningHospitalComment: text('morning_hospital_comment'),
+
+  // Afternoon / PM block
+  afternoonDoctorNames: text('afternoon_doctor_names'),
+  afternoonSpecialty: text('afternoon_specialty'),
+  afternoonDoctorComment: text('afternoon_doctor_comment'),
+  afternoonPharmacyName: text('afternoon_pharmacy_name'),
+  afternoonPharmacyComment: text('afternoon_pharmacy_comment'),
+
+  // General
+  generalComment: text('general_comment'),
+
+  // Event specific fields
+  eventName: text('event_name'),
+  eventType: text('event_type'),
+  location: text('location'),
+  attendees: text('attendees'),
+  budget: text('budget'),
+
+  // Training specific fields
+  trainingType: text('training_type'),
+  trainingTopic: text('training_topic'),
+  trainingLocation: text('training_location'),
+  participants: text('participants'),
+
+  // Office Working & Others specific fields
+  workSummary: text('work_summary'),
+  description: text('description'),
+
+  // Universal notes & timestamps
+  notes: text('notes'),
+  submittedAt: integer('submitted_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
+}, (table) => [
+  index('idx_mgr_activities_user').on(table.userId),
+  index('idx_mgr_activities_date').on(table.activityDate),
+  index('idx_mgr_activities_type').on(table.activityType),
+]);
+
+// ----------------------------------------------------
+// 8. MANAGER WEEKLY PLANS
+// ----------------------------------------------------
+export const managerWeeklyPlans = sqliteTable('manager_weekly_plans', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  startDate: text('start_date').notNull(), // YYYY-MM-DD
+  endDate: text('end_date').notNull(), // YYYY-MM-DD
+  weekLabel: text('week_label'),
+  saturdayAm: text('saturday_am').default(''),
+  saturdayPm: text('saturday_pm').default(''),
+  sundayAm: text('sunday_am').default(''),
+  sundayPm: text('sunday_pm').default(''),
+  mondayAm: text('monday_am').default(''),
+  mondayPm: text('monday_pm').default(''),
+  tuesdayAm: text('tuesday_am').default(''),
+  tuesdayPm: text('tuesday_pm').default(''),
+  wednesdayAm: text('wednesday_am').default(''),
+  wednesdayPm: text('wednesday_pm').default(''),
+  thursdayAm: text('thursday_am').default(''),
+  thursdayPm: text('thursday_pm').default(''),
+  fridayAm: text('friday_am').default(''),
+  fridayPm: text('friday_pm').default(''),
+  status: text('status', { enum: ['Draft', 'Submitted', 'Approved'] }).notNull().default('Submitted'),
+  managerNotes: text('manager_notes'),
+  submittedAt: integer('submitted_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
+}, (table) => [
+  index('idx_mgr_weekly_plans_user').on(table.userId),
+  index('idx_mgr_weekly_plans_dates').on(table.startDate, table.endDate),
+]);
+
+// ----------------------------------------------------
 // RELATIONS
 // ----------------------------------------------------
 export const usersRelations = relations(users, ({ one, many }) => ({
@@ -484,6 +572,8 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   supervisors: many(organizationRelationships, { relationName: 'subordinate' }),
   managerRepScopes: many(managerRepScopes),
   managerAreaScopes: many(managerAreaScopes),
+  managerActivities: many(managerActivities),
+  managerWeeklyPlans: many(managerWeeklyPlans),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -671,6 +761,20 @@ export const hierarchyPathsRelations = relations(hierarchyPaths, ({ one }) => ({
   }),
   ancestorUser: one(users, {
     fields: [hierarchyPaths.ancestorUserId],
+    references: [users.id],
+  }),
+}));
+
+export const managerActivitiesRelations = relations(managerActivities, ({ one }) => ({
+  user: one(users, {
+    fields: [managerActivities.userId],
+    references: [users.id],
+  }),
+}));
+
+export const managerWeeklyPlansRelations = relations(managerWeeklyPlans, ({ one }) => ({
+  user: one(users, {
+    fields: [managerWeeklyPlans.userId],
     references: [users.id],
   }),
 }));
