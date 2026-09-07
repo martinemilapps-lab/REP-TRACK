@@ -9,18 +9,22 @@ import { LoadingScreen } from '@/components/ui/LoadingScreen';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { ChangePasswordModal } from '@/components/auth/ChangePasswordModal';
 import { MedicalRepWorkspace, MRViewType } from '@/components/workspace/MedicalRepWorkspace';
-import { ManagerWorkspace } from '@/components/workspace/ManagerWorkspace';
+import { ManagerWorkspace, ManagerNavType } from '@/components/workspace/ManagerWorkspace';
+import { AppShell, ShellNavItem } from '@/components/layout/AppShell';
+import { BarChart3, ClipboardList, FileText, CalendarDays, ListChecks, PackageSearch, Download, LayoutDashboard, Activity, Users } from 'lucide-react';
 import { useTranslation } from '@/lib/i18nContext';
 import { INITIAL_REPRESENTATIVES } from '@/lib/constants';
+import type { UserSessionPayload } from '@/lib/auth';
 
 function HomePageContent() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const searchParams = useSearchParams();
-  const initialView = (searchParams.get('view') as MRViewType) || 'submit';
+  const initialView = (searchParams.get('view') as MRViewType) || 'overview';
 
   const [activeView, setActiveView] = useState<MRViewType>(initialView);
+  const [managerView, setManagerView] = useState<ManagerNavType>('overview');
   const [reps, setReps] = useState<Representative[]>(INITIAL_REPRESENTATIVES);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<UserSessionPayload | null>(null);
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [toast, setToast] = useState<ToastMessage | null>(null);
@@ -31,14 +35,6 @@ function HomePageContent() {
       setToast(null);
     }, 3200);
   }, []);
-
-  // Sync view from query param if changed
-  useEffect(() => {
-    const viewParam = searchParams.get('view') as MRViewType | null;
-    if (viewParam && (viewParam === 'submit' || viewParam === 'mylists' || viewParam === 'myreports' || viewParam === 'weeklyplan' || viewParam === 'analysis')) {
-      setActiveView(viewParam);
-    }
-  }, [searchParams]);
 
   // Fetch representatives and check user session on initial load
   const loadAppState = useCallback(async () => {
@@ -76,8 +72,16 @@ function HomePageContent() {
   }, []);
 
   useEffect(() => {
-    loadAppState();
+    const timer = window.setTimeout(loadAppState, 0);
+    return () => window.clearTimeout(timer);
   }, [loadAppState]);
+
+  useEffect(() => {
+    if (!currentUser || currentUser.mustChangePassword) return;
+    fetch('/api/reps').then((response) => response.ok ? response.json() : null).then((data) => {
+      if (data?.reps) setReps(data.reps);
+    }).catch(() => undefined);
+  }, [currentUser]);
 
   const handleLogout = async () => {
     try {
@@ -90,7 +94,7 @@ function HomePageContent() {
     showToast(t('msg.lockedSuccess'));
   };
 
-  const handleLoginSuccess = (user: any) => {
+  const handleLoginSuccess = (user: UserSessionPayload) => {
     setCurrentUser(user);
     if (user.mustChangePassword) {
       setMustChangePassword(true);
@@ -105,13 +109,28 @@ function HomePageContent() {
   // ----------------------------------------------------
   // UNIFIED ENTRY POINT LOGIC (STEP 17)
   // ----------------------------------------------------
+  const mrItems: ShellNavItem[] = [
+    { id:'overview', label: language === 'ar' ? 'نظرة عامة' : 'Overview', icon:<LayoutDashboard className="size-4"/> },
+    { id:'submit', label: language === 'ar' ? 'تسجيل تقرير' : 'Submit Report', icon:<ClipboardList className="size-4"/> },
+    { id:'myreports', label: language === 'ar' ? 'تقاريري' : 'My Reports', icon:<FileText className="size-4"/> },
+    { id:'weeklyplan', label: language === 'ar' ? 'الخطة الأسبوعية' : 'Weekly Plan', icon:<CalendarDays className="size-4"/> },
+    { id:'mylists', label: language === 'ar' ? 'قوائمي' : 'My Lists', icon:<ListChecks className="size-4"/> },
+    { id:'analysis', label: language === 'ar' ? 'توافر المنتجات' : 'Product Availability', icon:<PackageSearch className="size-4"/> },
+  ];
+  const managerItems: ShellNavItem[] = [
+    { id:'overview', label: language === 'ar' ? 'نظرة عامة' : 'Overview', icon:<LayoutDashboard className="size-4"/> },
+    { id:'team_reports', label: language === 'ar' ? 'تقارير الفريق' : 'Team Reports', icon:<Users className="size-4"/> },
+    { id:'submit_activity', label:'Submit Activity', icon:<Activity className="size-4"/> },
+    { id:'my_reports', label:'My Reports', icon:<FileText className="size-4"/> },
+    { id:'weekly_plan', label:'My Weekly Plan', icon:<CalendarDays className="size-4"/> },
+    { id:'team_plans', label:'Team Plans', icon:<ClipboardList className="size-4"/> },
+    { id:'team_lists', label:'Team Lists', icon:<Users className="size-4"/> },
+    { id:'product_analysis', label:'Product Availability', icon:<BarChart3 className="size-4"/> },
+    { id:'export', label:'Export', icon:<Download className="size-4"/> },
+  ];
+
   return (
-    <main className="max-w-[1280px] mx-auto px-4 py-4 md:py-6 transition-all">
-      {/* Position-Aware Header */}
-      <Topbar
-        currentUser={currentUser}
-        onLogout={handleLogout}
-      />
+    <main>
 
       {/* Mandatory First-Login Password Change Modal */}
       {currentUser && mustChangePassword && (
@@ -130,23 +149,25 @@ function HomePageContent() {
           2. MR -> Medical Rep Workspace
           3. DM / AM / OM / BUM / PM / MM / SMD -> Manager Workspace
       */}
-      {!currentUser ? (
-        <LoginForm onSuccess={handleLoginSuccess} />
-      ) : currentUser.positionCode === 'MR' ? (
-        <MedicalRepWorkspace
+      {!currentUser ? <><Topbar/><LoginForm onSuccess={handleLoginSuccess} /></> : (
+        <AppShell user={currentUser} items={currentUser.positionCode === 'MR' ? mrItems : managerItems} activeItem={currentUser.positionCode === 'MR' ? activeView : managerView} onNavigate={(id) => currentUser.positionCode === 'MR' ? setActiveView(id as MRViewType) : setManagerView(id as ManagerNavType)} onLogout={handleLogout}>
+        {currentUser.positionCode === 'MR' ? <MedicalRepWorkspace
           currentUser={currentUser}
           activeView={activeView}
           onViewChange={setActiveView}
           reps={reps}
           onShowToast={showToast}
-        />
-      ) : (
-        <ManagerWorkspace
+          embedded
+        /> : <ManagerWorkspace
           currentUser={currentUser}
           reps={reps}
           onShowToast={showToast}
           onLogout={handleLogout}
-        />
+          activeView={managerView}
+          onViewChange={setManagerView}
+          embedded
+        />}
+        </AppShell>
       )}
 
       {/* Global Notification Toast */}
@@ -159,6 +180,7 @@ function HomePageContent() {
     </main>
   );
 }
+
 
 export default function Home() {
   return (

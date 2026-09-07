@@ -49,6 +49,9 @@
   --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
   --shadow-hover: 0 4px 12px -2px rgba(229, 152, 25, 0.12), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
   --shadow-gold: 0 4px 14px 0 rgba(229, 152, 25, 0.28);
+  --focus: #9A5B02;
+  --info: #2563EB;
+  --info-bg: #EFF6FF;
 }
 
 body {
@@ -61,6 +64,28 @@ body {
   position: relative;
   min-height: 100vh;
 }
+
+button, a, input, select, textarea { outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--focus); }
+::selection { background: var(--gold-soft); color: var(--ink); }
+
+.app-shell { min-height: 100vh; display: flex; background: var(--bg); }
+.app-sidebar { position: sticky; top: 0; height: 100vh; width: 16.5rem; flex-direction: column; border-inline-end: 1px solid var(--line); background: var(--surface); padding: 1.25rem; box-shadow: var(--shadow-card); }
+.app-header { position: sticky; top: 0; z-index: 30; display: flex; min-height: 4.25rem; align-items: center; gap: .75rem; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 94%, transparent); padding: .75rem 1rem; backdrop-filter: blur(12px); }
+.app-content { width: 100%; max-width: 96rem; margin-inline: auto; padding: 1rem; }
+.app-nav-item { display: flex; width: 100%; align-items: center; gap: .75rem; border-radius: .65rem; padding: .7rem .8rem; color: var(--ink-soft); font-size: .875rem; font-weight: 650; transition: background-color .15s, color .15s; }
+.app-nav-item:hover { background: var(--surface-subtle); color: var(--ink); }
+.app-nav-item-active { background: var(--gold-tint); color: var(--gold-deep); box-shadow: inset 3px 0 var(--gold); }
+[dir="rtl"] .app-nav-item-active { box-shadow: inset -3px 0 var(--gold); }
+.app-mobile-drawer { position: fixed; inset-block: 0; inset-inline-start: 0; z-index: 50; width: min(20rem, 86vw); background: var(--surface); padding: 1rem; box-shadow: 0 20px 50px rgb(15 23 42 / .22); transition: transform .2s ease; }
+.section-card { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 1rem; box-shadow: var(--shadow-card); }
+.inline-alert { display: flex; gap: .625rem; align-items: flex-start; border: 1px solid; border-radius: .75rem; padding: .75rem; font-size: .8125rem; }
+.inline-alert-info { color: #1D4ED8; background: var(--info-bg); border-color: #BFDBFE; }
+.inline-alert-success { color: var(--visited-color); background: var(--visited-bg); border-color: var(--visited-border); }
+.inline-alert-warning { color: var(--pending-color); background: var(--pending-bg); border-color: var(--pending-border); }
+.inline-alert-error { color: var(--overdue-color); background: var(--overdue-bg); border-color: var(--overdue-border); }
+@media (min-width: 768px) { .app-content { padding: 1.5rem; } .section-card { padding: 1.25rem; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
 
 /* Monospace for numbers, dates, phones, codes */
 .font-mono {

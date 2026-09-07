@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { Inbox } from 'lucide-react';
 
 interface EmptyStateProps {
   title: string;
@@ -22,7 +23,7 @@ export function EmptyState({
       className={`flex flex-col items-center justify-center p-8 md:p-12 text-center bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] shadow-card ${className}`}
     >
       <div className="w-14 h-14 rounded-full bg-[var(--gold-tint)] border border-[var(--gold-border)] flex items-center justify-center text-[var(--gold-dark)] text-2xl mb-3 shadow-xs">
-        {icon || '📋'}
+        {icon || <Inbox className="size-6" />}
       </div>
       <h3 className="text-sm md:text-base font-bold text-[var(--ink)] mb-1">{title}</h3>
       {description && (

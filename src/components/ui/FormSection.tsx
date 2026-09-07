@@ -1,0 +1,2 @@
+import type { ReactNode } from 'react';
+export function FormSection({ title, description, children }: { title: string; description?: string; children: ReactNode }) { return <fieldset className="section-card"><legend className="px-1 text-base font-semibold">{title}</legend>{description && <p className="mb-4 text-sm text-[var(--ink-soft)]">{description}</p>}<div className="grid gap-4 sm:grid-cols-2">{children}</div></fieldset>; }

@@ -32,7 +32,7 @@ export function Button({
 
   const variantStyles = {
     primary:
-      'bg-gradient-to-r from-[var(--gold)] to-[var(--gold-light)] text-white hover:from-[var(--gold-dark)] hover:to-[var(--gold)] shadow-xs hover:shadow-gold transition-all duration-200 border border-[rgba(0,0,0,0.06)]',
+      'bg-[var(--gold-deep)] text-white hover:bg-[var(--gold-dark)] shadow-xs transition-colors duration-150 border border-transparent',
     secondary:
       'bg-[var(--surface)] text-[var(--ink)] border border-[var(--line)] hover:border-[var(--gold)] hover:bg-[var(--gold-tint)] shadow-2xs transition-all duration-200',
     danger:
@@ -44,7 +44,8 @@ export function Button({
   return (
     <button
       disabled={disabled || isLoading}
-      className={`inline-flex items-center justify-center font-sans tracking-tight cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none ${sizeStyles[size]} ${variantStyles[variant]} ${className}`}
+      aria-busy={isLoading || undefined}
+      className={`inline-flex items-center justify-center font-sans tracking-tight cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] ${sizeStyles[size]} ${variantStyles[variant]} ${className}`}
       {...props}
     >
       {isLoading && (

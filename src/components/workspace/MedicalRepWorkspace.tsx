@@ -17,7 +17,7 @@ import { WeeklyPlanView } from '@/components/weekly-plan/WeeklyPlanView';
 import { useTranslation } from '@/lib/i18nContext';
 import { MapPin, User, CheckCircle2 } from 'lucide-react';
 
-export type MRViewType = 'submit' | 'mylists' | 'myreports' | 'weeklyplan' | 'analysis';
+export type MRViewType = 'overview' | 'submit' | 'mylists' | 'myreports' | 'weeklyplan' | 'analysis';
 
 interface MedicalRepWorkspaceProps {
   currentUser: {
@@ -35,6 +35,7 @@ interface MedicalRepWorkspaceProps {
   onViewChange: (view: MRViewType) => void;
   reps: Representative[];
   onShowToast: (text: string, isError?: boolean) => void;
+  embedded?: boolean;
 }
 
 export function MedicalRepWorkspace({
@@ -43,6 +44,7 @@ export function MedicalRepWorkspace({
   onViewChange,
   reps,
   onShowToast,
+  embedded = false,
 }: MedicalRepWorkspaceProps) {
   const { t, language } = useTranslation();
   const [selectedType, setSelectedType] = useState<ActivityType>('hospital');
@@ -54,7 +56,7 @@ export function MedicalRepWorkspace({
   return (
     <div className="w-full animate-fade-in">
       {/* Sub-header: Server-Authoritative Identity Pill (No dropdown) */}
-      <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-4 mb-6 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+      {!embedded && <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-4 mb-6 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-[var(--gold-tint)] border border-[var(--gold-border)] flex items-center justify-center text-[var(--gold-dark)] font-black text-base">
             <User className="w-5 h-5" />
@@ -135,9 +137,10 @@ export function MedicalRepWorkspace({
             <span>{language === 'ar' ? 'تحليل المنتجات' : 'Product Analysis'}</span>
           </button>
         </nav>
-      </div>
+      </div>}
 
       {/* ============ VIEW 1: SUBMIT REPORT ============ */}
+      {activeView === 'overview' && <div className="section-card"><h1 className="text-xl font-bold">{language === 'ar' ? 'مساحة عمل المندوب' : 'Representative workspace'}</h1><p className="mt-2 text-sm text-[var(--ink-soft)]">{language === 'ar' ? `منطقتك الحالية: ${territory}` : `Current territory: ${territory}`}</p></div>}
       {activeView === 'submit' && (
         <div className="animate-fade-in">
           {/* Activity Type Picker */}

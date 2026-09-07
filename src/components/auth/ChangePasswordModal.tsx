@@ -82,7 +82,7 @@ export function ChangePasswordModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl max-w-lg w-full p-6 md:p-8 shadow-2xl animate-fade-in my-8">
+      <div role="dialog" aria-modal="true" aria-labelledby="change-password-title" className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl max-w-lg w-full p-6 md:p-8 shadow-2xl animate-fade-in my-8">
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center mb-6">
           <div className="relative w-48 h-20 mb-2 flex items-center justify-center">
@@ -99,7 +99,7 @@ export function ChangePasswordModal({
             <ShieldCheck className="w-4 h-4" />
             <span>إلزام أمني: تعيين كلمة المرور الدائمة</span>
           </div>
-          <h2 className="text-lg md:text-xl font-extrabold text-[var(--ink)]">
+          <h2 id="change-password-title" className="text-lg md:text-xl font-extrabold text-[var(--ink)]">
             تحديث كلمة المرور لأول مرة
           </h2>
           <p className="text-xs text-[var(--ink-soft)] mt-1.5 max-w-sm leading-relaxed">
@@ -116,11 +116,12 @@ export function ChangePasswordModal({
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label className="block text-xs font-bold text-[var(--ink)] mb-1.5">
+            <label htmlFor="current-password" className="block text-xs font-bold text-[var(--ink)] mb-1.5">
               كلمة المرور المؤقتة (الحالية)
             </label>
             <div className="relative">
               <input
+                id="current-password"
                 type="password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
@@ -134,11 +135,12 @@ export function ChangePasswordModal({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-[var(--ink)] mb-1.5">
+            <label htmlFor="new-password" className="block text-xs font-bold text-[var(--ink)] mb-1.5">
               كلمة المرور الجديدة
             </label>
             <div className="relative">
               <input
+                id="new-password"
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
@@ -151,11 +153,12 @@ export function ChangePasswordModal({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-[var(--ink)] mb-1.5">
+            <label htmlFor="confirm-password" className="block text-xs font-bold text-[var(--ink)] mb-1.5">
               تأكيد كلمة المرور الجديدة
             </label>
             <div className="relative">
               <input
+                id="confirm-password"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}

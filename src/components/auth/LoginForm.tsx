@@ -3,20 +3,22 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
-import { Lock, User, ShieldAlert, KeyRound } from 'lucide-react';
+import { User, ShieldAlert, KeyRound, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from '@/lib/i18nContext';
+import type { UserSessionPayload } from '@/lib/auth';
 
 interface LoginFormProps {
-  onSuccess: (user: any) => void;
+  onSuccess: (user: UserSessionPayload) => void;
 }
 
 export function LoginForm({ onSuccess }: LoginFormProps) {
-  const { t, language } = useTranslation();
+  const { language } = useTranslation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [lockoutMsg, setLockoutMsg] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,7 +128,8 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
             </label>
             <div className="relative">
               <input
-                type="password"
+                id="login-password"
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••"
@@ -135,6 +138,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
                 autoComplete="current-password"
               />
               <KeyRound className="w-4 h-4 absolute left-3 top-3 text-[var(--ink-muted)] pointer-events-none" />
+              <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute end-3 top-2.5 rounded p-0.5 text-[var(--ink-soft)]" aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff className="size-4"/> : <Eye className="size-4"/>}</button>
             </div>
           </div>
 

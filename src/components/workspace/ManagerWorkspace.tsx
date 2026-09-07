@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 
 export type ManagerNavType =
+  | 'overview'
   | 'submit_activity'
   | 'weekly_plan'
   | 'my_reports'
@@ -42,6 +43,9 @@ interface ManagerWorkspaceProps {
   reps: Representative[];
   onShowToast: (text: string, isError?: boolean) => void;
   onLogout: () => void;
+  activeView?: ManagerNavType;
+  onViewChange?: (view: ManagerNavType) => void;
+  embedded?: boolean;
 }
 
 export function ManagerWorkspace({
@@ -49,9 +53,14 @@ export function ManagerWorkspace({
   reps,
   onShowToast,
   onLogout,
+  activeView,
+  onViewChange,
+  embedded = false,
 }: ManagerWorkspaceProps) {
   const { language } = useTranslation();
-  const [activeNav, setActiveNav] = useState<ManagerNavType>('team_reports');
+  const [internalNav, setInternalNav] = useState<ManagerNavType>('overview');
+  const activeNav = activeView ?? internalNav;
+  const setActiveNav = (view: ManagerNavType) => { setInternalNav(view); onViewChange?.(view); };
   const [selectedTeamRep, setSelectedTeamRep] = useState<string>(reps[0]?.name || '');
 
   const [selectedPlan, setSelectedPlan] = useState<WeeklyPlanRecord | null>(null);
@@ -73,7 +82,7 @@ export function ManagerWorkspace({
   return (
     <div className="w-full animate-fade-in">
       {/* Position Header & Dual-Role Banner */}
-      <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-5 mb-5 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      {!embedded && <><div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-5 mb-5 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5 flex-wrap">
             <span className="px-3 py-1 rounded-lg text-xs font-black bg-[var(--gold-tint)] text-[var(--gold-dark)] border border-[var(--gold-border)]">
@@ -126,9 +135,10 @@ export function ManagerWorkspace({
             </button>
           ))}
         </nav>
-      </div>
+      </div></>}
 
       {/* ============ NAVIGATION CONTENT ============ */}
+      {activeNav === 'overview' && <div className="section-card"><h1 className="text-xl font-bold">{language === 'ar' ? 'مساحة العمل الإدارية' : 'Manager workspace'}</h1><p className="mt-2 text-sm text-[var(--ink-soft)]">{language === 'ar' ? 'البيانات والتقارير محددة بنطاق الإشراف المعتمد.' : 'Data and reports are limited to your authorized hierarchy.'}</p></div>}
 
       {/* 1. Submit Activity (Manager Activity Report: Visit, Event, Training, Office Working, Others) */}
       {activeNav === 'submit_activity' && (

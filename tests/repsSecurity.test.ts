@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import { resolveWritableRepId } from '../src/lib/repAccessPolicy';
+const base = { id:'u1', username:'MR1', name:'Rep', role:'REPRESENTATIVE' as const, repId:'rep-own', mustChangePassword:false };
+assert.equal(resolveWritableRepId(base, 'rep-forged'), 'rep-own');
+assert.throws(() => resolveWritableRepId({ ...base, mustChangePassword:true }, 'rep-own'), /كلمة المرور/);
+assert.throws(() => resolveWritableRepId({ ...base, role:'MANAGER', positionCode:'DM', repId:'rep-forged' }, 'rep-forged'), /personal/);
+assert.equal(resolveWritableRepId({ ...base, role:'MANAGER', positionCode:'DM', hasPersonalSalesAssignment:true, personalSalesAssignment:{ id:'a', titleRaw:'MR', businessLine:1, territoryName:'T', repId:'personal' } }, 'rep-forged'), 'personal');
+assert.equal(resolveWritableRepId({ ...base, role:'MANAGER', systemRole:'ADMIN' }, 'admin-choice'), 'admin-choice');
+assert.throws(() => resolveWritableRepId(null), /تسجيل/);
+console.log('/api/reps authorization policy passed');
