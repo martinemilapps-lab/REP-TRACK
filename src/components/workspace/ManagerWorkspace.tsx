@@ -4,6 +4,7 @@ import React, { useCallback, useState } from 'react';
 import { Representative, WeeklyPlanRecord } from '@/types';
 import { ManagerDashboardView } from '@/components/manager/ManagerDashboardView';
 import { ManagerActivityForm } from '@/components/manager/ManagerActivityForm';
+import { ManagerTeamPlansView } from '@/components/manager/ManagerTeamPlansView';
 import { ManagerMyReportsView } from '@/components/manager/ManagerMyReportsView';
 import { WeeklyPlanView } from '@/components/weekly-plan/WeeklyPlanView';
 import { MyListsView } from '@/components/my-lists/MyListsView';
@@ -200,16 +201,8 @@ export function ManagerWorkspace({
         </div>
       )}
 
-      {/* STEP 20 will supply actual hierarchy scope; do not select a fabricated team rep. */}
       {activeNav === 'team_plans' && (
-        <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-6 shadow-card">
-          <h2 className="text-base font-extrabold text-[var(--ink)]">
-            {language === 'ar' ? 'خطط الفريق غير متاحة بعد' : 'Team Plans are not available yet'}
-          </h2>
-          <p className="text-xs text-[var(--ink-soft)] mt-2">
-            {language === 'ar' ? 'ستتاح بعد تفعيل نطاق الإشراف المعتمد.' : 'Available once authorized team access is configured.'}
-          </p>
-        </div>
+        <ManagerTeamPlansView onError={showError} />
       )}
 
       {/* 6. Team Lists */}

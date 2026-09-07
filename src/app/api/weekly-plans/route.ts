@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuthenticatedUser } from '@/lib/auth';
-import { saveWeeklyPlan, getWeeklyPlans } from '@/lib/services/weeklyPlanService';
+import { saveWeeklyPlan, getWeeklyPlans, getTeamWeeklyPlans } from '@/lib/services/weeklyPlanService';
 import { handleApiError } from '@/lib/errors';
 
 export async function GET(request: NextRequest) {
@@ -12,7 +12,9 @@ export async function GET(request: NextRequest) {
     const personalParam = searchParams.get('personal') === 'true' || searchParams.get('isManagerPersonal') === 'true';
     const userIdParam = searchParams.get('userId');
 
-    const plans = await getWeeklyPlans(session, {
+    const team = searchParams.get('team') === 'true';
+    const mode = searchParams.get('scopeMode') === 'DIRECT_REPORTS' ? 'DIRECT_REPORTS' : 'ALL_DESCENDANTS';
+    const plans = team ? await getTeamWeeklyPlans(session, mode) : await getWeeklyPlans(session, {
       repName: repParam,
       repId: repIdParam,
       userId: userIdParam,

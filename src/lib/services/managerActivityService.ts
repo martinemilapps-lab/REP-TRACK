@@ -1,10 +1,11 @@
 import { db, managerActivities, users } from '@/lib/db';
-import { eq, and, desc, gte, lte } from 'drizzle-orm';
+import { eq, and, desc, gte, lte, inArray } from 'drizzle-orm';
 import { UserSessionPayload } from '@/lib/auth';
 import { assertManagerSession, assertManagerOwner } from '@/lib/authPolicy';
 import { ManagerActivitySchema, ManagerActivityFiltersSchema } from '@/lib/validation';
 import { ManagerActivityRecord } from '@/types';
 import { z } from 'zod';
+import { hierarchyService, HierarchyScopeMode } from './hierarchyService';
 
 export type ManagerActivityInput = z.infer<typeof ManagerActivitySchema>;
 
@@ -57,6 +58,27 @@ export async function saveManagerActivity(
     .returning();
 
   return formatManagerActivity(inserted, session.name, session.positionCode ?? undefined);
+}
+
+export async function getManagerActivitiesForTeam(session: UserSessionPayload | null, filters: {
+  startDate?: string; endDate?: string; activityType?: string; subordinateUserId?: string; positionCode?: string; scopeMode?: HierarchyScopeMode;
+} = {}): Promise<ManagerActivityRecord[]> {
+  assertManagerSession(session);
+  let userIds = await hierarchyService.getScopedUserIds(session, filters.scopeMode);
+  if (filters.subordinateUserId) {
+    if (!userIds.includes(filters.subordinateUserId)) return [];
+    userIds = [filters.subordinateUserId];
+  }
+  if (!userIds.length) return [];
+  const conditions = [inArray(managerActivities.userId, userIds)];
+  if (filters.startDate) conditions.push(gte(managerActivities.activityDate, filters.startDate));
+  if (filters.endDate) conditions.push(lte(managerActivities.activityDate, filters.endDate));
+  if (filters.activityType && filters.activityType !== 'All') conditions.push(eq(managerActivities.activityType, filters.activityType as ManagerActivityRecord['activityType']));
+  if (filters.positionCode) conditions.push(eq(users.positionCode, filters.positionCode));
+  const rows = await db.select({ activity: managerActivities, userName: users.name, userPosition: users.positionCode })
+    .from(managerActivities).innerJoin(users, eq(managerActivities.userId, users.id)).where(and(...conditions))
+    .orderBy(desc(managerActivities.activityDate), desc(managerActivities.submittedAt)).all();
+  return rows.map((r) => formatManagerActivity(r.activity, r.userName, r.userPosition ?? undefined));
 }
 
 /**
@@ -113,7 +135,7 @@ export async function getManagerActivityById(
   if (!row) return null;
 
   // Enforce access control
-  assertManagerOwner(session, row.userId);
+  await hierarchyService.assertUserVisible(session, row.userId);
 
   const owner = await db.select({ name: users.name, positionCode: users.positionCode })
     .from(users).where(eq(users.id, row.userId)).get();

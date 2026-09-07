@@ -13,6 +13,7 @@ import {
   EventRecord,
   TrainingRecord,
   SpecialTaskRecord,
+  ManagerActivityRecord,
 } from '@/types';
 import { StatPill } from '@/components/ui/StatPill';
 import { CoverageRing } from '@/components/ui/CoverageRing';
@@ -24,7 +25,7 @@ import { CustomSelect, SelectOption } from '@/components/ui/CustomSelect';
 import { useTranslation } from '@/lib/i18nContext';
 import { calculateRepCoverage } from '@/lib/coverage';
 
-type ManagerTabType = ActivityType | 'weeklyPlans';
+type ManagerTabType = ActivityType | 'weeklyPlans' | 'managerActivities';
 
 interface ManagerDashboardViewProps {
   reps: Representative[];
@@ -34,7 +35,6 @@ interface ManagerDashboardViewProps {
 }
 
 export function ManagerDashboardView({
-  reps,
   onLock,
   onError,
   onSuccess,
@@ -46,6 +46,7 @@ export function ManagerDashboardView({
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [selectedPlanPreview, setSelectedPlanPreview] = useState<WeeklyPlanRecord | null>(null);
+  const [scopedReps, setScopedReps] = useState<Representative[]>([]);
 
   const [data, setData] = useState<{
     hospitals: HospitalVisitRecord[];
@@ -57,6 +58,7 @@ export function ManagerDashboardView({
     trainings?: TrainingRecord[];
     specialTasks?: SpecialTaskRecord[];
     weeklyPlans: WeeklyPlanRecord[];
+    managerActivities: ManagerActivityRecord[];
   }>({
     hospitals: [],
     pharmacies: [],
@@ -67,6 +69,7 @@ export function ManagerDashboardView({
     trainings: [],
     specialTasks: [],
     weeklyPlans: [],
+    managerActivities: [],
   });
 
   const loadAllData = useCallback(async () => {
@@ -74,14 +77,16 @@ export function ManagerDashboardView({
     try {
       const [reportsRes, plansRes] = await Promise.all([
         fetch('/api/reports'),
-        fetch('/api/weekly-plans'),
+        fetch('/api/weekly-plans?team=true&scopeMode=ALL_DESCENDANTS'),
       ]);
       const resData = await reportsRes.json();
       const plansData = await plansRes.json();
       setData({
         ...resData,
         weeklyPlans: plansData.plans || [],
+        managerActivities: resData.managerActivities || [],
       });
+      setScopedReps(resData.reps || []);
     } catch (e) {
       console.error('Error fetching manager overview:', e);
       onError(t('msg.errorGeneric'));
@@ -91,7 +96,8 @@ export function ManagerDashboardView({
   }, [onError, t]);
 
   useEffect(() => {
-    loadAllData();
+    const timer = window.setTimeout(loadAllData, 0);
+    return () => window.clearTimeout(timer);
   }, [loadAllData]);
 
   const handleExportExcel = async () => {
@@ -118,27 +124,8 @@ export function ManagerDashboardView({
     }
   };
 
-  const handleApprovePlan = async (planId: string) => {
-    try {
-      const res = await fetch(`/api/weekly-plans/${planId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'Approved' }),
-      });
-      const resData = await res.json();
-      if (res.ok && resData.success) {
-        onSuccess('تم اعتماد الخطة الأسبوعية بنجاح ✓');
-        loadAllData();
-      } else {
-        onError(resData.message || t('msg.errorGeneric'));
-      }
-    } catch {
-      onError(t('msg.errorGeneric'));
-    }
-  };
-
   const repSummaries = useMemo(() => {
-    return reps.map((r) => {
+    return scopedReps.map((r) => {
       const hc = data.hospitals.filter(
         (x) => x.rep.trim().toLowerCase() === r.name.trim().toLowerCase()
       ).length;
@@ -151,18 +138,18 @@ export function ManagerDashboardView({
       const cov = calculateRepCoverage(r, hc, pc, dc);
       return { rep: r, cov };
     });
-  }, [reps, data.hospitals, data.pharmacies, data.doctors]);
+  }, [scopedReps, data.hospitals, data.pharmacies, data.doctors]);
 
   const repFilterOptions: SelectOption[] = useMemo(() => {
     return [
       { value: '', label: t('manager.allReps') },
-      ...reps.map((r) => ({
+      ...scopedReps.map((r) => ({
         value: r.name,
         label: r.name,
         sublabel: r.area,
       })),
     ];
-  }, [reps, t]);
+  }, [scopedReps, t]);
 
   const matchesSearch = (text?: string | null) => {
     if (!searchTerm.trim()) return true;
@@ -265,7 +252,7 @@ export function ManagerDashboardView({
         <StatPill label={t('kpi.doctorCoverage')} value={data.doctors.length} icon="🩺" />
         <StatPill label={t('kpi.branchVisits')} value={data.branches.length} icon="🏢" />
         <StatPill label={t('kpi.weeklyPlansCount')} value={data.weeklyPlans.length} icon="📅" highlight />
-        <StatPill label={t('kpi.repsCount')} value={reps.length} icon="👥" />
+        <StatPill label={t('kpi.repsCount')} value={scopedReps.length} icon="👥" />
       </div>
 
       <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 mb-4 shadow-card">
@@ -352,6 +339,7 @@ export function ManagerDashboardView({
               { id: 'training', icon: '🎓', label: t('activity.training') },
               { id: 'special_task', icon: '⚡', label: t('activity.specialTasks') },
               { id: 'availability', icon: '📊', label: t('activity.productsAnalysis') },
+              { id: 'managerActivities', icon: '🧭', label: 'Manager activities' },
               { id: 'weeklyPlans', icon: '📅', label: t('manager.tab.weeklyPlans') },
             ].map((tab) => (
               <button
@@ -823,6 +811,8 @@ export function ManagerDashboardView({
               </div>
             ))}
 
+          {activeTab === 'managerActivities' && (data.managerActivities.length === 0 ? <EmptyState title="No manager activities in your hierarchy" icon="🧭" className="border-none shadow-none" /> : <div className="space-y-2">{data.managerActivities.map((activity) => <div key={activity.id} className="bg-white border border-[var(--line)] rounded-xl p-4"><div className="flex justify-between gap-3"><strong>{activity.userName}</strong><span className="text-xs">{activity.userPosition}</span></div><div className="mt-1 text-sm">{activity.activityType} · {activity.activityDate}</div><div className="mt-1 text-xs text-[var(--ink-soft)]">{activity.description || activity.workSummary || activity.generalComment || activity.notes || '—'}</div></div>)}</div>)}
+
           {activeTab === 'weeklyPlans' &&
             (filteredWeeklyPlans.length === 0 ? (
               <EmptyState title={t('empty.noPlans')} icon="📅" className="border-none shadow-none" />
@@ -896,15 +886,6 @@ export function ManagerDashboardView({
                             <span>إكسل</span>
                           </a>
 
-                          {plan.status !== 'Approved' && (
-                            <button
-                              type="button"
-                              onClick={() => handleApprovePlan(plan.id)}
-                              className="px-2.5 py-1 text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors cursor-pointer"
-                            >
-                              ✓ اعتماد
-                            </button>
-                          )}
                         </div>
                       </div>
                     </div>

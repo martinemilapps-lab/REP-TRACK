@@ -1,11 +1,12 @@
 import { db, weeklyPlans, representatives, managerWeeklyPlans, users } from '@/lib/db';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, inArray } from 'drizzle-orm';
 import { UserSessionPayload, resolveAuthorizedRepId } from '@/lib/auth';
 import { AppError } from '@/lib/errors';
 import { assertAuthenticatedSession, assertManagerSession, assertManagerOwner } from '@/lib/authPolicy';
 import { z } from 'zod';
 import { WeeklyPlanSchema, WeeklyPlanStatusUpdateSchema, ManagerPlanStatusSchema } from '@/lib/validation';
 import { WeeklyPlanRecord } from '@/types';
+import { hierarchyService, HierarchyScopeMode } from './hierarchyService';
 
 export type WeeklyPlanInput = z.input<typeof WeeklyPlanSchema>;
 
@@ -346,9 +347,28 @@ export async function getWeeklyPlans(
   })) as WeeklyPlanRecord[];
 }
 
-/**
- * Retrieves a single weekly plan by ID.
- */
+export async function getTeamWeeklyPlans(session: UserSessionPayload | null, mode: HierarchyScopeMode = 'ALL_DESCENDANTS'): Promise<WeeklyPlanRecord[]> {
+  assertManagerSession(session);
+  const [userIds, repIds] = await Promise.all([hierarchyService.getScopedUserIds(session, mode), hierarchyService.getScopedRepIds(session, mode)]);
+  const mrSets = await Promise.all(repIds.map((repId) => getWeeklyPlans(session, { repId })));
+  const managerRows = userIds.length ? await db.select({
+    id: managerWeeklyPlans.id, userId: managerWeeklyPlans.userId, userName: users.name, startDate: managerWeeklyPlans.startDate,
+    endDate: managerWeeklyPlans.endDate, weekLabel: managerWeeklyPlans.weekLabel, saturdayAm: managerWeeklyPlans.saturdayAm,
+    saturdayPm: managerWeeklyPlans.saturdayPm, sundayAm: managerWeeklyPlans.sundayAm, sundayPm: managerWeeklyPlans.sundayPm,
+    mondayAm: managerWeeklyPlans.mondayAm, mondayPm: managerWeeklyPlans.mondayPm, tuesdayAm: managerWeeklyPlans.tuesdayAm,
+    tuesdayPm: managerWeeklyPlans.tuesdayPm, wednesdayAm: managerWeeklyPlans.wednesdayAm, wednesdayPm: managerWeeklyPlans.wednesdayPm,
+    thursdayAm: managerWeeklyPlans.thursdayAm, thursdayPm: managerWeeklyPlans.thursdayPm, fridayAm: managerWeeklyPlans.fridayAm,
+    fridayPm: managerWeeklyPlans.fridayPm, status: managerWeeklyPlans.status, managerNotes: managerWeeklyPlans.managerNotes,
+    submittedAt: managerWeeklyPlans.submittedAt, updatedAt: managerWeeklyPlans.updatedAt,
+  }).from(managerWeeklyPlans).innerJoin(users, eq(managerWeeklyPlans.userId, users.id))
+    .where(and(inArray(managerWeeklyPlans.userId, userIds), eq(users.isActive, true))).orderBy(desc(managerWeeklyPlans.submittedAt)).all() : [];
+  const managerPlans = managerRows.map((p) => ({ ...p, rep: p.userName, isManagerPlan: true,
+    submittedAt: p.submittedAt ? new Date(p.submittedAt).toISOString() : undefined,
+    updatedAt: p.updatedAt ? new Date(p.updatedAt).toISOString() : undefined })) as WeeklyPlanRecord[];
+  return [...new Map([...mrSets.flat(), ...managerPlans].map((p) => [p.id, p])).values()];
+}
+
+/** Retrieves a single weekly plan by ID. */
 export async function getWeeklyPlanById(id: string, session: UserSessionPayload | null): Promise<WeeklyPlanRecord | null> {
   assertAuthenticatedSession(session);
   const plan = await db
@@ -384,7 +404,9 @@ export async function getWeeklyPlanById(id: string, session: UserSessionPayload 
     .get();
 
   if (plan) {
-    if (session.role !== 'MANAGER' && plan.repId !== session.repId) {
+    if (session.role === 'MANAGER') {
+      await hierarchyService.assertRepVisible(session, plan.repId);
+    } else if (plan.repId !== session.repId) {
       throw new AppError('غير مصرح لك بالوصول إلى هذه الخطة', 403);
     }
     return {
@@ -430,7 +452,7 @@ export async function getWeeklyPlanById(id: string, session: UserSessionPayload 
     .get();
 
   if (mgrPlan) {
-    assertManagerOwner(session, mgrPlan.userId);
+    await hierarchyService.assertUserVisible(session, mgrPlan.userId);
     return {
       ...mgrPlan,
       rep: mgrPlan.userName || 'Manager',

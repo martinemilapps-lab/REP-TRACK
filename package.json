@@ -15,6 +15,7 @@
     "test": "tsx tests/runAll.ts",
     "db:migrate:d1:step19": "tsx scripts/migrate_step19.ts",
     "test:step19": "tsx tests/step19.test.ts",
+    "test:step20": "tsx tests/step20.test.ts",
     "test:local": "tsx tests/runLocal.ts"
   },
   "dependencies": {
