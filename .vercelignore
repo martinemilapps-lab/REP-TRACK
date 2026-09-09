@@ -1,0 +1,18 @@
+﻿# Local / sensitive files
+.wrangler/
+.dev.vars
+.dev-credentials*
+*.credentials.csv
+*credentials*.csv
+secrets/
+scripts/provision_dev_organization.sql
+
+# Local build/test artifacts
+coverage/
+tests/
+docs/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
