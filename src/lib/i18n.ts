@@ -51,7 +51,6 @@ export const translations: Record<string, { ar: string; en: string }> = {
   'login.connectionError': { ar: 'حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.', en: 'Connection error. Please try again.' },
   'login.showPassword': { ar: 'إظهار كلمة المرور', en: 'Show password' },
   'login.hidePassword': { ar: 'إخفاء كلمة المرور', en: 'Hide password' },
-  'login.help': { ar: 'للحصول على بيانات اعتماد مؤقتة أو مساعدة بالحساب، يرجى التواصل مع الإدارة التنفيذية.', en: 'For temporary credentials or account assistance, please contact executive administration.' },
   'auth.passwordUpdated': { ar: 'تم تحديث كلمة المرور بنجاح', en: 'Password updated successfully' },
   'admin.module': { ar: 'إدارة النظام', en: 'Admin module' },
   'admin.moduleDescription': { ar: 'صلاحيات إدارية إضافية داخل مساحة عمل المدير', en: 'Additional administrative capabilities inside the Manager workspace' },

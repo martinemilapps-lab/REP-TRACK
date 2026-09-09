@@ -209,7 +209,7 @@ export async function requireRepresentative(): Promise<UserSessionPayload & { re
 }
 
 /**
- * Authorization Guard: Requires an ADMIN system role (e.g. SMD executive administration).
+ * Authorization Guard: Requires the independently assigned ADMIN capability.
  * Normal managers are rejected with 403.
  */
 export async function requireAdmin(): Promise<UserSessionPayload> {

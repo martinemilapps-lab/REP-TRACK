@@ -152,14 +152,6 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
             {language === 'ar' ? 'تسجيل الدخول' : 'Sign In'}
           </Button>
         </form>
-
-        <div className="mt-6 pt-4 border-t border-[var(--line)] text-center">
-          <p className="text-[11px] text-[var(--ink-muted)] leading-relaxed">
-            {language === 'ar'
-              ? 'للحصول على كلمة المرور المؤقتة أو إعادة التعيين، يرجى التواصل مع إدارة النظام (SMD).'
-              : 'For temporary credentials or account assistance, please contact executive administration (SMD).'}
-          </p>
-        </div>
       </div>
     </div>
   );

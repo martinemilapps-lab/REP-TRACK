@@ -123,8 +123,12 @@ export function runUnifiedWorkspaceTests(): WorkspaceRoutingResult {
     if (smdUser) {
       const workspace = resolveWorkspace(smdUser);
       assert(workspace === 'MANAGER_WORKSPACE', `SMD (${smdUser.username} ${smdUser.name}) routes to Manager Workspace`);
-      assert(smdUser.system_role === 'ADMIN', `SMD holds executive system role: ADMIN`);
+      assert(smdUser.system_role === 'MANAGER', `SMD remains a Manager without position-derived Admin capability`);
     }
+
+    const marioUser = users.find(u => u.username === 'PM1' && u.name === 'Mario Nader');
+    assert(marioUser?.system_role === 'ADMIN', 'Mario Nader / PM1 holds the independently assigned Admin capability');
+    assert(users.filter(u => u.system_role === 'ADMIN').length === 1, 'Mario Nader / PM1 is the only Admin-capable account');
 
     // ----------------------------------------------------
     // 9. Verify Admin is integrated into Manager Workspace and capability gated

@@ -168,7 +168,8 @@ export function buildOrganizationDataset(): OrganizationDataset {
     const pos = emp.normalized_position;
     const isMR = pos === 'MR';
     const role = isMR ? 'REPRESENTATIVE' : 'MANAGER';
-    const systemRole = pos === 'SMD' ? 'ADMIN' : isMR ? 'USER' : 'MANAGER';
+    const isMarioAdmin = username === 'PM1' && emp.employee_name.trim().toLowerCase() === 'mario nader';
+    const systemRole = isMarioAdmin ? 'ADMIN' : isMR ? 'USER' : 'MANAGER';
     const repId = isMR ? `rep-${username.toLowerCase()}` : null;
     const line = extractBusinessLine(emp.legacy_title_raw);
 

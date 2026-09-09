@@ -1,6 +1,7 @@
-import * as dotenv from 'dotenv';
-dotenv.config({ path: '.env.local' });
-dotenv.config();
+const runRemoteIntegration = process.argv.includes('--remote-integration') && process.env.REP_TRACK_REMOTE_TEST_TARGET === 'NON_PRODUCTION';
+if (process.argv.includes('--remote-integration') && !runRemoteIntegration) {
+  throw new Error('Remote integration tests require REP_TRACK_REMOTE_TEST_TARGET=NON_PRODUCTION. Production is never an automated-test target.');
+}
 
 import { runStatusTests } from './status.test';
 import { runCoverageTests } from './coverage.test';
@@ -44,7 +45,7 @@ async function main() {
   console.log(`  📊 Workspace Test Summary: ${workspaceResults.passed} Passed, ${workspaceResults.failed} Failed\n`);
 
   console.log('📋 Running MR Lists Ownership & Autosave Tests (STEP 18)...');
-  const mrListsResults = await runMrListsOwnershipTests();
+  const mrListsResults = runRemoteIntegration ? await runMrListsOwnershipTests() : { passed: 0, failed: 0, checks: [] };
   for (const check of mrListsResults.checks) {
     if (check.startsWith('✓ PASS:')) {
       console.log(`  ✓ ${check.replace('✓ PASS: ', '')}`);
@@ -56,9 +57,13 @@ async function main() {
 
   const statusResults = runStatusTests();
   const coverageResults = runCoverageTests();
-  const integrationResults = await runIntegrationTests();
-  const weeklyPlanResults = await runWeeklyPlanTests();
-  const myListsResults = await runMyListsTests();
+  const integrationResults = runRemoteIntegration ? await runIntegrationTests() : { passed: 0, failed: 0 };
+  const weeklyPlanResults = runRemoteIntegration ? await runWeeklyPlanTests() : { passed: 0, failed: 0 };
+  const myListsResults = runRemoteIntegration ? await runMyListsTests() : { passed: 0, failed: 0 };
+
+  if (!runRemoteIntegration) {
+    console.log('🛡️ Remote database integration suites skipped. Use an explicitly designated NON_PRODUCTION target to run them.');
+  }
 
   const totalPassed =
     securityResults.passed +

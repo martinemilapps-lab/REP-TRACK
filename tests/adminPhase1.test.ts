@@ -7,12 +7,15 @@ import { applyAdminPhase1Migration, assertAdminMigrationApproval, preflightAdmin
 import type { UserSessionPayload } from '../src/lib/auth';
 
 async function main() {
-const admin = { id:'admin-1', username:'SMD1', name:'Admin', role:'MANAGER', systemRole:'ADMIN', mustChangePassword:false } as UserSessionPayload;
+const admin = { id:'u-pm1', username:'PM1', name:'Mario Nader', positionCode:'PM', role:'MANAGER', systemRole:'ADMIN', mustChangePassword:false } as UserSessionPayload;
 assert.throws(() => assertAdminActor(null), /Authentication/);
 assert.throws(() => assertAdminActor({ ...admin, role:'REPRESENTATIVE', systemRole:'REPRESENTATIVE' }), /Administrator/);
 assert.throws(() => assertAdminActor({ ...admin, systemRole:'MANAGER' }), /Administrator/);
 assert.throws(() => assertAdminActor({ ...admin, mustChangePassword:true }), /Password change/);
 assert.doesNotThrow(() => assertAdminActor(admin));
+assert.throws(() => assertAdminActor({ ...admin, id:'u-smd1', username:'SMD1', name:'Maged Raouf', positionCode:'SMD', systemRole:'MANAGER' }), /Administrator/);
+assert.throws(() => assertAdminActor({ ...admin, id:'u-dm1', username:'DM1', name:'Normal Manager', positionCode:'DM', systemRole:'MANAGER' }), /Administrator/);
+assert.throws(() => assertAdminActor({ ...admin, id:'u-mr1', username:'MR1', name:'Normal MR', positionCode:'MR', role:'REPRESENTATIVE', systemRole:'REPRESENTATIVE' }), /Administrator/);
 
 const passwords = new Set(Array.from({ length: 40 }, () => generateSecureTemporaryPassword(16)));
 assert.equal(passwords.size, 40, 'demo passwords must be unique');
@@ -54,6 +57,9 @@ assert.equal(/console\.(log|error).*temporaryPassword/.test(service),false,'plai
 const credentialRoute=readFileSync('src/app/api/admin/users/demo-passwords/route.ts','utf8'); assert.match(credentialRoute,/noStoreHeaders/); assert.match(credentialRoute,/assertAdminMutationRequest/);
 const home=readFileSync('src/app/page.tsx','utf8');assert.doesNotMatch(home,/router\.push\('\/admin'\)/);assert.match(home,/setManagerView\(id as ManagerNavType\)/);
 const manager=readFileSync('src/components/workspace/ManagerWorkspace.tsx','utf8');assert.match(manager,/systemRole === 'ADMIN'[\s\S]*<AdminWorkspace/);
+const login=readFileSync('src/components/auth/LoginForm.tsx','utf8');
+assert.doesNotMatch(login,/For temporary credentials or account assistance/i);
+assert.doesNotMatch(login,/للحصول على كلمة المرور المؤقتة أو إعادة التعيين/);
 const adminWorkspace=readFileSync('src/components/admin/AdminWorkspace.tsx','utf8');for(const component of ['AdminUsers','AdminSecurity','AdminOrganization','AdminAssignments'])assert.match(adminWorkspace,new RegExp(`<${component}`));
 assert.equal(existsSync('src/components/admin/AdminShell.tsx'),false,'standalone Admin shell must be removed');
 const securityUi=readFileSync('src/components/admin/AdminSecurity.tsx','utf8');assert.match(securityUi,/if\(!r\.ok\)throw new Error/,'demo-password UI must not silently map API errors to an empty list');
