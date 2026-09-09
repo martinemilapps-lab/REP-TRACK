@@ -1,5 +1,5 @@
 import { and, eq, inArray } from 'drizzle-orm';
-import { db, managerRepScopes, organizationRelationships, representatives, salesAssignments, users } from '@/lib/db';
+import { db, hierarchyPaths, managerRepScopes, organizationRelationships, representatives, salesAssignments, users } from '@/lib/db';
 import type { UserSessionPayload } from '@/lib/auth';
 import { assertManagerSession } from '@/lib/authPolicy';
 import { AppError } from '@/lib/errors';
@@ -66,6 +66,12 @@ export const hierarchyService = {
   async getScopedUserIds(session: UserSessionPayload | null, mode: HierarchyScopeMode = 'ALL_DESCENDANTS') {
     assertManagerSession(session);
     try {
+      if (mode === 'ALL_DESCENDANTS') {
+        const rows = await db.select({ id: hierarchyPaths.sourceUserId }).from(hierarchyPaths)
+          .innerJoin(users, eq(users.id, hierarchyPaths.sourceUserId))
+          .where(and(eq(hierarchyPaths.ancestorUserId, session.id), eq(users.isActive, true))).all();
+        return [...new Set(rows.map((row) => row.id))];
+      }
       const graph = await loadGraph();
       return resolveHierarchyUserIds(session.id, graph.edges, graph.activeUserIds, mode);
     } catch {
@@ -88,8 +94,10 @@ export const hierarchyService = {
   async getAncestorIds(session: UserSessionPayload | null) {
     assertManagerSession(session);
     try {
-      const graph = await loadGraph();
-      return resolveHierarchyAncestorIds(session.id, graph.edges, graph.activeUserIds);
+      const rows = await db.select({ id: hierarchyPaths.ancestorUserId }).from(hierarchyPaths)
+        .innerJoin(users, eq(users.id, hierarchyPaths.ancestorUserId))
+        .where(and(eq(hierarchyPaths.sourceUserId, session.id), eq(users.isActive, true))).all();
+      return [...new Set(rows.map((row) => row.id))];
     } catch {
       return [];
     }

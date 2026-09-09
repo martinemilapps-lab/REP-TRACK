@@ -381,14 +381,15 @@ export const organizationService = {
 
   /**
    * Retrieves all representatives within a manager's hierarchy scope.
-   * If the manager is SMD / ADMIN, returns all active representatives.
+   * SMD receives organization-wide scope from its real executive position.
+   * Admin capability alone never expands operational report scope.
    */
   async getScopedRepresentatives(
     managerUserId: string,
     systemRole?: string | null,
     positionCode?: string | null
   ): Promise<Array<{ id: string; name: string; area: string }>> {
-    if (systemRole === 'ADMIN' || positionCode === 'SMD') {
+    if (positionCode === 'SMD') {
       const all = await db
         .select({ id: representatives.id, name: representatives.name, area: representatives.area })
         .from(representatives)
@@ -439,7 +440,7 @@ export const organizationService = {
     positionCode?: string | null
   ): Promise<boolean> {
     if (!targetRepIdOrName) return false;
-    if (systemRole === 'ADMIN' || positionCode === 'SMD') return true;
+    if (positionCode === 'SMD') return true;
 
     const scopedReps = await this.getScopedRepresentatives(managerUserId, systemRole, positionCode);
     const targetClean = targetRepIdOrName.trim().toLowerCase();
