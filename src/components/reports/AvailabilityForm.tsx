@@ -1,14 +1,15 @@
 'use client';
 import { useState } from 'react';
-import { MONTHS_LIST, PRODUCTS_LIST } from '@/lib/constants';
+import { PRODUCTS_LIST } from '@/lib/constants';
 import { useTranslation } from '@/lib/i18nContext';
 import { Button } from '@/components/ui/Button';
 import { FormSection } from '@/components/ui/FormSection';
 import { FormField } from '@/components/ui/FormField';
 import { InlineAlert } from '@/components/ui/InlineAlert';
-const empty = {
-    hospital: '', area: '', product: '', month: 'Jan', annualTarget: 0, avgMonthlyTarget: 0, sales: 0, potentiality: 0, status: 'Available', notes: ''
-};
+const currentMonth = () => new Date().toISOString().slice(0, 7);
+const empty = () => ({
+    hospital: '', area: '', product: '', month: currentMonth(), annualTarget: 0, avgMonthlyTarget: 0, sales: 0, potentiality: 0, status: 'Available', notes: ''
+});
 export function AvailabilityForm({ onSuccess, onError }: {
     onSuccess: (message: string) => void;
     onError: (message: string) => void;
@@ -38,7 +39,7 @@ export function AvailabilityForm({ onSuccess, onError }: {
             error: false, text: message
         });
         onSuccess(message);
-        setForm(empty);
+        setForm(empty());
     }
     catch {
         const message = l('Unable to save availability. Please try again.', 'تعذر حفظ توافر المنتجات. أعد المحاولة.');
@@ -64,11 +65,9 @@ export function AvailabilityForm({ onSuccess, onError }: {
     })} className="mt-1 min-h-11 w-full rounded-lg border border-[var(--line)] px-3"/>
     <datalist id="availability-products">{PRODUCTS_LIST.map(product => <option key={product} value={product}/>)}</datalist>
     </label>
-    <label className="text-sm font-semibold">{l('Month', 'الشهر')}<select value={form.month} onChange={e => setForm({
+    <label className="text-sm font-semibold">{l('Month', 'الشهر')}<input type="month" required value={form.month} onChange={e => setForm({
         ...form, month: e.target.value
-    })} className="mt-1 min-h-11 w-full rounded-lg border border-[var(--line)] px-3">{MONTHS_LIST.map((month, index) => <option key={month} value={month}>{new Intl.DateTimeFormat(ar ? 'ar' : 'en', {
-            month: 'long', timeZone: 'UTC'
-        }).format(new Date(Date.UTC(2026, index, 1)))}</option>)}</select>
+    })} className="mt-1 min-h-11 w-full rounded-lg border border-[var(--line)] px-3"/>
     </label>
     <label className="text-sm font-semibold">{l('Availability', 'التوافر')}<select value={form.status} onChange={e => setForm({
         ...form, status: e.target.value

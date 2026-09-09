@@ -10,6 +10,7 @@ import { ManagerMyReportsView } from '@/components/manager/ManagerMyReportsView'
 import { WeeklyPlanView } from '@/components/weekly-plan/WeeklyPlanView';
 import { MyListsView } from '@/components/my-lists/MyListsView';
 import { useTranslation } from '@/lib/i18nContext';
+import { SalesAnalyticsView } from '@/components/sales/SalesAnalyticsView';
 import {
   Download,
   Target,
@@ -76,7 +77,7 @@ export function ManagerWorkspace({
     { id: 'team_reports', label: language === 'ar' ? 'تقارير الفريق' : 'Received / Team Reports', icon: <Inbox className="size-4"/> },
     { id: 'team_plans', label: language === 'ar' ? 'خطط الفريق' : 'Team Plans', icon: <ClipboardList className="size-4"/> },
     { id: 'team_lists', label: language === 'ar' ? 'قوائم الفريق' : 'Team Lists', icon: <Users className="size-4"/> },
-    { id: 'product_analysis', label: language === 'ar' ? 'توافر المنتجات' : 'Product Availability', icon: <PackageSearch className="size-4"/> },
+    { id: 'product_analysis', label: language === 'ar' ? 'تحليل المنتجات' : 'Product Analysis', icon: <PackageSearch className="size-4"/> },
     { id: 'compliance', label: language === 'ar' ? 'متابعة الالتزام' : 'Submission Compliance', icon: <Target className="size-4"/> },
     { id: 'export', label: language === 'ar' ? 'تصدير البيانات' : 'Export', icon: <Download className="size-4"/> },
   ];
@@ -231,7 +232,7 @@ export function ManagerWorkspace({
 
       {/* 7. Product Analysis */}
       {activeNav === 'product_analysis' && (
-        <ManagerDashboardView key="product-availability" reps={reps} initialTab="availability" onLock={onLogout} onError={showError} onSuccess={showSuccess}/>
+        <div className="space-y-6"><SalesAnalyticsView manager/><div className="border-t border-[var(--line)] pt-6"><h2 className="mb-3 text-lg font-black">{language==='ar'?'توافر المنتجات':'Product Availability'}</h2><ManagerDashboardView key="product-availability" reps={reps} initialTab="availability" onLock={onLogout} onError={showError} onSuccess={showSuccess}/></div></div>
       )}
 
       {activeNav==='compliance'&&<div className="section-card"><h2 className="font-semibold">{language==='ar'?'متابعة تقديم التقارير':'Submission tracking'}</h2><p className="mt-2 text-sm">{language==='ar'?'استعرض التقارير الفعلية من صفحة تقارير الفريق.':'Browse submitted records in Team Reports.'}</p><button type="button" className="mt-4 min-h-11 underline" onClick={()=>setActiveNav('team_reports')}>{language==='ar'?'عرض تقارير الفريق':'View Team Reports'}</button></div>}

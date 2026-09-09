@@ -156,7 +156,7 @@ export const ProductAvailabilitySchema = z.object({
   area: z.string().optional().default('').transform((v) => v.trim()),
   product: z.string().min(1, 'اسم المنتج مطلوب').trim(),
   objective: z.string().optional().default(''),
-  month: z.string().min(1, 'الشهر مطلوب').trim(),
+    month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'الشهر يجب أن يكون بصيغة YYYY-MM').trim(),
   annualTarget: z.coerce.number().min(0).optional().default(0),
   avgMonthlyTarget: z.coerce.number().min(0).optional().default(0),
   sales: z.coerce.number().min(0).optional().default(0),

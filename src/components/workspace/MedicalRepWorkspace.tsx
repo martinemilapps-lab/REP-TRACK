@@ -17,6 +17,7 @@ import { WeeklyPlanView } from '@/components/weekly-plan/WeeklyPlanView';
 import { useTranslation } from '@/lib/i18nContext';
 import { MapPin, User, CheckCircle2, ClipboardList, CalendarDays, PackageSearch } from 'lucide-react';
 import { RepresentativeOverview } from '@/components/overview/RepresentativeOverview';
+import { SalesAnalyticsView } from '@/components/sales/SalesAnalyticsView';
 
 export type MRViewType = 'overview' | 'submit' | 'mylists' | 'myreports' | 'weeklyplan' | 'analysis';
 
@@ -259,11 +260,14 @@ export function MedicalRepWorkspace({
 
       {/* ============ VIEW 5: PRODUCT ANALYSIS ============ */}
       {activeView === 'analysis' && (
-        <div className="animate-fade-in">
+        <div className="animate-fade-in space-y-6">
+          <SalesAnalyticsView />
+          <div className="border-t border-[var(--line)] pt-6"><h2 className="mb-3 text-lg font-black">{language==='ar'?'تسجيل التوافر':'Availability entry'}</h2>
           <AvailabilityForm
             onSuccess={(msg) => onShowToast(msg)}
             onError={(msg) => onShowToast(msg, true)}
           />
+          </div>
         </div>
       )}
     </div>
