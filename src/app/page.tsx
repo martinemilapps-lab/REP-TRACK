@@ -116,6 +116,7 @@ function HomePageContent() {
     { id:'weeklyplan', label: language === 'ar' ? 'الخطة الأسبوعية' : 'Weekly Plan', icon:<CalendarDays className="size-4"/> },
     { id:'mylists', label: language === 'ar' ? 'قوائمي' : 'My Lists', icon:<ListChecks className="size-4"/> },
     { id:'analysis', label: language === 'ar' ? 'توافر المنتجات' : 'Product Availability', icon:<PackageSearch className="size-4"/> },
+    { id:'export', label:language==='ar'?'تصدير':'Export', icon:<Download className="size-4"/> },
   ];
   const managerItems: ShellNavItem[] = [
     { id:'overview', label: language === 'ar' ? 'نظرة عامة' : 'Overview', icon:<LayoutDashboard className="size-4"/> },

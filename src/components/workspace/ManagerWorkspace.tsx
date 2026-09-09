@@ -12,6 +12,7 @@ import { MyListsView } from '@/components/my-lists/MyListsView';
 import { useTranslation } from '@/lib/i18nContext';
 import { SalesAnalyticsView } from '@/components/sales/SalesAnalyticsView';
 import { ComplianceView } from '@/components/compliance/ComplianceView';
+import { ExportCenter } from '@/components/exports/ExportCenter';
 import {
   Download,
   Target,
@@ -240,29 +241,7 @@ export function ManagerWorkspace({
 
       {/* 9. Export */}
       {activeNav === 'export' && (
-        <div className="animate-fade-in">
-          <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-8 shadow-card text-center">
-            <div className="w-16 h-16 rounded-2xl bg-[var(--gold-tint)] border border-[var(--gold-border)] flex items-center justify-center text-3xl mx-auto mb-4 text-[var(--gold-dark)]">
-              <Download className="size-6"/>
-            </div>
-            <h2 className="text-lg font-black text-[var(--ink)] mb-2">
-              {language === 'ar' ? 'تصدير تقارير وبيانات الفريق (Excel)' : 'Export Team Data & Workbooks'}
-            </h2>
-            <p className="text-xs text-[var(--ink-soft)] max-w-md mx-auto leading-relaxed mb-6">
-              {language === 'ar'
-                ? 'تحميل ملف Excel متكامل يحتوي على كافة تقارير الزيارات، التوافر، الفعاليات، وخطط العمل الأسبوعية مصنفة حسب الشيتات الرسمية.'
-                : 'Download complete consolidated Excel workbooks containing visits, availability, and weekly plans.'}
-            </p>
-            <a
-              href="/api/export/excel"
-              download
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[var(--gold)] to-[var(--gold-light)] text-white text-sm font-extrabold shadow-card hover:scale-[1.02] transition-all cursor-pointer"
-            >
-              <Download className="w-4 h-4" />
-              <span>{language === 'ar' ? 'تحميل شيت التقارير المجمع (.xlsx)' : 'Download Consolidated Excel (.xlsx)'}</span>
-            </a>
-          </div>
-        </div>
+        <div className="animate-fade-in"><ExportCenter manager reps={reps}/></div>
       )}
     </div>
   );

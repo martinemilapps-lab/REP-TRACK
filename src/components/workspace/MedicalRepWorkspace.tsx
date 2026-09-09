@@ -18,8 +18,9 @@ import { useTranslation } from '@/lib/i18nContext';
 import { MapPin, User, CheckCircle2, ClipboardList, CalendarDays, PackageSearch } from 'lucide-react';
 import { RepresentativeOverview } from '@/components/overview/RepresentativeOverview';
 import { SalesAnalyticsView } from '@/components/sales/SalesAnalyticsView';
+import { ExportCenter } from '@/components/exports/ExportCenter';
 
-export type MRViewType = 'overview' | 'submit' | 'mylists' | 'myreports' | 'weeklyplan' | 'analysis';
+export type MRViewType = 'overview' | 'submit' | 'mylists' | 'myreports' | 'weeklyplan' | 'analysis' | 'export';
 
 interface MedicalRepWorkspaceProps {
   currentUser: {
@@ -270,6 +271,7 @@ export function MedicalRepWorkspace({
           </div>
         </div>
       )}
+      {activeView === 'export' && <ExportCenter reps={reps}/>}
     </div>
   );
 }
