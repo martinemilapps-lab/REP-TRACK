@@ -1,1 +1,0 @@
-import { AdminOrganization } from '@/components/admin/AdminOrganization';import { requireAdminPage } from '@/lib/adminPageAuth';export default async function Page(){await requireAdminPage();return <AdminOrganization/>}

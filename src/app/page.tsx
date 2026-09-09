@@ -22,7 +22,7 @@ function HomePageContent() {
   const initialView = (requestedView === 'admin' ? 'overview' : requestedView as MRViewType) || 'overview';
 
   const [activeView, setActiveView] = useState<MRViewType>(initialView);
-  const [managerView, setManagerView] = useState<ManagerNavType>(requestedView === 'admin' ? 'admin' : 'overview');
+  const [managerView, setManagerView] = useState<ManagerNavType>('overview');
   const [reps, setReps] = useState<Representative[]>([]);
   const [currentUser, setCurrentUser] = useState<UserSessionPayload | null>(null);
   const [mustChangePassword, setMustChangePassword] = useState(false);
@@ -83,6 +83,12 @@ function HomePageContent() {
     }).catch(() => undefined);
   }, [currentUser]);
 
+  useEffect(() => {
+    if (requestedView === 'admin' && currentUser?.systemRole === 'ADMIN' && !currentUser.mustChangePassword) {
+      setManagerView('admin');
+    }
+  }, [currentUser, requestedView]);
+
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
@@ -110,25 +116,25 @@ function HomePageContent() {
   // UNIFIED ENTRY POINT LOGIC (STEP 17)
   // ----------------------------------------------------
   const mrItems: ShellNavItem[] = [
-    { id:'overview', label: language === 'ar' ? 'نظرة عامة' : 'Overview', icon:<LayoutDashboard className="size-4"/> },
-    { id:'submit', label: language === 'ar' ? 'تسجيل تقرير' : 'Submit Report', icon:<ClipboardList className="size-4"/> },
-    { id:'myreports', label: language === 'ar' ? 'تقاريري' : 'My Reports', icon:<FileText className="size-4"/> },
-    { id:'weeklyplan', label: language === 'ar' ? 'الخطة الأسبوعية' : 'Weekly Plan', icon:<CalendarDays className="size-4"/> },
-    { id:'mylists', label: language === 'ar' ? 'قوائمي' : 'My Lists', icon:<ListChecks className="size-4"/> },
-    { id:'analysis', label: language === 'ar' ? 'توافر المنتجات' : 'Product Availability', icon:<PackageSearch className="size-4"/> },
-    { id:'export', label:language==='ar'?'تصدير':'Export', icon:<Download className="size-4"/> },
+    { id:'overview', label: t('nav.overview'), icon:<LayoutDashboard className="size-4"/> },
+    { id:'submit', label: t('nav.submitReport'), icon:<ClipboardList className="size-4"/> },
+    { id:'myreports', label: t('nav.myReports'), icon:<FileText className="size-4"/> },
+    { id:'weeklyplan', label: t('nav.weeklyPlan'), icon:<CalendarDays className="size-4"/> },
+    { id:'mylists', label: t('nav.myLists'), icon:<ListChecks className="size-4"/> },
+    { id:'analysis', label: t('nav.productAvailability'), icon:<PackageSearch className="size-4"/> },
+    { id:'export', label:t('nav.export'), icon:<Download className="size-4"/> },
   ];
   const managerItems: ShellNavItem[] = [
-    { id:'overview', label: language === 'ar' ? 'نظرة عامة' : 'Overview', icon:<LayoutDashboard className="size-4"/> },
-    { id:'team_reports', label: language === 'ar' ? 'تقارير الفريق' : 'Team Reports', icon:<Users className="size-4"/> },
-    { id:'submit_activity', label:language==='ar'?'تسجيل نشاط':'Submit Activity', icon:<Activity className="size-4"/> },
-    { id:'my_reports', label:language==='ar'?'تقاريري':'My Reports', icon:<FileText className="size-4"/> },
-    { id:'weekly_plan', label:language==='ar'?'خطتي الأسبوعية':'My Weekly Plan', icon:<CalendarDays className="size-4"/> },
-    { id:'team_plans', label:language==='ar'?'خطط الفريق':'Team Plans', icon:<ClipboardList className="size-4"/> },
-    { id:'team_lists', label:language==='ar'?'قوائم الفريق':'Team Lists', icon:<Users className="size-4"/> },
-    { id:'product_analysis', label:language==='ar'?'توافر المنتجات':'Product Availability', icon:<BarChart3 className="size-4"/> },
-    { id:'export', label:language==='ar'?'تصدير':'Export', icon:<Download className="size-4"/> },
-    ...(currentUser?.systemRole === 'ADMIN' ? [{ id:'admin', label:language==='ar'?'الإدارة':'Admin', icon:<ShieldCheck className="size-4"/> }] : []),
+    { id:'overview', label: t('nav.overview'), icon:<LayoutDashboard className="size-4"/> },
+    { id:'team_reports', label: t('nav.teamReports'), icon:<Users className="size-4"/> },
+    { id:'submit_activity', label:t('nav.submitActivity'), icon:<Activity className="size-4"/> },
+    { id:'my_reports', label:t('nav.myReports'), icon:<FileText className="size-4"/> },
+    { id:'weekly_plan', label:t('nav.myWeeklyPlan'), icon:<CalendarDays className="size-4"/> },
+    { id:'team_plans', label:t('nav.teamPlans'), icon:<ClipboardList className="size-4"/> },
+    { id:'team_lists', label:t('nav.teamLists'), icon:<Users className="size-4"/> },
+    { id:'product_analysis', label:t('nav.productAvailability'), icon:<BarChart3 className="size-4"/> },
+    { id:'export', label:t('nav.export'), icon:<Download className="size-4"/> },
+    ...(currentUser?.systemRole === 'ADMIN' ? [{ id:'admin', label:t('nav.admin'), icon:<ShieldCheck className="size-4"/> }] : []),
   ];
 
   return (
@@ -140,7 +146,7 @@ function HomePageContent() {
           username={currentUser?.username}
           onSuccess={() => {
             setMustChangePassword(false);
-            showToast(language==='ar'?'تم تحديث وتأمين كلمة المرور بنجاح':'Password updated successfully');
+            showToast(t('auth.passwordUpdated', 'Password updated successfully'));
           }}
           onLogout={handleLogout}
         />
@@ -186,7 +192,7 @@ function HomePageContent() {
 
 export default function Home() {
   return (
-    <Suspense fallback={<LoadingScreen message="جارٍ التحميل..." />}>
+    <Suspense fallback={<LoadingScreen />}>
       <HomePageContent />
     </Suspense>
   );

@@ -1,5 +1,5 @@
 import { and, eq, inArray } from 'drizzle-orm';
-import { db, organizationRelationships, representatives, salesAssignments, users } from '@/lib/db';
+import { db, managerRepScopes, organizationRelationships, representatives, salesAssignments, users } from '@/lib/db';
 import type { UserSessionPayload } from '@/lib/auth';
 import { assertManagerSession } from '@/lib/authPolicy';
 import { AppError } from '@/lib/errors';
@@ -56,21 +56,43 @@ async function loadGraph() {
   return { activeUserIds: new Set(activeUsers.map((u) => u.id)), edges: activeEdges };
 }
 
+async function loadLegacyScopedRepIds(managerUserId: string) {
+  const rows = await db.select({ repId: managerRepScopes.repId }).from(managerRepScopes)
+    .where(eq(managerRepScopes.managerUserId, managerUserId)).all();
+  return [...new Set(rows.map((row) => row.repId))];
+}
+
 export const hierarchyService = {
   async getScopedUserIds(session: UserSessionPayload | null, mode: HierarchyScopeMode = 'ALL_DESCENDANTS') {
     assertManagerSession(session);
-    const graph = await loadGraph();
-    return resolveHierarchyUserIds(session.id, graph.edges, graph.activeUserIds, mode);
+    try {
+      const graph = await loadGraph();
+      return resolveHierarchyUserIds(session.id, graph.edges, graph.activeUserIds, mode);
+    } catch {
+      const repIds = await loadLegacyScopedRepIds(session.id);
+      if (!repIds.length) return [];
+      const rows = await db.select({ id: users.id }).from(users)
+        .where(and(inArray(users.repId, repIds), eq(users.isActive, true))).all();
+      return [...new Set(rows.map((row) => row.id))];
+    }
   },
   async getDirectManagerIds(session: UserSessionPayload | null) {
     assertManagerSession(session);
-    const graph = await loadGraph();
-    return resolveHierarchyAncestorIds(session.id, graph.edges, graph.activeUserIds, true);
+    try {
+      const graph = await loadGraph();
+      return resolveHierarchyAncestorIds(session.id, graph.edges, graph.activeUserIds, true);
+    } catch {
+      return [];
+    }
   },
   async getAncestorIds(session: UserSessionPayload | null) {
     assertManagerSession(session);
-    const graph = await loadGraph();
-    return resolveHierarchyAncestorIds(session.id, graph.edges, graph.activeUserIds);
+    try {
+      const graph = await loadGraph();
+      return resolveHierarchyAncestorIds(session.id, graph.edges, graph.activeUserIds);
+    } catch {
+      return [];
+    }
   },
   async getScopedRepIds(session: UserSessionPayload | null, mode: HierarchyScopeMode = 'ALL_DESCENDANTS') {
     const userIds = await this.getScopedUserIds(session, mode);
@@ -78,7 +100,7 @@ export const hierarchyService = {
     const [userRows, assignmentRows] = await Promise.all([
       db.select({ repId: users.repId }).from(users).where(inArray(users.id, userIds)).all(),
       db.select({ repId: salesAssignments.repId }).from(salesAssignments)
-        .where(and(inArray(salesAssignments.userId, userIds), eq(salesAssignments.isActive, true))).all(),
+        .where(and(inArray(salesAssignments.userId, userIds), eq(salesAssignments.isActive, true))).all().catch(() => []),
     ]);
     return [...new Set([...userRows, ...assignmentRows].map((r) => r.repId).filter((id): id is string => Boolean(id)))];
   },

@@ -1,1 +1,0 @@
-import { AdminReferenceData } from '@/components/admin/AdminReferenceData';import { requireAdminPage } from '@/lib/adminPageAuth';export default async function Page(){await requireAdminPage();return <AdminReferenceData/>}

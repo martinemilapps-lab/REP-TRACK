@@ -5,7 +5,7 @@ import { MedicalBackground } from '@/components/ui/MedicalBackground';
 
 export const metadata: Metadata = {
   title: 'REP TRACK — Sunny Medical Group',
-  description: 'منظومة تتبع وتوثيق نشاط المندوبين والتغطية البيعية — Medical Representative Activity & Sales Coverage System',
+  description: 'Medical Representative Activity & Sales Coverage System',
   icons: {
     icon: [
       { url: '/address_logo.png', sizes: '32x32', type: 'image/png' },
@@ -24,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ar" dir="rtl">
+    <html lang="en" dir="ltr">
       <head>
         <link rel="icon" href="/address_logo.png" type="image/png" />
         <link rel="apple-touch-icon" href="/address_logo.png" />

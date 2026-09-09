@@ -16,8 +16,7 @@ const I18nContext = createContext<I18nContextType | undefined>(undefined);
 const LANGUAGE_STORAGE_KEY = 'rep_track_lang';
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  // Default to Arabic
-  const [language, setLanguageState] = useState<Language>('ar');
+  const [language, setLanguageState] = useState<Language>('en');
 
   useEffect(() => {
     try {
@@ -58,7 +57,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       if (!item) {
         return fallback || key;
       }
-      return item[language] || item['ar'] || fallback || key;
+      return item[language] || fallback || key;
     },
     [language]
   );

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { assertAdminActor, sanitizeAuditMetadata, selectEligibleDemoUsers } from '../src/lib/services/adminService';
 import { generateSecureTemporaryPassword, hashPassword, verifyPassword } from '../src/lib/services/passwordService';
 import { createCredentialCsv } from '../src/lib/adminCredentialCsv';
@@ -43,7 +43,10 @@ for (const path of ['overview','users','audit']) {
   const file = path === 'users' ? 'src/app/api/admin/users/route.ts' : `src/app/api/admin/${path}/route.ts`;
   assert.match(readFileSync(file,'utf8'), /requireAdmin\(\)/, `${file} must independently guard access`);
 }
-for (const page of ['src/app/admin/page.tsx','src/app/admin/users/page.tsx','src/app/admin/security/page.tsx','src/app/admin/audit/page.tsx']) assert.match(readFileSync(page,'utf8'), /requireAdminPage\(\)/);
+const compatibilityPage = readFileSync('src/app/admin/page.tsx','utf8');
+assert.match(compatibilityPage, /getServerSession\(\)/);
+assert.match(compatibilityPage, /systemRole === 'ADMIN'/);
+assert.match(compatibilityPage, /redirect\(session\?\.systemRole/);
 const service = readFileSync('src/lib/services/adminService.ts','utf8');
 assert.match(service,/target\.id === admin\.id/); assert.match(service,/last active administrator/i); assert.match(service,/db\.delete\(sessions\)/); assert.match(service,/adminAuditEvents/);
 assert.match(service,/salesAssignments[\s\S]*\.catch\(\(\) => \[\]\)/,'user listing must survive legacy D1 without assignment enrichment');
@@ -52,7 +55,7 @@ const credentialRoute=readFileSync('src/app/api/admin/users/demo-passwords/route
 const home=readFileSync('src/app/page.tsx','utf8');assert.doesNotMatch(home,/router\.push\('\/admin'\)/);assert.match(home,/setManagerView\(id as ManagerNavType\)/);
 const manager=readFileSync('src/components/workspace/ManagerWorkspace.tsx','utf8');assert.match(manager,/systemRole === 'ADMIN'[\s\S]*<AdminWorkspace/);
 const adminWorkspace=readFileSync('src/components/admin/AdminWorkspace.tsx','utf8');for(const component of ['AdminUsers','AdminSecurity','AdminOrganization','AdminAssignments'])assert.match(adminWorkspace,new RegExp(`<${component}`));
-const legacyLayout=readFileSync('src/app/admin/layout.tsx','utf8');assert.match(legacyLayout,/redirect\('\/\?view=admin'\)/);
+assert.equal(existsSync('src/components/admin/AdminShell.tsx'),false,'standalone Admin shell must be removed');
 const securityUi=readFileSync('src/components/admin/AdminSecurity.tsx','utf8');assert.match(securityUi,/if\(!r\.ok\)throw new Error/,'demo-password UI must not silently map API errors to an empty list');
 console.log('Admin Phase 1 authorization, credential, migration, audit, selection, CSV and route guard tests passed');
 }

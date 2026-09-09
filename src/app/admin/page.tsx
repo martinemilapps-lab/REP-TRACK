@@ -1,2 +1,7 @@
-import { AdminOverview } from '@/components/admin/AdminOverview'; import { requireAdminPage } from '@/lib/adminPageAuth';
-export default async function AdminPage() { await requireAdminPage(); return <AdminOverview/>; }
+import { redirect } from 'next/navigation';
+import { getServerSession } from '@/lib/auth';
+
+export default async function AdminCompatibilityPage() {
+  const session = await getServerSession();
+  redirect(session?.systemRole === 'ADMIN' && !session.mustChangePassword ? '/?view=admin' : '/');
+}
