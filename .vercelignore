@@ -1,6 +1,8 @@
 ﻿# Local / sensitive files
-.wrangler/
+.wrangler
+**/.wrangler
 .dev.vars
+.env.local
 .dev-credentials*
 *.credentials.csv
 *credentials*.csv
