@@ -20,6 +20,7 @@
     "test:reps-security": "tsx tests/repsSecurity.test.ts",
     "test:final-ui-phase2": "tsx tests/finalUiPhase2.test.ts",
     "test:admin-phase1": "tsx tests/adminPhase1.test.ts",
+    "test:admin-phase2": "tsx tests/adminPhase2.test.ts",
     "test:admin-migration-preflight": "tsx tests/adminMigrationPreflight.test.ts",
     "test:local": "tsx tests/runLocal.ts"
   },

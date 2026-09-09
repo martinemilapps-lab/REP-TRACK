@@ -1,0 +1,2 @@
+import {NextRequest,NextResponse}from'next/server';import{requireAdmin}from'@/lib/auth';import{handleApiError}from'@/lib/errors';import{noStoreHeaders}from'@/lib/adminSecurity';import{pageInput}from'@/lib/adminRouteHelpers';import{getOrganizationAdmin}from'@/lib/services/adminCompanyService';
+export async function GET(request:NextRequest){try{return NextResponse.json({success:true,...await getOrganizationAdmin(await requireAdmin(),pageInput(request))},{headers:noStoreHeaders()});}catch(error){return handleApiError(error)}}

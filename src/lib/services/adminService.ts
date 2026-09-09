@@ -21,7 +21,7 @@ export function assertAdminActor(session: UserSessionPayload | null): asserts se
 }
 
 export function sanitizeAuditMetadata(metadata: Record<string, unknown> = {}) {
-  const blocked = /password|secret|hash|token|credential/i;
+  const blocked = /password|secret|hash|token|credential|api.?key/i;
   return JSON.stringify(Object.fromEntries(Object.entries(metadata).filter(([key]) => !blocked.test(key))));
 }
 
@@ -30,6 +30,10 @@ function audit(adminId: string, actionType: string, targetId: string, metadata: 
     id: crypto.randomUUID(), adminUserId: adminId, actionType, targetType: 'USER', targetId,
     metadata: sanitizeAuditMetadata(metadata), createdAt: new Date(),
   });
+}
+
+export async function recordAdminAudit(adminId: string, actionType: string, targetType: string, targetId: string, metadata: Record<string, unknown> = {}) {
+  return db.insert(adminAuditEvents).values({ id: crypto.randomUUID(), adminUserId: adminId, actionType, targetType, targetId, metadata: sanitizeAuditMetadata(metadata), createdAt: new Date() });
 }
 
 async function targetUser(userId: string) {

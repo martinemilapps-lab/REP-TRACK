@@ -2,13 +2,20 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { Activity, Languages, LayoutDashboard, LockKeyhole, LogOut, Menu, ShieldCheck, Users } from 'lucide-react';
+import { Activity, Boxes, BriefcaseBusiness, Building2, Languages, LayoutDashboard, ListTree, LockKeyhole, LogOut, MapPinned, Menu, ShieldCheck, Target, UserRoundCog, Users } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { Drawer } from '@/components/ui/Drawer'; import { Button } from '@/components/ui/Button'; import { useTranslation } from '@/lib/i18nContext';
 
 const items = [
   { href: '/admin', en: 'Overview', ar: 'نظرة عامة', icon: LayoutDashboard },
   { href: '/admin/users', en: 'Users', ar: 'المستخدمون', icon: Users },
+  { href: '/admin/organization', en: 'Organization', ar: 'المؤسسة', icon: Building2 },
+  { href: '/admin/assignments', en: 'Assignments', ar: 'التعيينات', icon: BriefcaseBusiness },
+  { href: '/admin/representatives', en: 'Representatives', ar: 'المندوبون', icon: UserRoundCog },
+  { href: '/admin/areas', en: 'Areas', ar: 'المناطق', icon: MapPinned },
+  { href: '/admin/products', en: 'Products', ar: 'المنتجات', icon: Boxes },
+  { href: '/admin/visit-objectives', en: 'Visit Objectives', ar: 'أهداف الزيارة', icon: Target },
+  { href: '/admin/reference-data', en: 'Reference Data', ar: 'البيانات المرجعية', icon: ListTree },
   { href: '/admin/security', en: 'Security Operations', ar: 'عمليات الأمان', icon: LockKeyhole },
   { href: '/admin/audit', en: 'Audit Log', ar: 'سجل التدقيق', icon: Activity },
 ];

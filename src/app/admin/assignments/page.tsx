@@ -1,0 +1,1 @@
+import { AdminAssignments } from '@/components/admin/AdminAssignments';import { requireAdminPage } from '@/lib/adminPageAuth';export default async function Page(){await requireAdminPage();return <AdminAssignments/>}
