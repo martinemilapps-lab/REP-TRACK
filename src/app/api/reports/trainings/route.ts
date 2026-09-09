@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TrainingSchema } from '@/lib/validation';
-import { getServerSession } from '@/lib/auth';
+import { requireAuthenticatedUser } from '@/lib/auth';
 import { createTrainingRecord, getTrainingsList } from '@/lib/services/trainingService';
 import { handleApiError } from '@/lib/errors';
 
@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   try {
     const rawData = await req.json();
     const validatedData = TrainingSchema.parse(rawData);
-    const session = await getServerSession();
+    const session = await requireAuthenticatedUser();
 
     const record = await createTrainingRecord(session, validatedData);
 
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await requireAuthenticatedUser();
     const { searchParams } = new URL(req.url);
     const repName = searchParams.get('rep') || undefined;
 

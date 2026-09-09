@@ -20,6 +20,7 @@
     "test:step21": "tsx tests/step21.test.ts",
     "test:step22": "tsx tests/step22.test.ts",
     "test:step23": "tsx tests/step23.test.ts",
+    "test:final-qa": "tsx tests/finalQa.test.ts",
     "test:reps-security": "tsx tests/repsSecurity.test.ts",
     "test:final-ui-phase2": "tsx tests/finalUiPhase2.test.ts",
     "test:admin-phase1": "tsx tests/adminPhase1.test.ts",

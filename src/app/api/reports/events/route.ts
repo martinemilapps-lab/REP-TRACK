@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { EventSchema } from '@/lib/validation';
-import { getServerSession } from '@/lib/auth';
+import { requireAuthenticatedUser } from '@/lib/auth';
 import { createEventRecord, getEventsList } from '@/lib/services/eventService';
 import { handleApiError } from '@/lib/errors';
 
@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   try {
     const rawData = await req.json();
     const validatedData = EventSchema.parse(rawData);
-    const session = await getServerSession();
+    const session = await requireAuthenticatedUser();
 
     const record = await createEventRecord(session, validatedData);
 
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await requireAuthenticatedUser();
     const { searchParams } = new URL(req.url);
     const repName = searchParams.get('rep') || undefined;
 

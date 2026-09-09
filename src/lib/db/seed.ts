@@ -12,7 +12,8 @@ async function seed() {
 
   // 1. Seed Manager Account
   const managerUsername = 'manager';
-  const managerPassword = process.env.MANAGER_DEFAULT_PASSWORD || '22515215monna';
+  const managerPassword = process.env.MANAGER_DEFAULT_PASSWORD;
+  if (!managerPassword) throw new Error('MANAGER_DEFAULT_PASSWORD is required for local seeding');
   const managerHash = hashSync(managerPassword, 10);
 
   const existingManager = await db
@@ -62,7 +63,7 @@ async function seed() {
       repDbId = existingRep.id;
     }
 
-    // Create user login for rep (username: sanitized lowercase rep name without spaces, default pass: 'rep123456')
+    // Representative login credentials are issued through the audited Admin flow.
     const username = rep.name.toLowerCase().replace(/[^a-z0-9]/g, '');
     const existingUser = await db
       .select()
@@ -70,16 +71,7 @@ async function seed() {
       .where(eq(users.username, username))
       .get();
 
-    if (!existingUser) {
-      await db.insert(users).values({
-        username,
-        passwordHash: hashSync('rep123456', 10),
-        name: rep.name,
-        role: 'REPRESENTATIVE',
-        repId: repDbId,
-      });
-      console.log(`✅ Created Rep Login User: ${username}`);
-    }
+    if (!existingUser) console.log(`ℹ️ No login created for ${username}; issue credentials through Admin`);
   }
 
   // 3. Seed Products List

@@ -49,5 +49,6 @@ local.db*
 .dev-credentials*
 *.credentials.csv
 *credentials*.csv
+scripts/provision_dev_organization.sql
 secrets/
 

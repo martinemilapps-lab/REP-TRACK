@@ -2,10 +2,11 @@ import { db, hospitals, productAvailabilities, products, representatives } from 
 import { eq, and, desc } from 'drizzle-orm';
 import { UserSessionPayload, resolveAuthorizedRepId } from '@/lib/auth';
 import { findOrCreateHospital, findOrCreateProduct } from './masterEntityService';
-import { AppError } from '@/lib/errors';
 import { z } from 'zod';
 import { ProductAvailabilitySchema } from '@/lib/validation';
 import { FilterOptions } from './hospitalService';
+import { assertAuthenticatedSession } from '@/lib/authPolicy';
+import { resolveWritableRepId } from '@/lib/repAccessPolicy';
 
 export type ProductAvailabilityInput = z.input<typeof ProductAvailabilitySchema>;
 
@@ -17,27 +18,9 @@ export async function upsertProductAvailability(
   session: UserSessionPayload | null,
   rawInput: ProductAvailabilityInput
 ) {
+  assertAuthenticatedSession(session);
   const input = ProductAvailabilitySchema.parse(rawInput);
-  let repId = session?.repId || null;
-
-  if (!repId && input.rep) {
-    const foundRep = await db
-      .select()
-      .from(representatives)
-      .where(eq(representatives.name, input.rep.trim()))
-      .get();
-    if (foundRep) {
-      repId = foundRep.id;
-    }
-  }
-
-  if (!repId) {
-    const firstRep = await db.select().from(representatives).limit(1).get();
-    if (!firstRep) {
-      throw new AppError('لم يتم العثور على المندوب. يرجى تسجيل الدخول أولاً', 401);
-    }
-    repId = firstRep.id;
-  }
+  const repId = resolveWritableRepId(session);
 
   // 1. Resolve Master Hospital
   const hospital = await findOrCreateHospital({

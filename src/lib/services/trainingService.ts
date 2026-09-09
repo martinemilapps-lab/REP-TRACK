@@ -5,6 +5,10 @@ import { AppError } from '@/lib/errors';
 import { z } from 'zod';
 import { TrainingSchema } from '@/lib/validation';
 import { FilterOptions } from './hospitalService';
+import { assertAuthenticatedSession } from '@/lib/authPolicy';
+import { resolveWritableRepId } from '@/lib/repAccessPolicy';
+import { hierarchyService } from './hierarchyService';
+import { inArray } from 'drizzle-orm';
 
 export type TrainingInput = z.input<typeof TrainingSchema>;
 
@@ -15,27 +19,9 @@ export async function createTrainingRecord(
   session: UserSessionPayload | null,
   rawInput: TrainingInput
 ) {
+  assertAuthenticatedSession(session);
   const input = TrainingSchema.parse(rawInput);
-  let repId = session?.repId || null;
-
-  if (!repId && input.rep) {
-    const foundRep = await db
-      .select()
-      .from(representatives)
-      .where(eq(representatives.name, input.rep.trim()))
-      .get();
-    if (foundRep) {
-      repId = foundRep.id;
-    }
-  }
-
-  if (!repId) {
-    const firstRep = await db.select().from(representatives).limit(1).get();
-    if (!firstRep) {
-      throw new AppError('لم يتم العثور على المندوب. يرجى تسجيل الدخول أولاً', 401);
-    }
-    repId = firstRep.id;
-  }
+  const repId = resolveWritableRepId(session);
 
   const [record] = await db
     .insert(trainings)
@@ -62,18 +48,16 @@ export async function getTrainingsList(
   session: UserSessionPayload | null,
   options?: FilterOptions
 ) {
-  const isManager = session?.role === 'MANAGER';
-  let targetRepId: string | null = null;
-
-  if (!isManager) {
-    targetRepId = session?.repId || null;
-  } else if (options?.repName) {
+  assertAuthenticatedSession(session);
+  let allowedRepIds=session.role==='REPRESENTATIVE'?[session.repId].filter((id):id is string=>Boolean(id)):await hierarchyService.getScopedRepIds(session);
+  if(options?.repId){if(!allowedRepIds.includes(options.repId))throw new AppError('غير مصرح',403);allowedRepIds=[options.repId];}
+  else if (options?.repName) {
     const found = await db
       .select()
       .from(representatives)
       .where(eq(representatives.name, options.repName.trim()))
       .get();
-    if (found) targetRepId = found.id;
+    if(!found||!allowedRepIds.includes(found.id))throw new AppError('غير مصرح',403);allowedRepIds=[found.id];
   }
 
   const baseQuery = db
@@ -95,9 +79,6 @@ export async function getTrainingsList(
     .innerJoin(representatives, eq(trainings.repId, representatives.id))
     .orderBy(desc(trainings.submittedAt));
 
-  if (targetRepId) {
-    return baseQuery.where(eq(trainings.repId, targetRepId)).all();
-  }
-
-  return baseQuery.all();
+  if(!allowedRepIds.length)return [];
+  return baseQuery.where(inArray(trainings.repId,allowedRepIds)).all();
 }

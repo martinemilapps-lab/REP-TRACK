@@ -1,11 +1,12 @@
 import { db, hospitals, hospitalVisits, representatives } from '@/lib/db';
-import { eq, and, desc, sql, SQL } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { UserSessionPayload, resolveAuthorizedRepId } from '@/lib/auth';
 import { findOrCreateHospital } from './masterEntityService';
 import { deriveVisitStatus } from '@/lib/business/status';
-import { AppError } from '@/lib/errors';
 import { z } from 'zod';
 import { HospitalVisitSchema } from '@/lib/validation';
+import { assertAuthenticatedSession } from '@/lib/authPolicy';
+import { resolveWritableRepId } from '@/lib/repAccessPolicy';
 
 export type HospitalVisitInput = z.input<typeof HospitalVisitSchema>;
 
@@ -25,29 +26,9 @@ export async function createHospitalVisit(
   session: UserSessionPayload | null,
   rawInput: HospitalVisitInput
 ) {
+  assertAuthenticatedSession(session);
   const input = HospitalVisitSchema.parse(rawInput);
-  // 1. Resolve Rep ID strictly
-  let repId = session?.repId || null;
-
-  if (!repId && input.rep) {
-    const foundRep = await db
-      .select()
-      .from(representatives)
-      .where(eq(representatives.name, input.rep.trim()))
-      .get();
-    if (foundRep) {
-      repId = foundRep.id;
-    }
-  }
-
-  if (!repId) {
-    // Fallback to first active representative for initial onboarding if no session
-    const firstRep = await db.select().from(representatives).limit(1).get();
-    if (!firstRep) {
-      throw new AppError('لم يتم العثور على المندوب. يرجى تسجيل الدخول أولاً', 401);
-    }
-    repId = firstRep.id;
-  }
+  const repId = resolveWritableRepId(session);
 
   // 2. Find or Create Master Hospital
   const hospital = await findOrCreateHospital({

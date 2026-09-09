@@ -2,10 +2,11 @@ import { db, distributionBranches, branchVisits, representatives } from '@/lib/d
 import { eq, desc } from 'drizzle-orm';
 import { UserSessionPayload, resolveAuthorizedRepId } from '@/lib/auth';
 import { findOrCreateBranch } from './masterEntityService';
-import { AppError } from '@/lib/errors';
 import { z } from 'zod';
 import { BranchVisitSchema } from '@/lib/validation';
 import { FilterOptions } from './hospitalService';
+import { assertAuthenticatedSession } from '@/lib/authPolicy';
+import { resolveWritableRepId } from '@/lib/repAccessPolicy';
 
 export type BranchVisitInput = z.input<typeof BranchVisitSchema>;
 
@@ -16,27 +17,9 @@ export async function createBranchVisit(
   session: UserSessionPayload | null,
   rawInput: BranchVisitInput
 ) {
+  assertAuthenticatedSession(session);
   const input = BranchVisitSchema.parse(rawInput);
-  let repId = session?.repId || null;
-
-  if (!repId && input.rep) {
-    const foundRep = await db
-      .select()
-      .from(representatives)
-      .where(eq(representatives.name, input.rep.trim()))
-      .get();
-    if (foundRep) {
-      repId = foundRep.id;
-    }
-  }
-
-  if (!repId) {
-    const firstRep = await db.select().from(representatives).limit(1).get();
-    if (!firstRep) {
-      throw new AppError('لم يتم العثور على المندوب. يرجى تسجيل الدخول أولاً', 401);
-    }
-    repId = firstRep.id;
-  }
+  const repId = resolveWritableRepId(session);
 
   const branch = await findOrCreateBranch({
     name: input.name,

@@ -3,10 +3,11 @@ import { eq, desc } from 'drizzle-orm';
 import { UserSessionPayload, resolveAuthorizedRepId } from '@/lib/auth';
 import { findOrCreatePharmacy } from './masterEntityService';
 import { deriveVisitStatus } from '@/lib/business/status';
-import { AppError } from '@/lib/errors';
 import { z } from 'zod';
 import { PharmacyVisitSchema } from '@/lib/validation';
 import { FilterOptions } from './hospitalService';
+import { assertAuthenticatedSession } from '@/lib/authPolicy';
+import { resolveWritableRepId } from '@/lib/repAccessPolicy';
 
 export type PharmacyVisitInput = z.input<typeof PharmacyVisitSchema>;
 
@@ -17,27 +18,9 @@ export async function createPharmacyVisit(
   session: UserSessionPayload | null,
   rawInput: PharmacyVisitInput
 ) {
+  assertAuthenticatedSession(session);
   const input = PharmacyVisitSchema.parse(rawInput);
-  let repId = session?.repId || null;
-
-  if (!repId && input.rep) {
-    const foundRep = await db
-      .select()
-      .from(representatives)
-      .where(eq(representatives.name, input.rep.trim()))
-      .get();
-    if (foundRep) {
-      repId = foundRep.id;
-    }
-  }
-
-  if (!repId) {
-    const firstRep = await db.select().from(representatives).limit(1).get();
-    if (!firstRep) {
-      throw new AppError('لم يتم العثور على المندوب. يرجى تسجيل الدخول أولاً', 401);
-    }
-    repId = firstRep.id;
-  }
+  const repId = resolveWritableRepId(session);
 
   const pharmacy = await findOrCreatePharmacy({
     name: input.name,

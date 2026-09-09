@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ProductAvailabilitySchema } from '@/lib/validation';
-import { getServerSession } from '@/lib/auth';
+import { requireAuthenticatedUser } from '@/lib/auth';
 import { upsertProductAvailability } from '@/lib/services/availabilityService';
 import { handleApiError } from '@/lib/errors';
 
@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   try {
     const rawData = await req.json();
     const validatedData = ProductAvailabilitySchema.parse(rawData);
-    const session = await getServerSession();
+    const session = await requireAuthenticatedUser();
 
     const { record, isUpdate, hospitalName, productName } = await upsertProductAvailability(
       session,

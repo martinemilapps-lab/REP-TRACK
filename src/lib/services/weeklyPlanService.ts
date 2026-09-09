@@ -77,6 +77,7 @@ export async function saveWeeklyPlan(
   }
 
   if (!repId) throw new AppError('لم يتم العثور على المندوب المعتمد', 403);
+  if (session.role === 'MANAGER') await hierarchyService.assertRepVisible(session, repId);
 
   // Check if a plan already exists for this rep and start_date
   const existingPlan = await db
@@ -230,6 +231,10 @@ export async function getWeeklyPlans(
   }
 
   const targetRepId = resolveAuthorizedRepId(session, options.repId);
+  if (session.role === 'MANAGER') {
+    if (!targetRepId) throw new AppError('يجب تحديد مندوب مصرح به', 400);
+    await hierarchyService.assertRepVisible(session, targetRepId);
+  }
 
   const query = db
     .select({
@@ -479,6 +484,7 @@ export async function updateWeeklyPlanStatus(
   const existing = await getWeeklyPlanById(id, session);
   if (!existing) throw new AppError('الخطة غير موجودة', 404);
   if (existing.isManagerPlan) {
+    if (existing.userId !== session.id) throw new AppError('غير مصرح لك بتعديل هذه الخطة', 403);
     ManagerPlanStatusSchema.parse(update.status);
     if (update.managerNotes) throw new AppError('Administrative notes are unavailable for personal plans', 400);
     await db.update(managerWeeklyPlans).set({ status: 'Submitted', updatedAt: new Date() })
@@ -496,6 +502,7 @@ export async function deleteWeeklyPlan(session: UserSessionPayload | null, id: s
   const existing = await getWeeklyPlanById(id, session);
   if (!existing) throw new AppError('الخطة غير موجودة', 404);
   if (existing.isManagerPlan) {
+    if (existing.userId !== session.id) throw new AppError('غير مصرح لك بحذف هذه الخطة', 403);
     await db.delete(managerWeeklyPlans)
       .where(and(eq(managerWeeklyPlans.id, id), eq(managerWeeklyPlans.userId, session.id)));
   } else {

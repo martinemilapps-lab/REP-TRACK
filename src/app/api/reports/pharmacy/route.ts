@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PharmacyVisitSchema } from '@/lib/validation';
-import { getServerSession } from '@/lib/auth';
+import { requireAuthenticatedUser } from '@/lib/auth';
 import { createPharmacyVisit } from '@/lib/services/pharmacyService';
 import { handleApiError } from '@/lib/errors';
 
@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   try {
     const rawData = await req.json();
     const validatedData = PharmacyVisitSchema.parse(rawData);
-    const session = await getServerSession();
+    const session = await requireAuthenticatedUser();
 
     const result = await createPharmacyVisit(session, validatedData);
 

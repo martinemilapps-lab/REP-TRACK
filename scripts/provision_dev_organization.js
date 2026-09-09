@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 const { hashSync } = require('bcrypt-ts');
+const { randomBytes } = require('crypto');
 
 // 1. Helper for CSV parsing
 function parseCSV(text) {
@@ -213,8 +214,9 @@ const userInserts = activeEmployees.map(emp => {
   const systemRole = pos === 'SMD' ? 'ADMIN' : isMR ? 'USER' : 'MANAGER';
   const repId = isMR ? repMap.get(username) : null;
 
-  // Generate secure temporary password for DEV
-  const tempPassword = `RepTrack2026!${username}`;
+  // Unique, non-derivable one-time credential. The ignored credential artifact is
+  // the only place where the plaintext exists; generated SQL contains its hash.
+  const tempPassword = `${randomBytes(18).toString('base64url')}!Aa1`;
   const passwordHash = hashSync(tempPassword, 10);
 
   devCredentials.push({
@@ -361,5 +363,5 @@ console.log('Wrote SQL file to', sqlFilePath, '(', sqlLines.length, 'lines)');
 
 // 11. Write dev-credentials.json (gitignored)
 const credsPath = path.join(__dirname, '../.dev-credentials.json');
-fs.writeFileSync(credsPath, JSON.stringify(devCredentials, null, 2), 'utf8');
+fs.writeFileSync(credsPath, JSON.stringify(devCredentials, null, 2), { encoding: 'utf8', mode: 0o600 });
 console.log('Wrote secure DEV credentials to', credsPath, '(', devCredentials.length, 'accounts)');

@@ -8,7 +8,7 @@ import {
   resetRateLimit,
 } from '@/lib/auth';
 import { db, users } from '@/lib/db';
-import { eq, and, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 
 function getClientIp(req: NextRequest): string {
   const forwarded = req.headers.get('x-forwarded-for');
@@ -88,46 +88,11 @@ export async function POST(req: NextRequest) {
       return response;
     }
 
-    // 3. Fallback: Manager Password Direct Entry (Legacy Gate - BCrypt verification only)
-    const managerUser = await db
-      .select()
-      .from(users)
-      .where(and(eq(users.role, 'MANAGER'), eq(users.isActive, true)))
-      .get();
-
-    let isManagerValid = false;
-    if (managerUser && managerUser.passwordHash) {
-      isManagerValid = verifyPassword(password, managerUser.passwordHash);
-    }
-
-    if (!isManagerValid || !managerUser) {
-      await recordFailedLogin(ip);
-      return NextResponse.json(
-        { success: false, message: 'كلمة السر غير صحيحة' },
-        { status: 401 }
-      );
-    }
-
-    await resetRateLimit(ip);
-    const sessionToken = await createDbSession(managerUser.id);
-
-    const response = NextResponse.json({
-      success: true,
-      mustChangePassword: managerUser.mustChangePassword === true,
-      user: {
-        id: managerUser.id,
-        username: managerUser.username,
-        name: managerUser.name,
-        role: managerUser.role,
-        repId: managerUser.repId,
-        positionCode: managerUser.positionCode,
-        systemRole: managerUser.systemRole,
-        mustChangePassword: managerUser.mustChangePassword === true,
-      },
-    });
-
-    setSessionCookie(response, sessionToken);
-    return response;
+    await recordFailedLogin(ip);
+    return NextResponse.json(
+      { success: false, message: 'اسم المستخدم أو كلمة السر غير صحيحة' },
+      { status: 401 }
+    );
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(

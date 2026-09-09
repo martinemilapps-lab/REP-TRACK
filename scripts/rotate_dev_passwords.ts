@@ -5,6 +5,7 @@ import {
   generateSecureTemporaryPassword,
   hashPassword,
 } from '../src/lib/services/passwordService';
+import { neutralizeSpreadsheetCell } from '../src/lib/adminCredentialCsv';
 
 export interface CredentialEntry {
   employeeName: string;
@@ -59,9 +60,8 @@ export function generateDevCredentialsAndSql(): {
       passwordHash: hash,
     });
 
-    // Escape for CSV (quote if contains comma)
-    const escapedName = user.name.includes(',') ? `"${user.name}"` : user.name;
-    csvRows.push(`${escapedName},${user.username},${tempPassword},${user.position_code}`);
+    const csv = (value:string) => `"${neutralizeSpreadsheetCell(value).replaceAll('"','""')}"`;
+    csvRows.push([user.name,user.username,tempPassword,user.position_code].map(csv).join(','));
 
     const escapedUsername = user.username.replace(/'/g, "''");
     const escapedHash = hash.replace(/'/g, "''");
@@ -86,7 +86,7 @@ async function main() {
 
   // 1. Write gitignored local-only CSV
   const csvPath = path.resolve(__dirname, '../.dev-credentials-step16.csv');
-  fs.writeFileSync(csvPath, csvContent, 'utf-8');
+  fs.writeFileSync(csvPath, csvContent, { encoding:'utf-8', mode:0o600 });
   console.log(`✓ Generated local-only credentials CSV: .dev-credentials-step16.csv`);
   console.log(`  - Total Accounts: ${credentials.length} active employee accounts`);
   console.log(`  - Vacant Positions: 0 accounts (verified zero credentials generated for vacant roles)`);
