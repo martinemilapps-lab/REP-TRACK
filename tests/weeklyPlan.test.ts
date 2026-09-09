@@ -13,7 +13,9 @@ import {
   deleteWeeklyPlan,
 } from '../src/lib/services/weeklyPlanService';
 import { generateWeeklyPlanWorkbook } from '../src/lib/excel';
-import { db, representatives } from '../src/lib/db';
+import { db, users } from '../src/lib/db';
+import { hierarchyService } from '../src/lib/services/hierarchyService';
+import type { UserSessionPayload } from '../src/lib/auth';
 
 export async function runWeeklyPlanTests() {
   console.log('\n🧪 Running Single/Double Visits & Weekly Plan Test Suite...');
@@ -107,19 +109,29 @@ export async function runWeeklyPlanTests() {
     // ----------------------------------------------------
     // 3. Weekly Plan Service Database Operations (CRUD)
     // ----------------------------------------------------
-    const rep = await db.select().from(representatives).get();
-    if (!rep) {
-      console.warn('  ⚠️ No representative found in DB for service test');
-    } else {
-      const managerSession = {
-        id: 'manager-a',
-        username: 'manager',
-        name: 'General Manager',
-        role: 'MANAGER' as const,
-        repId: null,
-        positionCode: 'DM',
+    const managers = await db.select().from(users).all();
+    let managerSession: UserSessionPayload | null = null;
+    let rep: { id: string; name: string; area: string } | undefined;
+    for (const manager of managers.filter((user) => user.role === 'MANAGER' && user.isActive)) {
+      const candidateSession: UserSessionPayload = {
+        id: manager.id,
+        username: manager.username,
+        name: manager.name,
+        role: 'MANAGER',
+        repId: manager.repId,
+        positionCode: manager.positionCode,
+        systemRole: manager.systemRole === 'ADMIN' ? 'ADMIN' : 'MANAGER',
       };
-
+      const scopedReps = await hierarchyService.getScopedRepresentatives(candidateSession);
+      if (scopedReps.length > 0) {
+        managerSession = candidateSession;
+        rep = scopedReps[0];
+        break;
+      }
+    }
+    if (!rep || !managerSession) {
+      console.warn('  ⚠️ No manager with an authorized representative found for service test');
+    } else {
       // 3.1 Save / Create
       const saved = await saveWeeklyPlan(managerSession, {
         rep: rep.name,

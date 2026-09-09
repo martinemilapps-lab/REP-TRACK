@@ -154,22 +154,23 @@ export async function runIntegrationTests() {
         repId: firstRep.id,
       };
 
-      const uniqueMonth = `2026-T${Date.now().toString().slice(-5)}`;
+      const availabilityHospital = `Test Avail Hospital ${Date.now()}`;
+      const validMonth = '2026-09';
       const avail1 = await upsertProductAvailability(repSession, {
-        hospital: 'Test Avail Hospital',
+        hospital: availabilityHospital,
         area: 'Dokki',
         product: 'Nitrong',
-        month: uniqueMonth,
+        month: validMonth,
         sales: 50,
         status: 'Available',
       });
       assert(avail1.isUpdate === false, 'First availability entry created new row');
 
       const avail2 = await upsertProductAvailability(repSession, {
-        hospital: 'Test Avail Hospital',
+        hospital: availabilityHospital,
         area: 'Dokki',
         product: 'Nitrong',
-        month: uniqueMonth,
+        month: validMonth,
         sales: 120,
         status: 'Available',
       });

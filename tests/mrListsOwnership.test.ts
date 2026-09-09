@@ -259,7 +259,7 @@ export async function runMrListsOwnershipTests(): Promise<MrListsOwnershipTestRe
     try {
       await deleteMasterItem('hospitals', savedHosp.id, repBId);
     } catch (err: any) {
-      deleteForbidden = err.message.includes('Forbidden: Item does not belong to your representative territory');
+      deleteForbidden = err?.statusCode === 403;
     }
     record(
       deleteForbidden,

@@ -127,12 +127,22 @@ export function runUnifiedWorkspaceTests(): WorkspaceRoutingResult {
     }
 
     // ----------------------------------------------------
-    // 9. Verify the new Admin Phase 1 route is server protected
+    // 9. Verify Admin is integrated into Manager Workspace and capability gated
     // ----------------------------------------------------
-    const adminPath = path.resolve(__dirname, '../src/app/admin');
-    const adminExists = fs.existsSync(adminPath);
-    const adminPage = fs.readFileSync(path.join(adminPath, 'page.tsx'), 'utf8');
-    assert(adminExists && adminPage.includes('requireAdminPage()'), 'Admin Phase 1 route exists with a server-side guard');
+    const homePage = fs.readFileSync(path.resolve(__dirname, '../src/app/page.tsx'), 'utf8');
+    const managerWorkspace = fs.readFileSync(
+      path.resolve(__dirname, '../src/components/workspace/ManagerWorkspace.tsx'),
+      'utf8'
+    );
+    const compatibilityPage = fs.readFileSync(path.resolve(__dirname, '../src/app/admin/page.tsx'), 'utf8');
+    assert(
+      homePage.includes("requestedView === 'admin'") &&
+        homePage.includes("currentUser?.systemRole === 'ADMIN'") &&
+        homePage.includes("setManagerView('admin')") &&
+        managerWorkspace.includes("activeNav === 'admin' && currentUser.systemRole === 'ADMIN'") &&
+        compatibilityPage.includes("'/?view=admin'"),
+      'Admin is integrated into Manager Workspace, capability gated, and reached by the compatibility redirect'
+    );
 
     // ----------------------------------------------------
     // 10. Verify Zero Vacant User Accounts in System
