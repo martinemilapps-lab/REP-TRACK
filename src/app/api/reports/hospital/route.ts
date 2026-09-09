@@ -6,9 +6,9 @@ import { handleApiError } from '@/lib/errors';
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await requireAuthenticatedUser();
     const rawData = await req.json();
     const validatedData = HospitalVisitSchema.parse(rawData);
-    const session = await requireAuthenticatedUser();
 
     const result = await createHospitalVisit(session, validatedData);
 
