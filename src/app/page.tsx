@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Representative } from '@/types';
 import { Topbar } from '@/components/layout/Topbar';
 import { Toast, ToastMessage } from '@/components/ui/Toast';
@@ -11,13 +11,14 @@ import { ChangePasswordModal } from '@/components/auth/ChangePasswordModal';
 import { MedicalRepWorkspace, MRViewType } from '@/components/workspace/MedicalRepWorkspace';
 import { ManagerWorkspace, ManagerNavType } from '@/components/workspace/ManagerWorkspace';
 import { AppShell, ShellNavItem } from '@/components/layout/AppShell';
-import { BarChart3, ClipboardList, FileText, CalendarDays, ListChecks, PackageSearch, Download, LayoutDashboard, Activity, Users } from 'lucide-react';
+import { BarChart3, ClipboardList, FileText, CalendarDays, ListChecks, PackageSearch, Download, LayoutDashboard, Activity, Users, ShieldCheck } from 'lucide-react';
 import { useTranslation } from '@/lib/i18nContext';
 import type { UserSessionPayload } from '@/lib/auth';
 
 function HomePageContent() {
   const { t, language } = useTranslation();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const initialView = (searchParams.get('view') as MRViewType) || 'overview';
 
   const [activeView, setActiveView] = useState<MRViewType>(initialView);
@@ -126,6 +127,7 @@ function HomePageContent() {
     { id:'team_lists', label:language==='ar'?'قوائم الفريق':'Team Lists', icon:<Users className="size-4"/> },
     { id:'product_analysis', label:language==='ar'?'توافر المنتجات':'Product Availability', icon:<BarChart3 className="size-4"/> },
     { id:'export', label:language==='ar'?'تصدير':'Export', icon:<Download className="size-4"/> },
+    ...(currentUser?.systemRole === 'ADMIN' ? [{ id:'admin', label:language==='ar'?'الإدارة':'Admin', icon:<ShieldCheck className="size-4"/> }] : []),
   ];
 
   return (
@@ -149,7 +151,7 @@ function HomePageContent() {
           3. DM / AM / OM / BUM / PM / MM / SMD -> Manager Workspace
       */}
       {!currentUser ? <><Topbar/><LoginForm onSuccess={handleLoginSuccess} /></> : (
-        <AppShell user={currentUser} items={currentUser.positionCode === 'MR' ? mrItems : managerItems} activeItem={currentUser.positionCode === 'MR' ? activeView : managerView} onNavigate={(id) => currentUser.positionCode === 'MR' ? setActiveView(id as MRViewType) : setManagerView(id as ManagerNavType)} onLogout={handleLogout}>
+        <AppShell user={currentUser} items={currentUser.positionCode === 'MR' ? mrItems : managerItems} activeItem={currentUser.positionCode === 'MR' ? activeView : managerView} onNavigate={(id) => { if (id === 'admin') { router.push('/admin'); return; } if (currentUser.positionCode === 'MR') setActiveView(id as MRViewType); else setManagerView(id as ManagerNavType); }} onLogout={handleLogout}>
         {currentUser.positionCode === 'MR' ? <MedicalRepWorkspace
           currentUser={currentUser}
           activeView={activeView}

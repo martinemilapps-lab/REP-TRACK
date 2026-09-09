@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { unstable_rethrow } from 'next/navigation';
 import { db, users, sessions, loginAttempts, salesAssignments } from '@/lib/db';
 import { eq, and, gt } from 'drizzle-orm';
 import { AppError } from '@/lib/errors';
@@ -117,7 +118,11 @@ export async function getServerSession(): Promise<UserSessionPayload | null> {
       .where(and(eq(sessions.id, token), gt(sessions.expiresAt, now)))
       .get();
 
-    if (!sessionRecord || sessionRecord.isActive === false) {
+    if (!sessionRecord) {
+      return null;
+    }
+    if (sessionRecord.isActive === false) {
+      await db.delete(sessions).where(eq(sessions.id, sessionRecord.sessionId));
       return null;
     }
 
@@ -165,6 +170,7 @@ export async function getServerSession(): Promise<UserSessionPayload | null> {
       } : null,
     };
   } catch (error) {
+    unstable_rethrow(error);
     console.error('Session retrieval error:', error);
     return null;
   }

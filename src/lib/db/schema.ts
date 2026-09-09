@@ -81,6 +81,21 @@ export const loginAttempts = sqliteTable('login_attempts', {
   lockedUntil: integer('locked_until', { mode: 'timestamp_ms' }),
 });
 
+export const adminAuditEvents = sqliteTable('admin_audit_events', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  adminUserId: text('admin_user_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
+  actionType: text('action_type').notNull(),
+  targetType: text('target_type').notNull(),
+  targetId: text('target_id').notNull(),
+  metadata: text('metadata').notNull().default('{}'),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
+}, (table) => [
+  index('idx_admin_audit_created').on(table.createdAt),
+  index('idx_admin_audit_admin').on(table.adminUserId),
+  index('idx_admin_audit_target').on(table.targetType, table.targetId),
+  index('idx_admin_audit_action').on(table.actionType),
+]);
+
 export const representatives = sqliteTable('representatives', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   name: text('name').notNull().unique(),

@@ -127,11 +127,12 @@ export function runUnifiedWorkspaceTests(): WorkspaceRoutingResult {
     }
 
     // ----------------------------------------------------
-    // 9. Verify /admin Route Is Completely Deleted
+    // 9. Verify the new Admin Phase 1 route is server protected
     // ----------------------------------------------------
     const adminPath = path.resolve(__dirname, '../src/app/admin');
     const adminExists = fs.existsSync(adminPath);
-    assert(!adminExists, 'Legacy route src/app/admin is completely deleted from repository');
+    const adminPage = fs.readFileSync(path.join(adminPath, 'page.tsx'), 'utf8');
+    assert(adminExists && adminPage.includes('requireAdminPage()'), 'Admin Phase 1 route exists with a server-side guard');
 
     // ----------------------------------------------------
     // 10. Verify Zero Vacant User Accounts in System
