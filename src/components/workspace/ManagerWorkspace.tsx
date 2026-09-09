@@ -11,6 +11,7 @@ import { WeeklyPlanView } from '@/components/weekly-plan/WeeklyPlanView';
 import { MyListsView } from '@/components/my-lists/MyListsView';
 import { useTranslation } from '@/lib/i18nContext';
 import { SalesAnalyticsView } from '@/components/sales/SalesAnalyticsView';
+import { ComplianceView } from '@/components/compliance/ComplianceView';
 import {
   Download,
   Target,
@@ -235,7 +236,7 @@ export function ManagerWorkspace({
         <div className="space-y-6"><SalesAnalyticsView manager/><div className="border-t border-[var(--line)] pt-6"><h2 className="mb-3 text-lg font-black">{language==='ar'?'توافر المنتجات':'Product Availability'}</h2><ManagerDashboardView key="product-availability" reps={reps} initialTab="availability" onLock={onLogout} onError={showError} onSuccess={showSuccess}/></div></div>
       )}
 
-      {activeNav==='compliance'&&<div className="section-card"><h2 className="font-semibold">{language==='ar'?'متابعة تقديم التقارير':'Submission tracking'}</h2><p className="mt-2 text-sm">{language==='ar'?'استعرض التقارير الفعلية من صفحة تقارير الفريق.':'Browse submitted records in Team Reports.'}</p><button type="button" className="mt-4 min-h-11 underline" onClick={()=>setActiveNav('team_reports')}>{language==='ar'?'عرض تقارير الفريق':'View Team Reports'}</button></div>}
+      {activeNav==='compliance'&&<ComplianceView/>}
 
       {/* 9. Export */}
       {activeNav === 'export' && (

@@ -18,6 +18,7 @@
     "test:step19": "tsx tests/step19.test.ts",
     "test:step20": "tsx tests/step20.test.ts",
     "test:step21": "tsx tests/step21.test.ts",
+    "test:step22": "tsx tests/step22.test.ts",
     "test:reps-security": "tsx tests/repsSecurity.test.ts",
     "test:final-ui-phase2": "tsx tests/finalUiPhase2.test.ts",
     "test:admin-phase1": "tsx tests/adminPhase1.test.ts",
