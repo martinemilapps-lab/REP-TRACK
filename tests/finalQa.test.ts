@@ -27,6 +27,10 @@ assert.match(weekly,/existing\.userId !== session\.id/,'personal manager-plan mu
 const login=readFileSync('src/app/api/auth/login/route.ts','utf8');
 assert.doesNotMatch(login,/Manager Password Direct Entry|managerUser/,'username-less legacy manager login is removed');
 assert.match(login,/اسم المستخدم أو كلمة السر غير صحيحة/);
+const changePassword=readFileSync('src/app/api/auth/change-password/route.ts','utf8');
+assert.match(changePassword,/db\.delete\(sessions\)\.where\(eq\(sessions\.userId, userRecord\.id\)\)/,'password change revokes every old session');
+assert.match(changePassword,/createDbSession\(userRecord\.id\)/,'password change creates a fresh authenticated session');
+assert.match(changePassword,/setSessionCookie\(response, newSessionToken\)/,'password change replaces the browser session cookie');
 const provision=readFileSync('scripts/provision_dev_organization.js','utf8');
 assert.match(provision,/randomBytes\(18\)/,'provisioned credentials are random');
 assert.doesNotMatch(provision,/RepTrack2026/);

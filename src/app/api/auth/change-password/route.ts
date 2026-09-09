@@ -4,10 +4,11 @@ import {
   verifyPassword,
   validatePasswordQuality,
   hashPassword,
-  SESSION_COOKIE_NAME,
+  createDbSession,
+  setSessionCookie,
 } from '@/lib/auth';
 import { db, users, sessions } from '@/lib/db';
-import { eq, and, ne } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 export async function POST(req: NextRequest) {
   try {
@@ -87,31 +88,25 @@ export async function POST(req: NextRequest) {
     const newHash = hashPassword(newPassword);
     const now = new Date();
 
-    await db
-      .update(users)
-      .set({
-        passwordHash: newHash,
-        mustChangePassword: false,
-        updatedAt: now,
-      })
-      .where(eq(users.id, userRecord.id));
+    await db.batch([
+      db.update(users)
+        .set({
+          passwordHash: newHash,
+          mustChangePassword: false,
+          updatedAt: now,
+        })
+        .where(eq(users.id, userRecord.id)),
+      db.delete(sessions).where(eq(sessions.userId, userRecord.id)),
+    ]);
 
-    // 8. Revoke Other Active Sessions (preserving current session)
-    const currentToken = req.cookies.get(SESSION_COOKIE_NAME)?.value;
-    if (currentToken) {
-      try {
-        await db
-          .delete(sessions)
-          .where(and(eq(sessions.userId, userRecord.id), ne(sessions.id, currentToken)));
-      } catch (err) {
-        console.error('Error revoking other sessions:', err);
-      }
-    }
-
-    return NextResponse.json({
+    // 8. Reissue a fresh authenticated session after revoking every old token.
+    const newSessionToken = await createDbSession(userRecord.id);
+    const response = NextResponse.json({
       success: true,
       message: 'تم تحديث وتأمين كلمة المرور بنجاح',
     });
+    setSessionCookie(response, newSessionToken);
+    return response;
   } catch (error: unknown) {
     const err = error as { statusCode?: number; message?: string };
     if (err?.statusCode === 401) {
