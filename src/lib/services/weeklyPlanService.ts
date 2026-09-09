@@ -352,7 +352,7 @@ export async function getTeamWeeklyPlans(session: UserSessionPayload | null, mod
   const [userIds, repIds] = await Promise.all([hierarchyService.getScopedUserIds(session, mode), hierarchyService.getScopedRepIds(session, mode)]);
   const mrSets = await Promise.all(repIds.map((repId) => getWeeklyPlans(session, { repId })));
   const managerRows = userIds.length ? await db.select({
-    id: managerWeeklyPlans.id, userId: managerWeeklyPlans.userId, userName: users.name, startDate: managerWeeklyPlans.startDate,
+    id: managerWeeklyPlans.id, userId: managerWeeklyPlans.userId, userName: users.name, userPosition: users.positionCode, startDate: managerWeeklyPlans.startDate,
     endDate: managerWeeklyPlans.endDate, weekLabel: managerWeeklyPlans.weekLabel, saturdayAm: managerWeeklyPlans.saturdayAm,
     saturdayPm: managerWeeklyPlans.saturdayPm, sundayAm: managerWeeklyPlans.sundayAm, sundayPm: managerWeeklyPlans.sundayPm,
     mondayAm: managerWeeklyPlans.mondayAm, mondayPm: managerWeeklyPlans.mondayPm, tuesdayAm: managerWeeklyPlans.tuesdayAm,

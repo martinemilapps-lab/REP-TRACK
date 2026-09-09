@@ -15,7 +15,8 @@ import { MyListsView } from '@/components/my-lists/MyListsView';
 import { MyReportsView } from '@/components/my-reports/MyReportsView';
 import { WeeklyPlanView } from '@/components/weekly-plan/WeeklyPlanView';
 import { useTranslation } from '@/lib/i18nContext';
-import { MapPin, User, CheckCircle2 } from 'lucide-react';
+import { MapPin, User, CheckCircle2, ClipboardList, CalendarDays, PackageSearch } from 'lucide-react';
+import { RepresentativeOverview } from '@/components/overview/RepresentativeOverview';
 
 export type MRViewType = 'overview' | 'submit' | 'mylists' | 'myreports' | 'weeklyplan' | 'analysis';
 
@@ -37,7 +38,6 @@ interface MedicalRepWorkspaceProps {
   onShowToast: (text: string, isError?: boolean) => void;
   embedded?: boolean;
 }
-
 export function MedicalRepWorkspace({
   currentUser,
   activeView,
@@ -101,7 +101,7 @@ export function MedicalRepWorkspace({
                 : 'text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--surface-hover)]'
             }`}
           >
-            <span>📋</span>
+            <ClipboardList className="size-4"/>
             <span>{t('nav.myLists')}</span>
           </button>
           <button
@@ -122,7 +122,7 @@ export function MedicalRepWorkspace({
                 : 'text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--surface-hover)]'
             }`}
           >
-            <span>📅</span>
+            <CalendarDays className="size-4"/>
             <span>{t('nav.weeklyPlan')}</span>
           </button>
           <button
@@ -133,20 +133,20 @@ export function MedicalRepWorkspace({
                 : 'text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--surface-hover)]'
             }`}
           >
-            <span>📈</span>
+            <PackageSearch className="size-4"/>
             <span>{language === 'ar' ? 'تحليل المنتجات' : 'Product Analysis'}</span>
           </button>
         </nav>
       </div>}
 
       {/* ============ VIEW 1: SUBMIT REPORT ============ */}
-      {activeView === 'overview' && <div className="section-card"><h1 className="text-xl font-bold">{language === 'ar' ? 'مساحة عمل المندوب' : 'Representative workspace'}</h1><p className="mt-2 text-sm text-[var(--ink-soft)]">{language === 'ar' ? `منطقتك الحالية: ${territory}` : `Current territory: ${territory}`}</p></div>}
+      {activeView === 'overview' && <RepresentativeOverview user={currentUser} onNavigate={onViewChange}/>}
       {activeView === 'submit' && (
         <div className="animate-fade-in">
           {/* Activity Type Picker */}
           <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[var(--radius)] p-5 mb-4 shadow-card">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xl">📋</span>
+              <ClipboardList className="size-5"/>
               <h2 className="text-base font-extrabold text-[var(--ink)]">
                 {t('activity.type.title')}
               </h2>
@@ -221,7 +221,6 @@ export function MedicalRepWorkspace({
 
           {(selectedType === 'availability' || selectedType === 'product_analysis') && (
             <AvailabilityForm
-              selectedRep={repName}
               onSuccess={(msg) => onShowToast(msg)}
               onError={(msg) => onShowToast(msg, true)}
             />
@@ -235,7 +234,6 @@ export function MedicalRepWorkspace({
           <MyListsView
             reps={reps}
             selectedRep={repName}
-            onSelectRep={() => {}}
           />
         </div>
       )}
@@ -243,11 +241,7 @@ export function MedicalRepWorkspace({
       {/* ============ VIEW 3: MY REPORTS ============ */}
       {activeView === 'myreports' && (
         <div className="animate-fade-in">
-          <MyReportsView
-            reps={reps}
-            selectedRep={repName}
-            onSelectRep={() => {}}
-          />
+          <MyReportsView />
         </div>
       )}
 
@@ -257,7 +251,6 @@ export function MedicalRepWorkspace({
           <WeeklyPlanView
             reps={reps}
             selectedRep={repName}
-            onSelectRep={() => {}}
             onSuccess={(msg) => onShowToast(msg)}
             onError={(msg) => onShowToast(msg, true)}
           />
@@ -268,7 +261,6 @@ export function MedicalRepWorkspace({
       {activeView === 'analysis' && (
         <div className="animate-fade-in">
           <AvailabilityForm
-            selectedRep={repName}
             onSuccess={(msg) => onShowToast(msg)}
             onError={(msg) => onShowToast(msg, true)}
           />

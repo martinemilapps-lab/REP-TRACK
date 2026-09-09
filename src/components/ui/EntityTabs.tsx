@@ -1,5 +1,6 @@
 'use client';
 
+import { Hospital, Pill, Stethoscope, Building2, CalendarDays, GraduationCap, ClipboardList, PackageSearch } from 'lucide-react';
 import React from 'react';
 import { ActivityType } from '@/types';
 import { useTranslation } from '@/lib/i18nContext';
@@ -17,25 +18,25 @@ export function EntityTabs({
   className = '',
   showAllFiveItems = true,
 }: EntityTabsProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
-  const tabs: { type: ActivityType; label: string; icon: string }[] = showAllFiveItems
+  const tabs: { type: ActivityType; label: string; icon: React.ReactNode }[] = showAllFiveItems
     ? [
-        { type: 'hospital', label: t('activity.hospital'), icon: '🏥' },
-        { type: 'pharmacy', label: t('activity.pharmacy'), icon: '💊' },
-        { type: 'doctor', label: t('activity.doctor'), icon: '🩺' },
-        { type: 'branch', label: t('activity.branch'), icon: '🏢' },
-        { type: 'event', label: t('activity.events'), icon: '🎟️' },
-        { type: 'training', label: t('activity.training'), icon: '🎓' },
-        { type: 'special_task', label: t('activity.specialTasks'), icon: '⚡' },
-        { type: 'availability', label: t('activity.productsAnalysis'), icon: '📊' },
+        { type: 'hospital', label: t('activity.hospital'), icon: <Hospital className="size-5"/> },
+        { type: 'pharmacy', label: t('activity.pharmacy'), icon: <Pill className="size-5"/> },
+        { type: 'doctor', label: t('activity.doctor'), icon: <Stethoscope className="size-5"/> },
+        { type: 'branch', label: t('activity.branch'), icon: <Building2 className="size-5"/> },
+        { type: 'event', label: t('activity.events'), icon: <CalendarDays className="size-5"/> },
+        { type: 'training', label: t('activity.training'), icon: <GraduationCap className="size-5"/> },
+        { type: 'special_task', label: t('activity.specialTasks'), icon: <ClipboardList className="size-5"/> },
+        { type: 'availability', label: language==='ar'?'توافر المنتجات':'Product availability', icon: <PackageSearch className="size-5"/> },
       ]
     : [
-        { type: 'hospital', label: t('activity.hospital'), icon: '🏥' },
-        { type: 'pharmacy', label: t('activity.pharmacy'), icon: '💊' },
-        { type: 'doctor', label: t('activity.doctor'), icon: '🩺' },
-        { type: 'branch', label: t('activity.branch'), icon: '🏢' },
-        { type: 'availability', label: t('activity.productsAnalysis'), icon: '📊' },
+        { type: 'hospital', label: t('activity.hospital'), icon: <Hospital className="size-5"/> },
+        { type: 'pharmacy', label: t('activity.pharmacy'), icon: <Pill className="size-5"/> },
+        { type: 'doctor', label: t('activity.doctor'), icon: <Stethoscope className="size-5"/> },
+        { type: 'branch', label: t('activity.branch'), icon: <Building2 className="size-5"/> },
+        { type: 'availability', label: t('activity.productsAnalysis'), icon: <PackageSearch className="size-5"/> },
       ];
 
   return (
@@ -43,7 +44,7 @@ export function EntityTabs({
       {tabs.map((tab) => {
         const isActive = activeTab === tab.type;
         return (
-          <button
+          <button type="button"
             key={tab.type}
             onClick={() => onChange(tab.type)}
             className={`px-3 py-1.5 md:px-3.5 md:py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 whitespace-nowrap select-none border ${

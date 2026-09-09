@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
     const filterRepName = searchParams.get('rep');
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!, 10) : 1000;
     const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!, 10) : 0;
+    const scopeMode = searchParams.get('scopeMode') === 'DIRECT_REPORTS' ? 'DIRECT_REPORTS' : 'ALL_DESCENDANTS';
 
     const session = await requireAuthenticatedUser();
 
@@ -38,6 +39,7 @@ export async function GET(req: NextRequest) {
       requestedRepId: targetRepId,
       limit,
       offset,
+      scopeMode,
     });
 
     const allReps = reportsData.reps;

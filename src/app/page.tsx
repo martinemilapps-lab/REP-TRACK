@@ -13,7 +13,6 @@ import { ManagerWorkspace, ManagerNavType } from '@/components/workspace/Manager
 import { AppShell, ShellNavItem } from '@/components/layout/AppShell';
 import { BarChart3, ClipboardList, FileText, CalendarDays, ListChecks, PackageSearch, Download, LayoutDashboard, Activity, Users } from 'lucide-react';
 import { useTranslation } from '@/lib/i18nContext';
-import { INITIAL_REPRESENTATIVES } from '@/lib/constants';
 import type { UserSessionPayload } from '@/lib/auth';
 
 function HomePageContent() {
@@ -23,7 +22,7 @@ function HomePageContent() {
 
   const [activeView, setActiveView] = useState<MRViewType>(initialView);
   const [managerView, setManagerView] = useState<ManagerNavType>('overview');
-  const [reps, setReps] = useState<Representative[]>(INITIAL_REPRESENTATIVES);
+  const [reps, setReps] = useState<Representative[]>([]);
   const [currentUser, setCurrentUser] = useState<UserSessionPayload | null>(null);
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -120,13 +119,13 @@ function HomePageContent() {
   const managerItems: ShellNavItem[] = [
     { id:'overview', label: language === 'ar' ? 'نظرة عامة' : 'Overview', icon:<LayoutDashboard className="size-4"/> },
     { id:'team_reports', label: language === 'ar' ? 'تقارير الفريق' : 'Team Reports', icon:<Users className="size-4"/> },
-    { id:'submit_activity', label:'Submit Activity', icon:<Activity className="size-4"/> },
-    { id:'my_reports', label:'My Reports', icon:<FileText className="size-4"/> },
-    { id:'weekly_plan', label:'My Weekly Plan', icon:<CalendarDays className="size-4"/> },
-    { id:'team_plans', label:'Team Plans', icon:<ClipboardList className="size-4"/> },
-    { id:'team_lists', label:'Team Lists', icon:<Users className="size-4"/> },
-    { id:'product_analysis', label:'Product Availability', icon:<BarChart3 className="size-4"/> },
-    { id:'export', label:'Export', icon:<Download className="size-4"/> },
+    { id:'submit_activity', label:language==='ar'?'تسجيل نشاط':'Submit Activity', icon:<Activity className="size-4"/> },
+    { id:'my_reports', label:language==='ar'?'تقاريري':'My Reports', icon:<FileText className="size-4"/> },
+    { id:'weekly_plan', label:language==='ar'?'خطتي الأسبوعية':'My Weekly Plan', icon:<CalendarDays className="size-4"/> },
+    { id:'team_plans', label:language==='ar'?'خطط الفريق':'Team Plans', icon:<ClipboardList className="size-4"/> },
+    { id:'team_lists', label:language==='ar'?'قوائم الفريق':'Team Lists', icon:<Users className="size-4"/> },
+    { id:'product_analysis', label:language==='ar'?'توافر المنتجات':'Product Availability', icon:<BarChart3 className="size-4"/> },
+    { id:'export', label:language==='ar'?'تصدير':'Export', icon:<Download className="size-4"/> },
   ];
 
   return (
@@ -138,7 +137,7 @@ function HomePageContent() {
           username={currentUser?.username}
           onSuccess={() => {
             setMustChangePassword(false);
-            showToast('تم تحديث وتأمين كلمة المرور بنجاح');
+            showToast(language==='ar'?'تم تحديث وتأمين كلمة المرور بنجاح':'Password updated successfully');
           }}
           onLogout={handleLogout}
         />

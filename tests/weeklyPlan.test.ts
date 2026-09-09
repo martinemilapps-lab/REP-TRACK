@@ -112,11 +112,12 @@ export async function runWeeklyPlanTests() {
       console.warn('  ⚠️ No representative found in DB for service test');
     } else {
       const managerSession = {
-        id: 'test-manager-id',
+        id: 'manager-a',
         username: 'manager',
         name: 'General Manager',
         role: 'MANAGER' as const,
         repId: null,
+        positionCode: 'DM',
       };
 
       // 3.1 Save / Create

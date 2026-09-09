@@ -7,7 +7,7 @@ import { NextRequest } from 'next/server';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { dataGatewayClient } from '../src/lib/dataGatewayClient';
-import { db, users, sessions, salesAssignments, representatives, weeklyPlans } from '../src/lib/db';
+import { db, users, sessions, salesAssignments, representatives, weeklyPlans, organizationRelationships } from '../src/lib/db';
 import type { UserSessionPayload } from '../src/lib/auth';
 import { AppError } from '../src/lib/errors';
 import { applyStep19Migration, assertExplicitMigrationTarget } from '../src/lib/db/step19Migration';
@@ -16,6 +16,8 @@ import { saveManagerActivity, getManagerActivities, getManagerActivityById, dele
 import { saveWeeklyPlan, getWeeklyPlans, getWeeklyPlanById, deleteWeeklyPlan, updateWeeklyPlanStatus } from '../src/lib/services/weeklyPlanService';
 import * as activitiesRoute from '../src/app/api/manager/activities/route';
 import * as activityRoute from '../src/app/api/manager/activities/[id]/route';
+import * as reportsRoute from '../src/app/api/reports/route';
+import { hospitals, pharmacies, doctors, distributionBranches, hospitalVisits, pharmacyVisits, doctorVisits, branchVisits, productAvailabilities, products, events, trainings, specialTasks } from '../src/lib/db';
 import * as plansRoute from '../src/app/api/weekly-plans/route';
 import * as planRoute from '../src/app/api/weekly-plans/[id]/route';
 import * as exportRoute from '../src/app/api/weekly-plans/[id]/export/route';
@@ -81,7 +83,7 @@ const context = (id: string) => ({ params: Promise.resolve({ id }) });
 async function main() {
   // Only fixture prerequisites are derived from existing schemas. Manager DDL is the exact migration.
   const dialect = new SQLiteSyncDialect();
-  for (const table of [users, sessions, salesAssignments, representatives, weeklyPlans]) {
+  for (const table of [users, sessions, salesAssignments, representatives, weeklyPlans, organizationRelationships, hospitals, pharmacies, doctors, distributionBranches, hospitalVisits, pharmacyVisits, doctorVisits, branchVisits, productAvailabilities, products, events, trainings, specialTasks]) {
     const config = getTableConfig(table);
     const columns = config.columns.map(column => {
       let definition = `"${column.name}" ${column.getSQLType()}${column.primary ? ' PRIMARY KEY' : ''}`;
@@ -100,6 +102,7 @@ async function main() {
     await db.insert(sessions).values({ id: `session-${user.id}`, userId: user.id, expiresAt: new Date(Date.now() + 3600000) });
   }
   await db.insert(representatives).values({ id: 'rep-a', name: 'MR', area: 'Test' });
+  await db.insert(organizationRelationships).values({ id: 'rel-mr-manager', subordinateUserId: mr.id, managerUserId: mgr.id, sourcePosition: 'MR', managerPosition: 'DM' });
   const executor = { execute: async (sql: string) => sqlite.exec(sql) };
   await check('exact migration applies and reruns idempotently', async () => {
     await applyStep19Migration(executor); await applyStep19Migration(executor);
@@ -257,6 +260,17 @@ async function main() {
     assert.match(editor, /if \(loading \|\| loadFailed \|\| saving\) return/);
     assert.match(editor, /disabled=\{loading \|\| saving \|\| loadFailed\}/);
     assert.match(editor, /sequence !== loadSequence.current/);
+  });
+  await check('MR report explorer ignores forged representative identity and never includes other reps', async () => {
+    await db.insert(representatives).values({ id:'rep-private', name:'Private Rep', area:'Private area' });
+    await db.insert(hospitals).values([{id:'hospital-own',repId:'rep-a',name:'Own Hospital',area:'Test'},{id:'hospital-private',repId:'rep-private',name:'Private Hospital',area:'Private'}]);
+    await db.insert(hospitalVisits).values([{id:'visit-own',repId:'rep-a',hospitalId:'hospital-own',lastVisitDate:'2026-09-07'},{id:'visit-private',repId:'rep-private',hospitalId:'hospital-private',lastVisitDate:'2026-09-07'}]);
+    cookieToken='session-mr';
+    for (const url of ['/api/reports','/api/reports?rep=Private%20Rep&scopeMode=ALL_DESCENDANTS']) {
+      const response=await reportsRoute.GET(request(url));assert.equal(response.status,200);
+      const data=await response.json();assert.deepEqual(data.hospitals.map((row:{id:string})=>row.id),['visit-own']);assert.deepEqual(data.reps,[]);assert.deepEqual(data.managerActivities,[]);assert(!JSON.stringify(data).includes('Private Hospital'));
+    }
+    cookieToken=null;assert.equal((await reportsRoute.GET(request('/api/reports'))).status,401);
   });
   await check('owner deletes own activity and plan', async () => {
     assert.equal(await deleteManagerActivity(mgr, activity.id), true);

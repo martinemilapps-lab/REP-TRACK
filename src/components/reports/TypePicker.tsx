@@ -1,5 +1,6 @@
 'use client';
 
+import { Hospital, Pill, Stethoscope, Building2, CalendarDays, GraduationCap, ClipboardList, PackageSearch, MapPin } from 'lucide-react';
 import React from 'react';
 import { ActivityType, VisitEntityType } from '@/types';
 import { useTranslation } from '@/lib/i18nContext';
@@ -17,7 +18,7 @@ export function TypePicker({
   visitSubtype = 'hospital',
   onSelectVisitSubtype,
 }: TypePickerProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   // Normalize active top item
   const isVisitCategory =
@@ -35,7 +36,7 @@ export function TypePicker({
   const mainItems: {
     key: string;
     targetType: ActivityType;
-    icon: string;
+    icon: React.ReactNode;
     badgeNumber: string;
     title: string;
     subtitle: string;
@@ -44,55 +45,55 @@ export function TypePicker({
     {
       key: 'visit',
       targetType: visitSubtype || 'hospital',
-      icon: '🩺',
+      icon: <Stethoscope className="size-5"/>,
       badgeNumber: '1',
       title: t('activity.visitType'),
-      subtitle: 'مستشفى، صيدلية، عيادة، موزع',
+      subtitle: language==='ar'?'مستشفى، صيدلية، عيادة، موزع':'Hospital, pharmacy, clinic, distributor',
       isSelected: isVisitCategory,
     },
     {
       key: 'event',
       targetType: 'event',
-      icon: '🎟️',
+      icon: <CalendarDays className="size-5"/>,
       badgeNumber: '2',
       title: t('activity.events'),
-      subtitle: 'مؤتمرات، ندوات، ستاندات',
+      subtitle: language==='ar'?'مؤتمرات، ندوات، ستاندات':'Conferences and scientific meetings',
       isSelected: isEventCategory,
     },
     {
       key: 'training',
       targetType: 'training',
-      icon: '🎓',
+      icon: <GraduationCap className="size-5"/>,
       badgeNumber: '3',
       title: t('activity.training'),
-      subtitle: 'ورش عمل، مهارات، تدريب علمي',
+      subtitle: language==='ar'?'ورش عمل، مهارات، تدريب علمي':'Workshops and scientific training',
       isSelected: isTrainingCategory,
     },
     {
       key: 'task',
       targetType: 'special_task',
-      icon: '⚡',
+      icon: <ClipboardList className="size-5"/>,
       badgeNumber: '4',
       title: t('activity.specialTasks'),
-      subtitle: 'مسح سوقي، مهام إدارية، أخرى',
+      subtitle: language==='ar'?'مسح سوقي، مهام إدارية، أخرى':'Market surveys and special tasks',
       isSelected: isTaskCategory,
     },
     {
       key: 'analysis',
       targetType: 'availability',
-      icon: '📊',
+      icon: <PackageSearch className="size-5"/>,
       badgeNumber: '5',
-      title: t('activity.productsAnalysis'),
-      subtitle: 'توافر ومبيعات وبدائل السوق',
+      title: language==='ar'?'توافر المنتجات':'Product availability',
+      subtitle: language==='ar'?'تسجيل توافر المنتجات':'Record product availability',
       isSelected: isAnalysisCategory,
     },
   ];
 
-  const visitSubtypes: { type: VisitEntityType; icon: string; label: string }[] = [
-    { type: 'hospital', icon: '🏥', label: t('activity.hospital') },
-    { type: 'pharmacy', icon: '💊', label: t('activity.pharmacy') },
-    { type: 'doctor', icon: '🩺', label: t('activity.doctor') },
-    { type: 'branch', icon: '🏢', label: t('activity.branch') },
+  const visitSubtypes: { type: VisitEntityType; icon: React.ReactNode; label: string }[] = [
+    { type: 'hospital', icon: <Hospital className="size-5"/>, label: t('activity.hospital') },
+    { type: 'pharmacy', icon: <Pill className="size-5"/>, label: t('activity.pharmacy') },
+    { type: 'doctor', icon: <Stethoscope className="size-5"/>, label: t('activity.doctor') },
+    { type: 'branch', icon: <Building2 className="size-5"/>, label: t('activity.branch') },
   ];
 
   return (
@@ -140,8 +141,8 @@ export function TypePicker({
       {isVisitCategory && (
         <div className="bg-gradient-to-r from-[var(--surface)] to-[var(--bg-subtle)] border border-[var(--line)] rounded-xl p-2.5 animate-fade-in flex flex-col sm:flex-row items-center justify-between gap-2.5 shadow-xs">
           <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--ink)] self-start sm:self-center px-1">
-            <span className="text-sm">📍</span>
-            <span>الجهة المستهدفة للزيارة (Visit Target):</span>
+            <MapPin className="size-4"/>
+            <span>{language==='ar'?'الجهة المستهدفة للزيارة':'Visit target'}</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">

@@ -1,5 +1,5 @@
 import { db, hospitals, pharmacies, doctors, distributionBranches, representatives } from '@/lib/db';
-import { eq, or, isNull, and, desc } from 'drizzle-orm';
+import { eq, or, isNull, desc } from 'drizzle-orm';
 import {
   MasterHospital,
   MasterPharmacy,
@@ -218,26 +218,10 @@ export async function getScopedMasterListsForManager(
     };
   }
 
-  // If no target specified, return first scoped rep or empty lists
-  const scopedReps = await organizationService.getScopedRepresentatives(
-    managerSession.id,
-    managerSession.systemRole,
-    managerSession.positionCode
-  );
-
-  if (scopedReps.length === 0) {
-    return {
-      lists: { hospitals: [], pharmacies: [], doctors: [], branches: [] },
-      targetRep: null,
-      readOnly: true,
-    };
-  }
-
-  const firstRep = scopedReps[0];
-  const lists = await getMasterListsForRep(firstRep.id);
+  // An explicit selection is required. Never infer identity from list order.
   return {
-    lists,
-    targetRep: firstRep,
+    lists: { hospitals: [], pharmacies: [], doctors: [], branches: [] },
+    targetRep: null,
     readOnly: true,
   };
 }
@@ -253,7 +237,7 @@ export async function saveMasterHospital(
   const cleanArea = (data.area || '').trim();
   const repId = enforcedRepId || (await resolveRepId(data.rep || data.repId));
 
-  let targetId = data.id;
+  const targetId = data.id;
 
   if (targetId) {
     // Validate existing record ownership
@@ -316,7 +300,7 @@ export async function saveMasterPharmacy(
   const cleanArea = (data.area || '').trim();
   const repId = enforcedRepId || (await resolveRepId(data.rep || data.repId));
 
-  let targetId = data.id;
+  const targetId = data.id;
 
   if (targetId) {
     const existing = await db
@@ -376,7 +360,7 @@ export async function saveMasterDoctor(
   const cleanArea = (data.area || '').trim();
   const repId = enforcedRepId || (await resolveRepId(data.rep || data.repId));
 
-  let targetId = data.id;
+  const targetId = data.id;
 
   if (targetId) {
     const existing = await db
@@ -442,7 +426,7 @@ export async function saveMasterBranch(
   const cleanCoverage = (data.coverageArea || '').trim();
   const repId = enforcedRepId || (await resolveRepId(data.rep || data.repId));
 
-  let targetId = data.id;
+  const targetId = data.id;
 
   if (targetId) {
     const existing = await db

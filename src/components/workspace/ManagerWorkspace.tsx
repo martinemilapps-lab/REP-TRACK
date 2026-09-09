@@ -5,14 +5,16 @@ import { Representative, WeeklyPlanRecord } from '@/types';
 import { ManagerDashboardView } from '@/components/manager/ManagerDashboardView';
 import { ManagerActivityForm } from '@/components/manager/ManagerActivityForm';
 import { ManagerTeamPlansView } from '@/components/manager/ManagerTeamPlansView';
+import { ManagerOverview } from '@/components/overview/ManagerOverview';
 import { ManagerMyReportsView } from '@/components/manager/ManagerMyReportsView';
 import { WeeklyPlanView } from '@/components/weekly-plan/WeeklyPlanView';
 import { MyListsView } from '@/components/my-lists/MyListsView';
 import { useTranslation } from '@/lib/i18nContext';
 import {
   Download,
+  Target,
   Award,
-  Sparkles,
+  Sparkles, ClipboardList, CalendarDays, FileText, Inbox, Users, PackageSearch, Info,
 } from 'lucide-react';
 
 export type ManagerNavType =
@@ -61,22 +63,22 @@ export function ManagerWorkspace({
   const [internalNav, setInternalNav] = useState<ManagerNavType>('overview');
   const activeNav = activeView ?? internalNav;
   const setActiveNav = (view: ManagerNavType) => { setInternalNav(view); onViewChange?.(view); };
-  const [selectedTeamRep, setSelectedTeamRep] = useState<string>(reps[0]?.name || '');
+  const [selectedTeamRep, setSelectedTeamRep] = useState<string>('');
 
   const [selectedPlan, setSelectedPlan] = useState<WeeklyPlanRecord | null>(null);
   const showSuccess = useCallback((msg: string) => onShowToast(msg), [onShowToast]);
   const showError = useCallback((msg: string) => onShowToast(msg, true), [onShowToast]);
 
   const navItems = [
-    { id: 'submit_activity', label: language === 'ar' ? 'تسجيل نشاط' : 'Submit Activity', icon: '📝' },
-    { id: 'weekly_plan', label: language === 'ar' ? 'خطتي الأسبوعية' : 'Weekly Plan', icon: '📅' },
-    { id: 'my_reports', label: language === 'ar' ? 'تقاريري الخاصة' : 'My Reports', icon: '📄' },
-    { id: 'team_reports', label: language === 'ar' ? 'تقارير الفريق' : 'Received / Team Reports', icon: '📥' },
-    { id: 'team_plans', label: language === 'ar' ? 'خطط الفريق' : 'Team Plans', icon: '📋' },
-    { id: 'team_lists', label: language === 'ar' ? 'قوائم الفريق' : 'Team Lists', icon: '👥' },
-    { id: 'product_analysis', label: language === 'ar' ? 'تحليل المنتجات' : 'Product Analysis', icon: '📈' },
-    { id: 'compliance', label: language === 'ar' ? 'متابعة الالتزام' : 'Submission Compliance', icon: '🎯' },
-    { id: 'export', label: language === 'ar' ? 'تصدير البيانات' : 'Export', icon: '📤' },
+    { id: 'submit_activity', label: language === 'ar' ? 'تسجيل نشاط' : 'Submit Activity', icon: <ClipboardList className="size-4"/> },
+    { id: 'weekly_plan', label: language === 'ar' ? 'خطتي الأسبوعية' : 'Weekly Plan', icon: <CalendarDays className="size-4"/> },
+    { id: 'my_reports', label: language === 'ar' ? 'تقاريري الخاصة' : 'My Reports', icon: <FileText className="size-4"/> },
+    { id: 'team_reports', label: language === 'ar' ? 'تقارير الفريق' : 'Received / Team Reports', icon: <Inbox className="size-4"/> },
+    { id: 'team_plans', label: language === 'ar' ? 'خطط الفريق' : 'Team Plans', icon: <ClipboardList className="size-4"/> },
+    { id: 'team_lists', label: language === 'ar' ? 'قوائم الفريق' : 'Team Lists', icon: <Users className="size-4"/> },
+    { id: 'product_analysis', label: language === 'ar' ? 'توافر المنتجات' : 'Product Availability', icon: <PackageSearch className="size-4"/> },
+    { id: 'compliance', label: language === 'ar' ? 'متابعة الالتزام' : 'Submission Compliance', icon: <Target className="size-4"/> },
+    { id: 'export', label: language === 'ar' ? 'تصدير البيانات' : 'Export', icon: <Download className="size-4"/> },
   ];
 
   return (
@@ -138,7 +140,7 @@ export function ManagerWorkspace({
       </div></>}
 
       {/* ============ NAVIGATION CONTENT ============ */}
-      {activeNav === 'overview' && <div className="section-card"><h1 className="text-xl font-bold">{language === 'ar' ? 'مساحة العمل الإدارية' : 'Manager workspace'}</h1><p className="mt-2 text-sm text-[var(--ink-soft)]">{language === 'ar' ? 'البيانات والتقارير محددة بنطاق الإشراف المعتمد.' : 'Data and reports are limited to your authorized hierarchy.'}</p></div>}
+      {activeNav === 'overview' && <ManagerOverview name={currentUser.name} position={currentUser.positionCode}/>}
 
       {/* 1. Submit Activity (Manager Activity Report: Visit, Event, Training, Office Working, Others) */}
       {activeNav === 'submit_activity' && (
@@ -146,7 +148,7 @@ export function ManagerWorkspace({
           {currentUser.hasPersonalSalesAssignment && (
             <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 text-xs text-amber-700 dark:text-amber-300 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span>ℹ️</span>
+                <Info className="size-4"/>
                 <span>
                   {language === 'ar'
                     ? `ملاحظة: أنت مكلف بمبيعات ميدانية لمنطقة (${currentUser.personalSalesAssignment?.territoryName}) بالإضافة لمسؤولياتك الإدارية.`
@@ -218,9 +220,9 @@ export function ManagerWorkspace({
       {/* 6. Team Lists */}
       {activeNav === 'team_lists' && (
         <div className="animate-fade-in">
-          <MyListsView
+          <MyListsView key={selectedTeamRep}
             reps={reps}
-            selectedRep={selectedTeamRep || reps[0]?.name || ''}
+            selectedRep={selectedTeamRep}
             onSelectRep={(repName) => setSelectedTeamRep(repName)}
             readOnly={true}
           />
@@ -229,56 +231,17 @@ export function ManagerWorkspace({
 
       {/* 7. Product Analysis */}
       {activeNav === 'product_analysis' && (
-        <div className="animate-fade-in">
-          <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-8 shadow-card text-center">
-            <div className="w-16 h-16 rounded-2xl bg-[var(--gold-tint)] border border-[var(--gold-border)] flex items-center justify-center text-3xl mx-auto mb-4 text-[var(--gold-dark)]">
-              📈
-            </div>
-            <h2 className="text-lg font-black text-[var(--ink)] mb-2">
-              {language === 'ar' ? 'التحليل التراكمي للمنتجات والمنافسين' : 'Aggregate Product & Market Analysis'}
-            </h2>
-            <p className="text-xs text-[var(--ink-soft)] max-w-md mx-auto leading-relaxed mb-6">
-              {language === 'ar'
-                ? `مؤشرات توافر الأصناف (Nitrong, Sugammadex, etc.) ومعدلات الحصة السوقية والمنافسين لكافة المناطق التابعة لموقع (${currentUser.positionCode}).`
-                : `Comprehensive product availability and competitor dynamics across your supervised territories.`}
-            </p>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--surface-muted)] border border-[var(--line)] text-xs font-bold text-[var(--ink)]">
-              <span>📊 التحليل الشامل:</span>
-              <span className="font-mono text-[var(--gold-dark)]">Ready for STEP 18 aggregation</span>
-            </div>
-          </div>
-        </div>
+        <ManagerDashboardView key="product-availability" reps={reps} initialTab="availability" onLock={onLogout} onError={showError} onSuccess={showSuccess}/>
       )}
 
-      {/* 8. Submission Compliance */}
-      {activeNav === 'compliance' && (
-        <div className="animate-fade-in">
-          <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-8 shadow-card text-center">
-            <div className="w-16 h-16 rounded-2xl bg-[var(--gold-tint)] border border-[var(--gold-border)] flex items-center justify-center text-3xl mx-auto mb-4 text-[var(--gold-dark)]">
-              🎯
-            </div>
-            <h2 className="text-lg font-black text-[var(--ink)] mb-2">
-              {language === 'ar' ? 'متابعة معدلات التغطية ونسب الإنجاز' : 'Submission Compliance & Call Rate Monitoring'}
-            </h2>
-            <p className="text-xs text-[var(--ink-soft)] max-w-md mx-auto leading-relaxed mb-6">
-              {language === 'ar'
-                ? `مؤشرات التغطية الحقيقية (Coverage %) والزيارات المنجزة مقابل المستهدف للمندوبين المباشرين وغير المباشرين حسب الهرم الإداري.`
-                : `Real-time call rate adherence and coverage tracking across direct and indirect team reports.`}
-            </p>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--surface-muted)] border border-[var(--line)] text-xs font-bold text-[var(--ink)]">
-              <span>🛡️ محرك التغطية:</span>
-              <span className="font-mono text-[var(--gold-dark)]">Active Engine Integrated</span>
-            </div>
-          </div>
-        </div>
-      )}
+      {activeNav==='compliance'&&<div className="section-card"><h2 className="font-semibold">{language==='ar'?'متابعة تقديم التقارير':'Submission tracking'}</h2><p className="mt-2 text-sm">{language==='ar'?'استعرض التقارير الفعلية من صفحة تقارير الفريق.':'Browse submitted records in Team Reports.'}</p><button type="button" className="mt-4 min-h-11 underline" onClick={()=>setActiveNav('team_reports')}>{language==='ar'?'عرض تقارير الفريق':'View Team Reports'}</button></div>}
 
       {/* 9. Export */}
       {activeNav === 'export' && (
         <div className="animate-fade-in">
           <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-8 shadow-card text-center">
             <div className="w-16 h-16 rounded-2xl bg-[var(--gold-tint)] border border-[var(--gold-border)] flex items-center justify-center text-3xl mx-auto mb-4 text-[var(--gold-dark)]">
-              📤
+              <Download className="size-6"/>
             </div>
             <h2 className="text-lg font-black text-[var(--ink)] mb-2">
               {language === 'ar' ? 'تصدير تقارير وبيانات الفريق (Excel)' : 'Export Team Data & Workbooks'}

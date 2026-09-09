@@ -1,0 +1,26 @@
+import assert from 'node:assert/strict';
+import { buildTeamPlansUrl, buildTeamReportsUrl, hasExplicitTeamListSelection } from '../src/lib/teamQuery';
+assert.equal(buildTeamReportsUrl('DIRECT_REPORTS'), '/api/reports?scopeMode=DIRECT_REPORTS');
+assert.equal(buildTeamReportsUrl('ALL_DESCENDANTS'), '/api/reports?scopeMode=ALL_DESCENDANTS');
+assert.equal(buildTeamPlansUrl('DIRECT_REPORTS'), '/api/weekly-plans?team=true&scopeMode=DIRECT_REPORTS');
+assert.equal(buildTeamPlansUrl('ALL_DESCENDANTS'), '/api/weekly-plans?team=true&scopeMode=ALL_DESCENDANTS');
+assert.equal(hasExplicitTeamListSelection(''), false);
+assert.equal(hasExplicitTeamListSelection('  '), false);
+assert.equal(hasExplicitTeamListSelection('rep-1'), true);
+console.log('Final UI Phase 2 request and selection behavior passed');
+
+import { filterReports, normalizeReports } from '../src/lib/reportExplorer';
+const rows=normalizeReports({hospitals:[{id:'same-id',name:'Hospital A',rep:'Authorized MR',lastVisit:'2026-09-05',status:'Visited'}],managerActivities:[{id:'same-id',activityType:'Visit',activityDate:'2026-09-07',userName:'Authorized Manager',userPosition:'DM'}],doctors:[{id:'d1',name:'Doctor B',visitDate:'2026-09-08'}]});
+assert.equal(rows.length,3);
+assert.equal(new Set(rows.map(row=>row.id)).size,3,'IDs remain unique across report types');
+const filters={search:'',type:'',entity:'',owner:'',position:'',start:'',end:'',sort:'newest'};
+assert.deepEqual(filterReports(rows,filters).map(row=>row.date),['2026-09-08','2026-09-07','2026-09-05']);
+assert.equal(filterReports(rows,{...filters,start:'2026-09-07',end:'2026-09-07'})[0].owner,'Authorized Manager');
+assert.equal(filterReports(rows,{...filters,owner:'Authorized MR',type:'hospital',entity:'Hospital A',search:'hospital'})[0].name,'Hospital A');
+assert.equal(filterReports(rows,{...filters,position:'DM'}).length,1);
+assert.equal(filterReports(rows,{...filters,search:'not found'}).length,0);
+assert.equal(filterReports(rows,{...filters,start:'2026-09-09',end:'2026-09-01'}).length,0);
+assert.equal(filterReports(rows,filters).length,3,'Reset returns the authorized loaded set');
+assert.equal(rows[0].date,'2026-09-05','Sorting must not mutate the source');
+assert.equal(normalizeReports({hospitals:null,managerActivities:{}}).length,0);
+console.log('Final UI Phase 2 explorer filtering, sorting, range, owner and record-key tests passed');
