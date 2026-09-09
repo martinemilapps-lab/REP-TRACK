@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Representative } from '@/types';
 import { Topbar } from '@/components/layout/Topbar';
 import { Toast, ToastMessage } from '@/components/ui/Toast';
@@ -18,11 +18,11 @@ import type { UserSessionPayload } from '@/lib/auth';
 function HomePageContent() {
   const { t, language } = useTranslation();
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const initialView = (searchParams.get('view') as MRViewType) || 'overview';
+  const requestedView = searchParams.get('view');
+  const initialView = (requestedView === 'admin' ? 'overview' : requestedView as MRViewType) || 'overview';
 
   const [activeView, setActiveView] = useState<MRViewType>(initialView);
-  const [managerView, setManagerView] = useState<ManagerNavType>('overview');
+  const [managerView, setManagerView] = useState<ManagerNavType>(requestedView === 'admin' ? 'admin' : 'overview');
   const [reps, setReps] = useState<Representative[]>([]);
   const [currentUser, setCurrentUser] = useState<UserSessionPayload | null>(null);
   const [mustChangePassword, setMustChangePassword] = useState(false);
@@ -152,7 +152,7 @@ function HomePageContent() {
           3. DM / AM / OM / BUM / PM / MM / SMD -> Manager Workspace
       */}
       {!currentUser ? <><Topbar/><LoginForm onSuccess={handleLoginSuccess} /></> : (
-        <AppShell user={currentUser} items={currentUser.positionCode === 'MR' ? mrItems : managerItems} activeItem={currentUser.positionCode === 'MR' ? activeView : managerView} onNavigate={(id) => { if (id === 'admin') { router.push('/admin'); return; } if (currentUser.positionCode === 'MR') setActiveView(id as MRViewType); else setManagerView(id as ManagerNavType); }} onLogout={handleLogout}>
+        <AppShell user={currentUser} items={currentUser.positionCode === 'MR' ? mrItems : managerItems} activeItem={currentUser.positionCode === 'MR' ? activeView : managerView} onNavigate={(id) => { if (currentUser.positionCode === 'MR') setActiveView(id as MRViewType); else setManagerView(id as ManagerNavType); }} onLogout={handleLogout}>
         {currentUser.positionCode === 'MR' ? <MedicalRepWorkspace
           currentUser={currentUser}
           activeView={activeView}

@@ -13,6 +13,7 @@ import { useTranslation } from '@/lib/i18nContext';
 import { SalesAnalyticsView } from '@/components/sales/SalesAnalyticsView';
 import { ComplianceView } from '@/components/compliance/ComplianceView';
 import { ExportCenter } from '@/components/exports/ExportCenter';
+import { AdminWorkspace } from '@/components/admin/AdminWorkspace';
 import {
   Download,
   Target,
@@ -30,7 +31,8 @@ export type ManagerNavType =
   | 'team_lists'
   | 'product_analysis'
   | 'compliance'
-  | 'export';
+  | 'export'
+  | 'admin';
 
 interface ManagerWorkspaceProps {
   currentUser: {
@@ -243,6 +245,8 @@ export function ManagerWorkspace({
       {activeNav === 'export' && (
         <div className="animate-fade-in"><ExportCenter manager reps={reps}/></div>
       )}
+
+      {activeNav === 'admin' && currentUser.systemRole === 'ADMIN' && <AdminWorkspace />}
     </div>
   );
 }

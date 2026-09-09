@@ -72,7 +72,7 @@ export async function listAdminUsers(admin: UserSessionPayload, input: { search?
   const [rows, totalRow, assignments] = await Promise.all([
     db.select({ id: users.id, name: users.name, username: users.username, positionCode: users.positionCode, systemRole: users.systemRole, role: users.role, isActive: users.isActive, mustChangePassword: users.mustChangePassword, createdAt: users.createdAt, updatedAt: users.updatedAt }).from(users).where(where).orderBy(asc(users.name)).limit(pageSize).offset((page - 1) * pageSize).all(),
     db.select({ count: sql<number>`count(*)` }).from(users).where(where).get(),
-    db.select().from(salesAssignments).where(eq(salesAssignments.isActive, true)).all(),
+    db.select().from(salesAssignments).where(eq(salesAssignments.isActive, true)).all().catch(() => []),
   ]);
   const byUser = new Map<string, string[]>();
   for (const item of assignments) byUser.set(item.userId, [...(byUser.get(item.userId) ?? []), item.territoryName]);
