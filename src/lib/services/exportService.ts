@@ -37,6 +37,12 @@ export async function buildReportsExport(session: UserSessionPayload, input: Rep
     return createWorkbook([{ name: 'Export Info', rows: metadataRows(session, { Scope: 'MY_RECORDS', 'Start Date': input.startDate, 'End Date': input.endDate }) }, { name: 'Manager Activities', rows: dedupeById(rows).map((row) => pick(row as unknown as Record<string, unknown>, reportColumns)) }]);
   }
   const data = await getVisibleReports(session, { requestedRepId: input.repId, scopeMode: input.scopeMode, limit: 5000 });
+  if(input.type==='availability'){
+    const rows=(data.availabilities as AnyRow[]).filter(row=>inRange(row,input.startDate,input.endDate));
+    const detail=rows.map(row=>pick(row,[['rep','MR Name'],['username','Username'],['positionCode','Position'],['area','Territory / Area'],['month','Reporting Period'],['hospital','Hospital'],['hospitalType','Hospital Type'],['product','Product'],['productCode','Product Code'],['status','Availability Status'],['submittedAt','Submitted At']]));
+    const productNames=[...new Set(rows.map(row=>String(row.product||'')).filter(Boolean))];const grouped=new Map<string,ExportRow>();for(const row of rows){const key=`${row.rep}|${row.month}|${row.hospital}`;if(!grouped.has(key))grouped.set(key,{'MR Name':value(row.rep),'Reporting Period':value(row.month),Hospital:value(row.hospital)});grouped.get(key)![String(row.product)]=value(row.status)}
+    return createWorkbook([{name:'Export Info',rows:metadataRows(session,{Scope:session.role==='REPRESENTATIVE'?'MY_RECORDS':input.scopeMode,'Start Date':input.startDate,'End Date':input.endDate,Legend:'Available = green; Not Available = red'})},{name:'Availability Detail',rows:detail},{name:'Hospital Matrix',rows:[...grouped.values()].map(row=>Object.fromEntries([['MR Name',row['MR Name']],['Reporting Period',row['Reporting Period']],['Hospital',row.Hospital],...productNames.map(name=>[name,row[name]||''])]))}]);
+  }
   const sets: Array<[string, AnyRow[]]> = [
     ['Hospitals', data.hospitals as AnyRow[]], ['Pharmacies', data.pharmacies as AnyRow[]], ['Doctors', data.doctors as AnyRow[]],
     ['Distribution Branches', data.branches as AnyRow[]], ['Product Availability', data.availabilities as AnyRow[]], ['Events', data.events as AnyRow[]],
@@ -70,7 +76,7 @@ export async function buildListsExport(session: UserSessionPayload, input: ListI
     const result = await getScopedMasterListsForManager(session, input.repId);
     lists = result.lists; owner = result.targetRep?.name ?? owner;
   }
-  const common: Array<[string,string]> = [['id','Record ID'],['name','Name'],['code','Code'],['area','Area'],['type','Type'],['specialty','Specialty'],['workplace','Workplace'],['address','Address'],['contact','Contact'],['phone','Phone'],['mobile','Mobile'],['classification','Classification'],['defaultCycle','Default Cycle (Days)'],['createdAt','Created At']];
+  const common: Array<[string,string]> = [['id','Record ID'],['name','Name'],['area','Area'],['type','Type'],['specialty','Specialty'],['workplace','Workplace'],['address','Address'],['contact','Contact'],['phone','Phone'],['mobile','Mobile'],['classification','Classification'],['defaultCycle','Default Cycle (Days)'],['createdAt','Created At']];
   const listSheets: Array<[string, Array<{ id: string }>]> = [['Hospitals',lists.hospitals],['Doctors',lists.doctors],['Pharmacies',lists.pharmacies],['Distribution Branches',lists.branches]];
   return createWorkbook([{ name: 'Export Info', rows: metadataRows(session, { 'List Owner': owner }) }, ...listSheets.map(([name, rows]) => ({ name, rows: dedupeById(rows).map((row) => pick(row as unknown as Record<string, unknown>, common)) }))]);
 }

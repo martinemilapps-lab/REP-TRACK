@@ -4,7 +4,6 @@ import { useTranslation } from '@/lib/i18nContext';
 import { Representative, MasterListsPayload, MasterHospital, MasterPharmacy, MasterDoctor, MasterBranch } from '@/types';
 import { CustomSelect, SelectOption } from '@/components/ui/CustomSelect';
 import { Button } from '@/components/ui/Button';
-import { MultiProductSelect } from '@/components/ui/MultiProductSelect';
 import { FormField } from '@/components/ui/FormField';
 import { Drawer } from '@/components/ui/Drawer';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -45,6 +44,7 @@ export function MyListsView({ reps, selectedRep, onSelectRep, onLogVisitForCusto
         doctors: [],
         branches: [],
     });
+    const [assignedRates,setAssignedRates]=useState<Array<{customerCategory:string;dailyRate:number;requiredPerWeek:number;requiredPerMonth:number}>>([]);
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<Customer | null>(null);
@@ -88,6 +88,7 @@ export function MyListsView({ reps, selectedRep, onSelectRep, onLogVisitForCusto
         const timer = setTimeout(() => void loadLists(selectedRep), 0);
         return () => clearTimeout(timer);
     }, [selectedRep, loadLists]);
+    useEffect(()=>{if(!readOnly)void fetch('/api/visit-rates').then(r=>r.json()).then(x=>{if(x.success)setAssignedRates(x.rates)}).catch(()=>undefined)},[readOnly]);
     const showNotification = (text: string, isError = false) => {
         setStatusMsg({
             text, isError
@@ -102,6 +103,12 @@ export function MyListsView({ reps, selectedRep, onSelectRep, onLogVisitForCusto
                 name: '',
                 area: '',
                 type: 'Private',
+                hospitalTypes: ['Private'],
+                address: '',
+                keyPersonName: '',
+                keyPersonPhone: '',
+                purchasingContactName: '',
+                purchasingContactPhone: '',
                 contact: '',
                 phone: '',
                 defaultCycle: 7,
@@ -116,15 +123,16 @@ export function MyListsView({ reps, selectedRep, onSelectRep, onLogVisitForCusto
                 mobile: '',
                 classification: 'A',
                 defaultCycle: 7,
-                targetProducts: '',
             });
         }
         else if (activeCategory === 'doctors') {
             setModalFormData({
-                code: '',
                 name: '',
                 specialty: '',
                 workplace: '',
+                clinicAddress: '',
+                workingHospitalIds: [],
+                nearbyPharmacyIds: [],
                 area: '',
                 address: '',
                 mobile: '',
@@ -163,6 +171,7 @@ export function MyListsView({ reps, selectedRep, onSelectRep, onLogVisitForCusto
             showNotification(language === 'ar' ? 'اسم العميل مطلوب' : 'Customer name is required', true);
             return;
         }
+        if(activeCategory==='hospitals'&&!(modalFormData.hospitalTypes?.length)){showNotification(language==='ar'?'اختر نوع مستشفى واحداً على الأقل':'Select at least one hospital type',true);return}
         if (!Number.isInteger(Number(modalFormData.defaultCycle)) || Number(modalFormData.defaultCycle) < 1) {
             showNotification(language === 'ar' ? 'يجب أن تكون دورة الزيارة يوماً واحداً على الأقل' : 'Visit cycle must be at least one whole day', true);
             return;
@@ -263,62 +272,6 @@ export function MyListsView({ reps, selectedRep, onSelectRep, onLogVisitForCusto
                 item.workplace?.toLowerCase().includes(term));
         });
     }, [currentList, search]);
-    // Manual Daily Rates state (keyed by category: 'hospitals', 'pharmacies', 'doctors', 'branches')
-    const [dailyInputs, setDailyInputs] = useState<Record<string, string>>({
-        hospitals: '',
-        pharmacies: '',
-        doctors: '',
-        branches: '',
-    });
-    // Load manual rates from D1-backed representative fields when selectedRep changes
-    useEffect(() => {
-        const repObj = reps.find((r) => r.name === selectedRep);
-        const timer = setTimeout(() => setDailyInputs({
-            hospitals: repObj && repObj.assignedHospitals > 0 ? String(repObj.assignedHospitals) : '',
-            pharmacies: repObj && repObj.assignedPharmacies > 0 ? String(repObj.assignedPharmacies) : '',
-            doctors: repObj && repObj.assignedDrs > 0 ? String(repObj.assignedDrs) : '',
-            branches: '',
-        }), 0);
-        return () => clearTimeout(timer);
-    }, [selectedRep, reps]);
-    const handleDailyInputChange = async (category: string, value: string) => {
-        setDailyInputs((prev) => ({
-            ...prev, [category]: value
-        }));
-        if (readOnly || !selectedRep)
-            return;
-        const num = parseFloat(value);
-        const validNum = !isNaN(num) && num >= 0 ? Math.round(num) : 0;
-        const patchPayload: Record<string, string | number> = {
-            repName: selectedRep
-        };
-        if (category === 'hospitals')
-            patchPayload.assignedHospitals = validNum;
-        if (category === 'pharmacies')
-            patchPayload.assignedPharmacies = validNum;
-        if (category === 'doctors')
-            patchPayload.assignedDrs = validNum;
-        try {
-            const response = await fetch('/api/reps', {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(patchPayload),
-            });
-            if (!response.ok)
-                throw new Error();
-        }
-        catch {
-            showNotification(language === 'ar' ? 'تعذر حفظ معدل الزيارة' : 'Unable to save the visit rate', true);
-        }
-    };
-    // Active Category Calculation: Auto customer count, manual daily rate, auto weekly/monthly rates
-    const customerCount = (listsData[activeCategory] || []).length;
-    const currentDailyInputStr = dailyInputs[activeCategory] ?? '';
-    const activeDailyRate = parseFloat(currentDailyInputStr) || 0;
-    const activeWeeklyRate = activeDailyRate * 6; // 6 working days / week
-    const activeMonthlyRate = Math.round(activeDailyRate * 26); // 26 working days / month
     const ar = language === 'ar';
     const l = (en: string, arabic: string) => ar ? arabic : en;
     const categories = [{
@@ -334,10 +287,10 @@ export function MyListsView({ reps, selectedRep, onSelectRep, onLogVisitForCusto
         string,
         string
     ]> = {
-        name: ['Name', 'الاسم'], area: ['Area', 'المنطقة'], type: ['Hospital type', 'نوع المستشفى'], contact: ['Contact', 'جهة الاتصال'], phone: ['Phone', 'الهاتف'], address: ['Address', 'العنوان'], pharmacist: ['Pharmacist', 'الصيدلي'], mobile: ['Mobile', 'الهاتف المحمول'], classification: ['Classification', 'التصنيف'], specialty: ['Specialty', 'التخصص'], workplace: ['Workplace', 'مكان العمل'], bestTime: ['Best visit time', 'أفضل وقت للزيارة'], coverageArea: ['Coverage area', 'منطقة التغطية'], distributedProducts: ['Distributed products', 'المنتجات الموزعة'], defaultCycle: ['Visit cycle (days)', 'دورة الزيارة (أيام)'], targetProducts: ['Target products', 'المنتجات المستهدفة'], code: ['Code', 'الكود']
+        name: ['Name', 'الاسم'], area: ['Area', 'المنطقة'], address: ['Address', 'العنوان'], keyPersonName: ['Pharmacist / Key Person', 'الصيدلي / الشخص المسؤول'], keyPersonPhone: ['Key Person phone', 'هاتف الشخص المسؤول'], purchasingContactName: ['Purchasing contact', 'مسؤول المشتريات'], purchasingContactPhone: ['Purchasing phone', 'هاتف مسؤول المشتريات'], pharmacist: ['Pharmacist', 'الصيدلي'], mobile: ['Mobile', 'الهاتف المحمول'], classification: ['Classification', 'التصنيف'], specialty: ['Specialty', 'التخصص'], workplace: ['Workplace', 'مكان العمل'], clinicAddress: ['Clinic address', 'عنوان العيادة'], bestTime: ['Best visit time', 'أفضل وقت للزيارة'], coverageArea: ['Coverage area', 'منطقة التغطية'], distributedProducts: ['Distributed products', 'المنتجات الموزعة'], defaultCycle: ['Visit cycle (days)', 'دورة الزيارة (أيام)']
     };
     const keys: Record<ListCategory, string[]> = {
-        hospitals: ['name', 'area', 'type', 'contact', 'phone'], pharmacies: ['name', 'area', 'address', 'pharmacist', 'mobile', 'classification'], doctors: ['code', 'name', 'area', 'address', 'specialty', 'workplace', 'mobile', 'classification', 'bestTime'], branches: ['name', 'coverageArea', 'address', 'contact', 'phone', 'distributedProducts']
+        hospitals: ['name', 'area', 'address', 'keyPersonName', 'keyPersonPhone', 'purchasingContactName', 'purchasingContactPhone'], pharmacies: ['name', 'area', 'address', 'pharmacist', 'mobile', 'classification'], doctors: ['name', 'area', 'address', 'specialty', 'workplace', 'clinicAddress', 'mobile', 'classification', 'bestTime'], branches: ['name', 'coverageArea', 'address', 'contact', 'phone', 'distributedProducts']
     };
     const visible = filteredList.filter(item => !areaFilter || (item as unknown as Record<string, string>).area === areaFilter || (item as unknown as Record<string, string>).coverageArea === areaFilter);
     const actions = (item: typeof currentList[number]) => <div className="flex flex-wrap gap-2">
@@ -350,7 +303,7 @@ export function MyListsView({ reps, selectedRep, onSelectRep, onLogVisitForCusto
         })}>{l('Delete', 'حذف')}</Button>{onLogVisitForCustomer && <Button type="button" size="sm" onClick={() => onLogVisitForCustomer(({
             hospitals: 'hospital', doctors: 'doctor', pharmacies: 'pharmacy', branches: 'branch'
         } as const)[activeCategory], item)}>{l('Log visit', 'تسجيل زيارة')}</Button>}</>}</div>;
-    return <div className="space-y-4">{statusMsg && <InlineAlert tone={statusMsg.isError ? 'error' : 'success'}>{statusMsg.text}</InlineAlert>}<SectionCard title={readOnly ? l('Team customer lists', 'قوائم عملاء الفريق') : l('My customer lists', 'قوائم عملائي')}>
+    return <div className="space-y-4">{statusMsg && <InlineAlert tone={statusMsg.isError ? 'error' : 'success'}>{statusMsg.text}</InlineAlert>}{!readOnly&&assignedRates.length>0&&<SectionCard title={l('Admin-assigned visit rates','معدلات الزيارة المحددة من الإدارة')}><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{assignedRates.map(rate=><div key={rate.customerCategory} className="rounded-xl border border-[var(--line)] p-3"><b>{rate.customerCategory}</b><p>{rate.dailyRate} {l('daily','يومياً')}</p><p className="text-xs text-[var(--ink-soft)]">{rate.requiredPerWeek}/{l('week','أسبوع')} · {rate.requiredPerMonth}/{l('month','شهر')}</p></div>)}</div></SectionCard>}<SectionCard title={readOnly ? l('Team customer lists', 'قوائم عملاء الفريق') : l('My customer lists', 'قوائم عملائي')}>
     <div className="flex flex-wrap items-center justify-between gap-3">
     <p>{selectedRep}</p>
     <StatusBadge tone={syncStatus === 'error' ? 'error' : syncStatus === 'saving' ? 'warning' : 'success'}>{readOnly ? l('Read only', 'للقراءة فقط') : syncStatus === 'saving' ? l('Saving', 'جارٍ الحفظ') : syncStatus === 'error' ? l('Save failed', 'فشل الحفظ') : l('Saved', 'محفوظ')}</StatusBadge>
@@ -380,11 +333,7 @@ export function MyListsView({ reps, selectedRep, onSelectRep, onLogVisitForCusto
                 <div className="grid gap-3 lg:hidden">{visible.map(item => <SectionCard key={item.id} title={item.name}>
                     <p className="mb-3 text-sm">{String((item as unknown as Record<string, unknown>).area || (item as unknown as Record<string, unknown>).coverageArea || '—')} · {item.defaultCycle} {l('days', 'أيام')}</p>{actions(item)}</SectionCard>)}</div>
                 </>}</>}
- {activeCategory !== 'branches' && <SectionCard title={l('Visit rates', 'معدلات الزيارة')}>
-            <p className="mb-3 text-sm">{customerCount} {l('customers', 'عميل')} · {activeWeeklyRate} {l('visits per week', 'زيارة أسبوعياً')} · {activeMonthlyRate} {l('visits per month', 'زيارة شهرياً')}</p>
-            <label className="text-sm">{l('Daily visit rate', 'معدل الزيارات اليومي')}<input type="number" min="0" value={currentDailyInputStr} disabled={readOnly} onChange={e => void handleDailyInputChange(activeCategory, e.target.value)} className="ms-2 min-h-11 w-24 rounded-lg border border-[var(--line)] px-2"/>
-            </label>
-            </SectionCard>}</>}
+ </>}
  <Drawer open={Boolean(detail)} title={String(detail?.name || l('Customer details', 'تفاصيل العميل'))} onClose={() => setDetail(null)}>
     <dl className="grid gap-4 sm:grid-cols-2">{Object.entries(fields).map(([key, label]) => detail?.[key] !== undefined && detail?.[key] !== '' ? <div key={key}>
         <dt className="text-xs text-[var(--ink-soft)]">{label[ar ? 1 : 0]}</dt>
@@ -393,13 +342,9 @@ export function MyListsView({ reps, selectedRep, onSelectRep, onLogVisitForCusto
     </Drawer>
  <Drawer open={isModalOpen} title={editingItem ? l('Edit customer', 'تعديل العميل') : l('Add customer', 'إضافة عميل')} onClose={() => { if (!saving)
         setIsModalOpen(false); }}>
-    <form onSubmit={handleSaveModal}>{statusMsg?.isError && <InlineAlert tone="error">{statusMsg.text}</InlineAlert>}<fieldset disabled={saving} className="grid min-w-0 gap-4 sm:grid-cols-2">{[...keys[activeCategory], 'defaultCycle'].map(key => <FormField key={key} label={fields[key][ar ? 1 : 0]} value={String(modalFormData[key as keyof CustomerFields] ?? '')} required={key === 'name' || key === 'defaultCycle'} type={key === 'defaultCycle' ? 'number' : 'text'} onChange={value => setModalFormData({
+    <form onSubmit={handleSaveModal}>{statusMsg?.isError && <InlineAlert tone="error">{statusMsg.text}</InlineAlert>}<fieldset disabled={saving} className="grid min-w-0 gap-4 sm:grid-cols-2">{activeCategory==='hospitals'&&<fieldset className="sm:col-span-2"><legend className="text-sm font-semibold">{l('Hospital type','نوع المستشفى')} *</legend><div className="mt-2 flex flex-wrap gap-3">{['Private','Government','University','Insurance','Other'].map(type=><label key={type} className="flex items-center gap-2"><input type="checkbox" checked={(modalFormData.hospitalTypes||[]).includes(type)} onChange={e=>setModalFormData({...modalFormData,hospitalTypes:e.target.checked?[...(modalFormData.hospitalTypes||[]),type]:(modalFormData.hospitalTypes||[]).filter(x=>x!==type),type:e.target.checked?type:modalFormData.type})}/>{type}</label>)}</div></fieldset>}{[...keys[activeCategory], 'defaultCycle'].map(key => <FormField key={key} label={fields[key][ar ? 1 : 0]} value={String(modalFormData[key as keyof CustomerFields] ?? '')} required={key === 'name' || key === 'defaultCycle'} type={key === 'defaultCycle' ? 'number' : 'text'} onChange={value => setModalFormData({
             ...modalFormData, [key]: key === 'defaultCycle' ? Number(value) : value
-        })}/>)}{activeCategory === 'pharmacies' && <div className="sm:col-span-2">
-        <MultiProductSelect value={modalFormData.targetProducts || ''} onChange={value => setModalFormData({
-            ...modalFormData, targetProducts: value
-        })}/>
-        </div>}<div className="flex flex-wrap gap-2 sm:col-span-2">
+        })}/>)}{activeCategory==='doctors'&&<><label className="text-sm font-semibold">{l('Working hospitals','المستشفيات التي يعمل بها')}<select multiple className="input mt-1 min-h-28 w-full" value={modalFormData.workingHospitalIds||[]} onChange={e=>setModalFormData({...modalFormData,workingHospitalIds:Array.from(e.target.selectedOptions,x=>x.value)})}>{listsData.hospitals.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label><label className="text-sm font-semibold">{l('Nearby pharmacies','الصيدليات القريبة')}<select multiple className="input mt-1 min-h-28 w-full" value={modalFormData.nearbyPharmacyIds||[]} onChange={e=>setModalFormData({...modalFormData,nearbyPharmacyIds:Array.from(e.target.selectedOptions,x=>x.value)})}>{listsData.pharmacies.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label></>}<div className="flex flex-wrap gap-2 sm:col-span-2">
     <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>{l('Cancel', 'إلغاء')}</Button>
     <Button type="submit" isLoading={saving}>{l('Save', 'حفظ')}</Button>
     </div>

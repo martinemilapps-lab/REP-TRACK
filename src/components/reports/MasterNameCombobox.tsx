@@ -60,7 +60,7 @@ export function MasterNameCombobox<T>({
   });
 
   const selectedItem = selectedMasterId
-    ? items.find((item: any) => item.id === selectedMasterId)
+    ? items.find((item) => (item as {id?:string}).id === selectedMasterId)
     : null;
 
   return (
@@ -96,11 +96,8 @@ export function MasterNameCombobox<T>({
           ref={inputRef}
           id={id}
           type="text"
+          readOnly
           value={value}
-          onChange={(e) => {
-            onChange(e.target.value);
-            setIsOpen(true);
-          }}
           onFocus={() => {
             if (items.length > 0) {
               setIsOpen(true);
@@ -200,11 +197,11 @@ export function MasterNameCombobox<T>({
                 const itemName = getItemName(item);
                 const sublabel = getItemSublabel ? getItemSublabel(item) : '';
                 const badge = getItemBadge ? getItemBadge(item) : '';
-                const isCurrent = selectedMasterId === (item as any).id;
+                const isCurrent = selectedMasterId === (item as {id?:string}).id;
 
                 return (
                   <div
-                    key={(item as any).id || idx}
+                    key={(item as {id?:string}).id || idx}
                     onClick={() => {
                       onSelectItem(item);
                       setIsOpen(false);
@@ -245,21 +242,10 @@ export function MasterNameCombobox<T>({
                   ? 'لم يتم العثور على اسم مطابق في قوائمك.'
                   : 'No matching customer in your lists.'}
               </p>
-              <p className="text-[10px] text-gray-500 mt-0.5">
-                {language === 'ar'
-                  ? 'يمكنك متابعة الكتابة وسيتم تسجيله كعميل جديد.'
-                  : 'You can continue typing to record as a new customer.'}
-              </p>
             </div>
           )}
 
-          {/* Quick footer reminder */}
-          <div className="p-2 bg-gray-50 text-[10px] text-[var(--ink-muted)] flex items-center justify-between">
-            <span>
-              {language === 'ar'
-                ? '💡 يمكنك أيضاً كتابة اسم جديد غير مسجل'
-                : '💡 You can also type a new unlisted name'}
-            </span>
+          <div className="p-2 bg-gray-50 text-[10px] text-[var(--ink-muted)] flex justify-end">
             <button
               type="button"
               onClick={() => setIsOpen(false)}

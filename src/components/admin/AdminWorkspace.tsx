@@ -11,8 +11,9 @@ import { AdminOverview } from './AdminOverview';
 import { AdminReferenceData } from './AdminReferenceData';
 import { AdminSecurity } from './AdminSecurity';
 import { AdminUsers } from './AdminUsers';
+import { AdminVisitRates } from './AdminVisitRates';
 
-type AdminView = 'overview' | 'users' | 'organization' | 'assignments' | 'representatives' | 'areas' | 'products' | 'objectives' | 'reference' | 'security' | 'audit';
+type AdminView = 'overview' | 'users' | 'organization' | 'assignments' | 'representatives' | 'visit-rates' | 'areas' | 'products' | 'objectives' | 'reference' | 'security' | 'audit';
 
 const positions = ['MR', 'DM', 'AM', 'OM', 'BUM', 'PM', 'MM', 'SMD'];
 const catalog = {
@@ -31,6 +32,7 @@ export function AdminWorkspace() {
     { id: 'organization' as const, en: 'Organization', ar: 'المؤسسة', icon: Building2 },
     { id: 'assignments' as const, en: 'Assignments', ar: 'التعيينات', icon: BriefcaseBusiness },
     { id: 'representatives' as const, en: 'Representatives', ar: 'المندوبون', icon: UserRoundCog },
+    { id: 'visit-rates' as const, en: 'Visit Rates', ar: 'معدلات الزيارة', icon: Target },
     { id: 'areas' as const, en: 'Areas', ar: 'المناطق', icon: MapPinned },
     { id: 'products' as const, en: 'Products', ar: 'المنتجات', icon: Boxes },
     { id: 'objectives' as const, en: 'Visit Objectives', ar: 'أهداف الزيارة', icon: Target },
@@ -52,6 +54,7 @@ export function AdminWorkspace() {
     {view === 'organization' && <AdminOrganization />}
     {view === 'assignments' && <AdminAssignments />}
     {view === 'representatives' && <AdminCatalog config={catalog.representatives} />}
+    {view === 'visit-rates' && <AdminVisitRates />}
     {view === 'areas' && <AdminCatalog config={catalog.areas} />}
     {view === 'products' && <AdminCatalog config={catalog.products} />}
     {view === 'objectives' && <AdminCatalog config={catalog.objectives} />}

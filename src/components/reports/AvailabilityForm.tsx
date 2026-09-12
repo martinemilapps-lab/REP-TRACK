@@ -1,93 +1,17 @@
 'use client';
-import { useState } from 'react';
-import { PRODUCTS_LIST } from '@/lib/constants';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from '@/lib/i18nContext';
 import { Button } from '@/components/ui/Button';
-import { FormSection } from '@/components/ui/FormSection';
-import { FormField } from '@/components/ui/FormField';
 import { InlineAlert } from '@/components/ui/InlineAlert';
-const currentMonth = () => new Date().toISOString().slice(0, 7);
-const empty = () => ({
-    hospital: '', area: '', product: '', month: currentMonth(), annualTarget: 0, avgMonthlyTarget: 0, sales: 0, potentiality: 0, status: 'Available', notes: ''
-});
-export function AvailabilityForm({ onSuccess, onError }: {
-    onSuccess: (message: string) => void;
-    onError: (message: string) => void;
-}) {
-    const { language } = useTranslation();
-    const ar = language === 'ar';
-    const l = (en: string, arabic: string) => ar ? arabic : en;
-    const [form, setForm] = useState(empty), [saving, setSaving] = useState(false), [notice, setNotice] = useState<{
-        error: boolean;
-        text: string;
-    } | null>(null);
-    const submit = async (event: React.FormEvent) => { event.preventDefault(); if (saving)
-        return; if (!form.hospital.trim() || !form.product.trim())
-        return; setSaving(true); setNotice(null); try {
-        const response = await fetch('/api/reports/availability', {
-            method: 'POST', headers: {
-                'Content-Type': 'application/json'
-            }, body: JSON.stringify({
-                ...form, monthlySales: form.sales
-            })
-        });
-        const data = await response.json();
-        if (!response.ok || !data.success)
-            throw new Error();
-        const message = l('Product availability saved', 'تم حفظ توافر المنتجات');
-        setNotice({
-            error: false, text: message
-        });
-        onSuccess(message);
-        setForm(empty());
-    }
-    catch {
-        const message = l('Unable to save availability. Please try again.', 'تعذر حفظ توافر المنتجات. أعد المحاولة.');
-        setNotice({
-            error: true, text: message
-        });
-        onError(message);
-    }
-    finally {
-        setSaving(false);
-    } };
-    return <form onSubmit={submit} className="space-y-4">{notice && <InlineAlert tone={notice.error ? 'error' : 'success'}>{notice.text}</InlineAlert>}<fieldset disabled={saving} className="min-w-0 space-y-4">
-    <legend className="mb-4 text-xl font-semibold">{l('Product availability', 'توافر المنتجات')}</legend>
-    <FormSection title={l('Availability record', 'سجل توافر المنتجات')}>
-    <FormField label={l('Hospital', 'المستشفى')} value={form.hospital} required onChange={hospital => setForm({
-        ...form, hospital
-    })}/>
-    <FormField label={l('Area', 'المنطقة')} value={form.area} onChange={area => setForm({
-        ...form, area
-    })}/>
-    <label className="text-sm font-semibold">{l('Product', 'المنتج')}<input list="availability-products" required value={form.product} onChange={e => setForm({
-        ...form, product: e.target.value
-    })} className="mt-1 min-h-11 w-full rounded-lg border border-[var(--line)] px-3"/>
-    <datalist id="availability-products">{PRODUCTS_LIST.map(product => <option key={product} value={product}/>)}</datalist>
-    </label>
-    <label className="text-sm font-semibold">{l('Month', 'الشهر')}<input type="month" required value={form.month} onChange={e => setForm({
-        ...form, month: e.target.value
-    })} className="mt-1 min-h-11 w-full rounded-lg border border-[var(--line)] px-3"/>
-    </label>
-    <label className="text-sm font-semibold">{l('Availability', 'التوافر')}<select value={form.status} onChange={e => setForm({
-        ...form, status: e.target.value
-    })} className="mt-1 min-h-11 w-full rounded-lg border border-[var(--line)] px-3">
-    <option value="Available">{l('Available', 'متوفر')}</option>
-    <option value="Not Available">{l('Not available', 'غير متوفر')}</option>
-    </select>
-    </label>
-    <FormField label={l('Notes', 'ملاحظات')} value={form.notes} multiline onChange={notes => setForm({
-        ...form, notes
-    })}/>
-    </FormSection>
-    <details className="section-card">
-    <summary className="cursor-pointer text-sm font-semibold">{l('Optional recorded figures', 'قيم مسجلة اختيارية')}</summary>
-    <p className="my-3 text-xs text-[var(--ink-soft)]">{l('Values entered for this individual record.', 'قيم مدخلة لهذا السجل الفردي.')}</p>
-    <div className="grid gap-4 sm:grid-cols-2">{(['annualTarget', 'avgMonthlyTarget', 'sales', 'potentiality'] as const).map((key, index) => <FormField key={key} type="number" label={(ar ? ['المستهدف السنوي', 'متوسط المستهدف الشهري', 'المبيعات المسجلة', 'الإمكانات المسجلة'] : ['Annual target', 'Average monthly target', 'Recorded sales', 'Recorded potentiality'])[index]} value={String(form[key])} onChange={value => setForm({
-            ...form, [key]: Math.max(0, Number(value) || 0)
-        })}/>)}</div>
-    </details>
-    <Button type="submit" isLoading={saving}>{l('Save availability', 'حفظ التوافر')}</Button>
-    </fieldset>
-    </form>;
+import { SectionCard } from '@/components/ui/SectionCard';
+type Hospital={id:string;name:string;area:string}; type Product={id:string;name:string;code?:string|null}; type Status='Available'|'Not Available';
+const currentMonth=()=>new Date().toISOString().slice(0,7);
+export function AvailabilityForm({onSuccess,onError}:{onSuccess:(message:string)=>void;onError:(message:string)=>void}){
+ const{language}=useTranslation();const ar=language==='ar';const l=(en:string,a:string)=>ar?a:en;
+ const[hospitals,setHospitals]=useState<Hospital[]>([]),[products,setProducts]=useState<Product[]>([]),[hospitalId,setHospitalId]=useState(''),[month,setMonth]=useState(currentMonth()),[statuses,setStatuses]=useState<Record<string,Status>>({}),[notes,setNotes]=useState(''),[saving,setSaving]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState('');
+ useEffect(()=>{Promise.all([fetch('/api/lists').then(r=>r.json()),fetch('/api/products').then(r=>r.json())]).then(([lists,catalog])=>{if(!lists.success||!catalog.success)throw new Error();setHospitals(lists.data.hospitals);setProducts(catalog.products);setStatuses(Object.fromEntries(catalog.products.map((p:Product)=>[p.id,'Available'])))}).catch(()=>setError(l('Unable to load saved hospitals and products.','تعذر تحميل المستشفيات والمنتجات.'))).finally(()=>setLoading(false))},[]);
+ const complete=useMemo(()=>products.length>0&&products.every(p=>statuses[p.id]),[products,statuses]);
+ async function submit(e:React.FormEvent){e.preventDefault();if(saving||!hospitalId||!complete)return;setSaving(true);setError('');try{const response=await fetch('/api/reports/availability',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hospitalId,month,notes,items:products.map(p=>({productId:p.id,status:statuses[p.id]}))})});const data=await response.json();if(!response.ok||!data.success)throw new Error(data.message);onSuccess(l(`Saved ${data.savedCount} product statuses for ${data.hospitalName}`,`تم حفظ حالة ${data.savedCount} منتج في ${data.hospitalName}`))}catch(e){const message=e instanceof Error&&e.message?e.message:l('Unable to save availability.','تعذر حفظ التوافر.');setError(message);onError(message)}finally{setSaving(false)}}
+ if(loading)return <p role="status">{l('Loading product availability…','جارٍ تحميل توافر المنتجات…')}</p>;
+ return <form onSubmit={submit} className="space-y-4" dir={ar?'rtl':'ltr'}><header><h2 className="text-2xl font-black">{l('Product Availability','توافر المنتجات')}</h2><p className="text-sm text-[var(--ink-soft)]">{l('Record every canonical product for one saved hospital and reporting month.','سجل كل منتج معتمد لمستشفى محفوظ وشهر التقرير.')}</p></header>{error&&<InlineAlert tone="error">{error}</InlineAlert>}<SectionCard title={l('Hospital and period','المستشفى والفترة')}><div className="grid gap-3 sm:grid-cols-2"><label className="text-sm font-semibold">{l('Saved hospital','المستشفى المحفوظ')}<select required className="input mt-1 w-full" value={hospitalId} onChange={e=>setHospitalId(e.target.value)}><option value="">{l('Select hospital…','اختر مستشفى…')}</option>{hospitals.map(h=><option key={h.id} value={h.id}>{h.name} · {h.area}</option>)}</select></label><label className="text-sm font-semibold">{l('Reporting month','شهر التقرير')}<input required type="month" className="input mt-1 w-full" value={month} onChange={e=>setMonth(e.target.value)}/></label></div>{!hospitals.length&&<InlineAlert tone="warning">{l('Create hospitals in My Lists first.','أضف المستشفيات من قوائمي أولاً.')}</InlineAlert>}</SectionCard><SectionCard title={`${l('Canonical product catalog','قائمة المنتجات المعتمدة')} · ${products.length}`}><div className="max-h-[60dvh] overflow-auto rounded-xl border border-[var(--line)]"><table className="w-full text-sm"><thead className="sticky top-0 bg-[var(--surface)]"><tr><th className="p-3 text-start">{l('Product','المنتج')}</th><th className="p-3">{l('Status','الحالة')}</th></tr></thead><tbody>{products.map(product=><tr key={product.id} className="border-t border-[var(--line)]"><td className="p-3 font-medium">{product.name}{product.code?<small className="ms-2 text-[var(--ink-soft)]">{product.code}</small>:null}</td><td className="p-2"><div className="flex justify-center gap-2">{(['Available','Not Available'] as const).map(status=><button type="button" key={status} aria-pressed={statuses[product.id]===status} onClick={()=>setStatuses({...statuses,[product.id]:status})} className={`rounded-lg border px-3 py-2 font-semibold ${statuses[product.id]===status?(status==='Available'?'border-emerald-700 bg-emerald-100 text-emerald-900':'border-red-700 bg-red-100 text-red-900'):'border-[var(--line)]'}`}>{status==='Available'?l('✓ Available','✓ متوفر'):l('✕ Not Available','✕ غير متوفر')}</button>)}</div></td></tr>)}</tbody></table></div><label className="mt-3 block text-sm font-semibold">{l('Notes','ملاحظات')}<textarea className="input mt-1 w-full" value={notes} onChange={e=>setNotes(e.target.value)}/></label></SectionCard><Button type="submit" isLoading={saving} disabled={!hospitalId||!complete||!products.length}>{l(`Save ${products.length} statuses`,`حفظ حالة ${products.length} منتج`)}</Button></form>;
 }

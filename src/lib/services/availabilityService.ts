@@ -1,14 +1,39 @@
-import { db, hospitals, productAvailabilities, products, representatives } from '@/lib/db';
+import { db, hospitals, productAvailabilities, products, representatives, users } from '@/lib/db';
 import { eq, and, desc } from 'drizzle-orm';
 import { UserSessionPayload, resolveAuthorizedRepId } from '@/lib/auth';
 import { findOrCreateHospital, findOrCreateProduct } from './masterEntityService';
 import { z } from 'zod';
-import { ProductAvailabilitySchema } from '@/lib/validation';
+import { ProductAvailabilitySchema, ProductAvailabilityBatchSchema } from '@/lib/validation';
 import { FilterOptions } from './hospitalService';
 import { assertAuthenticatedSession } from '@/lib/authPolicy';
 import { resolveWritableRepId } from '@/lib/repAccessPolicy';
+import { AppError } from '@/lib/errors';
 
 export type ProductAvailabilityInput = z.input<typeof ProductAvailabilitySchema>;
+export type ProductAvailabilityBatchInput = z.input<typeof ProductAvailabilityBatchSchema>;
+
+export async function saveProductAvailabilityBatch(session: UserSessionPayload | null, rawInput: ProductAvailabilityBatchInput) {
+  assertAuthenticatedSession(session);
+  const input = ProductAvailabilityBatchSchema.parse(rawInput);
+  const repId = resolveWritableRepId(session);
+  const hospital = await db.select().from(hospitals).where(and(eq(hospitals.id, input.hospitalId), eq(hospitals.repId, repId))).get();
+  if (!hospital) throw new AppError('Hospital is not in your saved list', 403);
+  const activeProducts = await db.select({ id: products.id }).from(products).where(eq(products.isActive, true)).all();
+  const activeIds = new Set(activeProducts.map((product) => product.id));
+  if (input.items.some((item) => !activeIds.has(item.productId))) throw new AppError('Invalid or inactive product', 400);
+  const submittedAt = new Date();
+  const operations = input.items.map((item) => db.insert(productAvailabilities).values({
+    repId, hospitalId: hospital.id, productId: item.productId, month: input.month,
+    isAvailable: item.status === 'Available', notes: input.notes || null, submittedAt,
+  }).onConflictDoUpdate({
+    target: [productAvailabilities.repId, productAvailabilities.hospitalId, productAvailabilities.productId, productAvailabilities.month],
+    set: { isAvailable: item.status === 'Available', notes: input.notes || null, submittedAt },
+  }));
+  const [first, ...rest] = operations;
+  if (!first) throw new AppError('At least one product status is required', 400);
+  await db.batch([first, ...rest]);
+  return { hospitalName: hospital.name, savedCount: input.items.length };
+}
 
 /**
  * Upserts a monthly product availability snapshot.
@@ -114,7 +139,11 @@ export async function getProductAvailabilityReports(
       rep: representatives.name,
       hospital: hospitals.name,
       area: hospitals.area,
+      hospitalType: hospitals.type,
       product: products.name,
+      productCode: products.code,
+      username: users.username,
+      positionCode: users.positionCode,
       objective: productAvailabilities.objective,
       month: productAvailabilities.month,
       annualTarget: productAvailabilities.annualTarget,
@@ -129,6 +158,7 @@ export async function getProductAvailabilityReports(
     .innerJoin(hospitals, eq(productAvailabilities.hospitalId, hospitals.id))
     .innerJoin(products, eq(productAvailabilities.productId, products.id))
     .innerJoin(representatives, eq(productAvailabilities.repId, representatives.id))
+    .leftJoin(users, eq(users.repId, representatives.id))
     .orderBy(desc(productAvailabilities.submittedAt));
 
   let results;
@@ -140,7 +170,11 @@ export async function getProductAvailabilityReports(
         rep: representatives.name,
         hospital: hospitals.name,
         area: hospitals.area,
+        hospitalType: hospitals.type,
         product: products.name,
+        productCode: products.code,
+        username: users.username,
+        positionCode: users.positionCode,
         objective: productAvailabilities.objective,
         month: productAvailabilities.month,
         annualTarget: productAvailabilities.annualTarget,
@@ -155,6 +189,7 @@ export async function getProductAvailabilityReports(
       .innerJoin(hospitals, eq(productAvailabilities.hospitalId, hospitals.id))
       .innerJoin(products, eq(productAvailabilities.productId, products.id))
       .innerJoin(representatives, eq(productAvailabilities.repId, representatives.id))
+      .leftJoin(users, eq(users.repId, representatives.id))
       .where(eq(productAvailabilities.repId, targetRepId))
       .orderBy(desc(productAvailabilities.submittedAt))
       .limit(options.limit || 1000)

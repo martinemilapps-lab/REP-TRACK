@@ -36,6 +36,7 @@ export async function createBranchVisit(
       repId,
       branchId: branch.id,
       objective: input.objective || null,
+      objectiveOtherText: input.objective.match(/(?:^|[،,]\s*)Others:\s*(.+?)(?=$|[،,])/i)?.[1]?.trim() || null,
       cycleDays: input.cycle || 0,
       lastVisitDate: input.lastVisit || null,
       nextVisitDate: input.nextVisit || null,

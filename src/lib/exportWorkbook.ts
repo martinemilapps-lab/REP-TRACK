@@ -23,9 +23,15 @@ export function createWorkbook(sheets: Array<{ name: string; rows: ExportRow[] }
     const headers = rows.length ? Object.keys(rows[0]) : ['Message'];
     worksheet['!cols'] = headers.map((header) => ({ wch: Math.min(42, Math.max(12, header.length + 2)) }));
     worksheet['!autofilter'] = worksheet['!ref'] ? { ref: worksheet['!ref'] } : undefined;
+    worksheet['!freeze'] = { xSplit: 0, ySplit: 1, topLeftCell: 'A2', activePane: 'bottomLeft', state: 'frozen' };
+    worksheet['!pageSetup'] = { orientation: 'landscape', fitToWidth: 1, fitToHeight: 0 };
+    worksheet['!margins'] = { left: 0.25, right: 0.25, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 };
+    for (const cell of Object.values(worksheet)) if (cell && typeof cell === 'object' && 'v' in cell) {
+      const target=cell as XLSX.CellObject; if(target.v==='Available') target.s={fill:{fgColor:{rgb:'C6EFCE'}},font:{color:{rgb:'006100'},bold:true}}; if(target.v==='Not Available') target.s={fill:{fgColor:{rgb:'FFC7CE'}},font:{color:{rgb:'9C0006'},bold:true}};
+    }
     XLSX.utils.book_append_sheet(workbook, worksheet, name.slice(0, 31));
   }
-  return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx', compression: true }) as Uint8Array;
+  return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx', compression: true, cellStyles: true }) as Uint8Array;
 }
 
 export function workbookResponse(bytes: Uint8Array, requestedFilename: string): Response {

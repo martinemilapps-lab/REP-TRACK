@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { DOCTOR_CLASSES, OUR_PRODUCTS_DISCUSSED_LIST, VISIT_STATUS_OPTIONS, PRESCRIPTION_RATE_OPTIONS } from '@/lib/constants';
+import React, { useState, useEffect, useCallback } from 'react';
+import { DOCTOR_CLASSES, OUR_PRODUCTS_DISCUSSED_LIST, PRESCRIPTION_RATE_OPTIONS } from '@/lib/constants';
 import { useTranslation } from '@/lib/i18nContext';
 import { Button } from '@/components/ui/Button';
 import { CustomSelect, SelectOption } from '@/components/ui/CustomSelect';
 import { MasterNameCombobox } from '@/components/reports/MasterNameCombobox';
 import { VisitObjectiveSelect } from '@/components/reports/VisitObjectiveSelect';
-import { MasterDoctor } from '@/types';
+import { MasterDoctor, MasterHospital, MasterPharmacy } from '@/types';
 
 interface DoctorFormProps {
   selectedRep: string;
@@ -50,6 +50,8 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
   const [loading, setLoading] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
   const [savedDoctors, setSavedDoctors] = useState<MasterDoctor[]>([]);
+  const [savedHospitals,setSavedHospitals]=useState<MasterHospital[]>([]);
+  const [savedPharmacies,setSavedPharmacies]=useState<MasterPharmacy[]>([]);
   const [selectedMasterId, setSelectedMasterId] = useState<string>('');
 
   const initialToday = getTodayString();
@@ -90,6 +92,8 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
         const data = await res.json();
         if (res.ok && data.success && data.data?.doctors) {
           setSavedDoctors(data.data.doctors);
+          setSavedHospitals(data.data.hospitals||[]);
+          setSavedPharmacies(data.data.pharmacies||[]);
         }
       } catch {
         // ignore
@@ -105,6 +109,7 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
       const savedDraft = localStorage.getItem(draftKey);
       if (savedDraft) {
         const parsed = JSON.parse(savedDraft);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setFormData((prev) => ({
           ...prev,
           ...parsed,
@@ -201,9 +206,9 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
       const next = {
         ...prev,
         name: doc.name,
-        code: doc.code || prev.code,
         specialty: doc.specialty || prev.specialty,
-        workplace: doc.workplace || prev.workplace,
+        workplace: doc.workingHospitalIds?.map(id=>savedHospitals.find(h=>h.id===id)?.name).filter(Boolean).join(', ') || doc.workplace || prev.workplace,
+        nearbyPharmacy: doc.nearbyPharmacyIds?.map(id=>savedPharmacies.find(p=>p.id===id)?.name).filter(Boolean).join(', ') || prev.nearbyPharmacy,
         area: doc.area || prev.area,
         mobile: doc.mobile || prev.mobile,
         cls: doc.classification || prev.cls,
@@ -473,20 +478,6 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
           required
         />
 
-        {/* Doctor Code */}
-        <div>
-          <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
-            {t('form.code')}
-          </label>
-          <input
-            id="code"
-            value={formData.code}
-            onChange={handleChange}
-            placeholder="كود الطبيب إن وجد..."
-            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl font-mono outline-none"
-          />
-        </div>
-
         {/* Specialty */}
         <div>
           <label className="block text-xs font-bold text-[var(--ink-secondary)] mb-1.5">
@@ -523,13 +514,7 @@ export function DoctorForm({ selectedRep, onSuccess, onError }: DoctorFormProps)
               💊 Pharmacy
             </span>
           </label>
-          <input
-            id="nearbyPharmacy"
-            value={formData.nearbyPharmacy}
-            onChange={handleChange}
-            placeholder="اسم الصيدلية القريبة من العيادة..."
-            className="w-full px-3.5 py-2.5 text-sm bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-xl font-medium outline-none"
-          />
+          <input id="nearbyPharmacy" readOnly value={formData.nearbyPharmacy} placeholder={language==='ar'?'تُملأ من قوائمي':'Auto-filled from My Lists'} className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-[var(--line)] rounded-xl font-medium"/>
         </div>
 
         {/* Area / Region */}

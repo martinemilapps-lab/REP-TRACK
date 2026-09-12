@@ -1,0 +1,10 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { and, desc, eq } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdmin } from '@/lib/auth';
+import { db, representativeVisitRates, representatives } from '@/lib/db';
+import { assertAdminMutationRequest, noStoreHeaders } from '@/lib/adminSecurity';
+import { handleApiError } from '@/lib/errors';
+const input=z.object({repId:z.string().min(1),customerCategory:z.enum(['HOSPITAL','DOCTOR','PHARMACY','DISTRIBUTION_BRANCH']),dailyRate:z.coerce.number().int().min(0),workingDaysPerWeek:z.coerce.number().int().min(1).max(7),workingDaysPerMonth:z.coerce.number().int().min(1).max(31),effectiveFrom:z.string().date()}).strict();
+export async function GET(){try{await requireAdmin();const [reps,rates]=await Promise.all([db.select({id:representatives.id,name:representatives.name,area:representatives.area}).from(representatives).where(eq(representatives.isActive,true)).all(),db.select().from(representativeVisitRates).orderBy(desc(representativeVisitRates.effectiveFrom)).all()]);return NextResponse.json({success:true,reps,rates},{headers:noStoreHeaders()})}catch(e){return handleApiError(e)}}
+export async function PUT(request:NextRequest){try{const admin=await requireAdmin();assertAdminMutationRequest(request,admin.id,'visit-rate');const data=input.parse(await request.json());const existing=await db.select().from(representativeVisitRates).where(and(eq(representativeVisitRates.repId,data.repId),eq(representativeVisitRates.customerCategory,data.customerCategory),eq(representativeVisitRates.effectiveFrom,data.effectiveFrom))).get();const values={...data,updatedAt:new Date()};const [rate]=existing?await db.update(representativeVisitRates).set(values).where(eq(representativeVisitRates.id,existing.id)).returning():await db.insert(representativeVisitRates).values({...values,id:crypto.randomUUID()}).returning();return NextResponse.json({success:true,rate},{headers:noStoreHeaders()})}catch(e){return handleApiError(e)}}

@@ -1,14 +1,27 @@
-import { db, hospitals, hospitalVisits, representatives } from '@/lib/db';
-import { eq, desc } from 'drizzle-orm';
+import { db, dailyReports, doctors, hospitalVisitDoctors, hospitals, hospitalVisits, representatives } from '@/lib/db';
+import { and, eq, desc, inArray } from 'drizzle-orm';
 import { UserSessionPayload, resolveAuthorizedRepId } from '@/lib/auth';
 import { findOrCreateHospital } from './masterEntityService';
 import { deriveVisitStatus } from '@/lib/business/status';
 import { z } from 'zod';
-import { HospitalVisitSchema } from '@/lib/validation';
+import { HospitalDailyReportSchema, HospitalVisitSchema } from '@/lib/validation';
+import { AppError } from '@/lib/errors';
 import { assertAuthenticatedSession } from '@/lib/authPolicy';
 import { resolveWritableRepId } from '@/lib/repAccessPolicy';
 
 export type HospitalVisitInput = z.input<typeof HospitalVisitSchema>;
+export type HospitalDailyReportInput = z.input<typeof HospitalDailyReportSchema>;
+
+export async function saveHospitalDailyReport(session: UserSessionPayload | null, rawInput: HospitalDailyReportInput) {
+  assertAuthenticatedSession(session); const input=HospitalDailyReportSchema.parse(rawInput); const repId=resolveWritableRepId(session); const reportId=input.id||crypto.randomUUID();
+  if(input.id){const existing=await db.select().from(dailyReports).where(eq(dailyReports.id,input.id)).get();if(!existing||existing.repId!==repId)throw new AppError('Hospital report not found or forbidden',403)}
+  const hospitalIds=[...new Set(input.visits.map(v=>v.hospitalId))];const ownedHospitals=await db.select({id:hospitals.id}).from(hospitals).where(and(eq(hospitals.repId,repId),inArray(hospitals.id,hospitalIds))).all();
+  const doctorIds=[...new Set(input.visits.flatMap(v=>v.doctors.map(d=>d.doctorId)))];const ownedDoctors=doctorIds.length?await db.select({id:doctors.id,specialty:doctors.specialty}).from(doctors).where(and(eq(doctors.repId,repId),inArray(doctors.id,doctorIds))).all():[];
+  if(ownedHospitals.length!==hospitalIds.length||ownedDoctors.length!==doctorIds.length)throw new AppError('A selected hospital or doctor is outside your saved lists',403);
+  const specialty=new Map(ownedDoctors.map(d=>[d.id,d.specialty]));const visitRows=input.visits.map(v=>({id:crypto.randomUUID(),visit:v}));
+  const operations=[db.insert(dailyReports).values({id:reportId,repId,reportDate:input.reportDate,updatedAt:new Date()}).onConflictDoUpdate({target:dailyReports.id,set:{reportDate:input.reportDate,updatedAt:new Date()}}),db.delete(hospitalVisits).where(eq(hospitalVisits.dailyReportId,reportId)),...visitRows.map(({id,visit})=>db.insert(hospitalVisits).values({id,repId,dailyReportId:reportId,hospitalId:visit.hospitalId,objective:visit.objective,objectiveOtherText:visit.objective.match(/Others:\s*(.+)/i)?.[1]?.trim()||null,dept:visit.dept||null,drsVisited:visit.doctors.length,doctorNames:visit.doctors.map(d=>d.doctorId).join(','),cycleDays:visit.cycle,lastVisitDate:input.reportDate,nextVisitDate:visit.nextVisit||null,visitType:visit.visitType,companion:visit.companion||null,ourProducts:visit.ourProducts||null,competitor:visit.competitor||null,notes:visit.notes||null})),...visitRows.flatMap(({id,visit})=>visit.doctors.map(d=>db.insert(hospitalVisitDoctors).values({id:crypto.randomUUID(),hospitalVisitId:id,doctorId:d.doctorId,specialtySnapshot:specialty.get(d.doctorId)||null,comment:d.comment||null})) )];
+  const[first,...rest]=operations;await db.batch([first,...rest]);return{id:reportId,visitCount:visitRows.length,doctorVisitCount:visitRows.reduce((n,x)=>n+x.visit.doctors.length,0)};
+}
 
 export interface FilterOptions {
   repName?: string | null;
@@ -48,6 +61,7 @@ export async function createHospitalVisit(
       repId,
       hospitalId: hospital.id,
       objective: input.objective || null,
+      objectiveOtherText: input.objective.match(/(?:^|[،,]\s*)Others:\s*(.+?)(?=$|[،,])/i)?.[1]?.trim() || null,
       dept: input.dept || null,
       drsVisited: input.drsVisited || 0,
       doctorNames: input.doctorNames || null,

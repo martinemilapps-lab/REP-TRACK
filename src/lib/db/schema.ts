@@ -198,6 +198,12 @@ export const hospitals = sqliteTable('hospitals', {
   name: text('name').notNull(),
   area: text('area').notNull(),
   type: text('type').notNull().default('Private'), // Private, Government, University, Insurance, Other
+  hospitalTypes: text('hospital_types').notNull().default('[]'),
+  address: text('address'),
+  keyPersonName: text('key_person_name'),
+  keyPersonPhone: text('key_person_phone'),
+  purchasingContactName: text('purchasing_contact_name'),
+  purchasingContactPhone: text('purchasing_contact_phone'),
   dept: text('dept'),
   contact: text('contact'),
   phone: text('phone'),
@@ -238,6 +244,7 @@ export const doctors = sqliteTable('doctors', {
   name: text('name').notNull(),
   specialty: text('specialty'),
   workplace: text('workplace'),
+  clinicAddress: text('clinic_address'),
   area: text('area').notNull(),
   address: text('address'),
   mobile: text('mobile'),
@@ -280,14 +287,50 @@ export const products = sqliteTable('products', {
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
 });
 
+export const doctorWorkingHospitals = sqliteTable('doctor_working_hospitals', {
+  doctorId: text('doctor_id').notNull().references(() => doctors.id, { onDelete: 'cascade' }),
+  hospitalId: text('hospital_id').notNull().references(() => hospitals.id, { onDelete: 'cascade' }),
+}, (table) => [uniqueIndex('idx_doctor_hospital_unique').on(table.doctorId, table.hospitalId)]);
+
+export const doctorNearbyPharmacies = sqliteTable('doctor_nearby_pharmacies', {
+  doctorId: text('doctor_id').notNull().references(() => doctors.id, { onDelete: 'cascade' }),
+  pharmacyId: text('pharmacy_id').notNull().references(() => pharmacies.id, { onDelete: 'cascade' }),
+}, (table) => [uniqueIndex('idx_doctor_pharmacy_unique').on(table.doctorId, table.pharmacyId)]);
+
+export const representativeVisitRates = sqliteTable('representative_visit_rates', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  repId: text('rep_id').notNull().references(() => representatives.id, { onDelete: 'cascade' }),
+  customerCategory: text('customer_category', { enum: ['HOSPITAL','DOCTOR','PHARMACY','DISTRIBUTION_BRANCH'] }).notNull(),
+  dailyRate: integer('daily_rate').notNull().default(0),
+  workingDaysPerWeek: integer('working_days_per_week').notNull().default(6),
+  workingDaysPerMonth: integer('working_days_per_month').notNull().default(26),
+  effectiveFrom: text('effective_from').notNull(),
+  effectiveTo: text('effective_to'),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
+}, (table) => [
+  uniqueIndex('idx_rep_visit_rate_period').on(table.repId, table.customerCategory, table.effectiveFrom),
+  index('idx_rep_visit_rate_rep').on(table.repId),
+]);
+
 // ----------------------------------------------------
 // 3. ACTIVITY LOGS / VISIT HISTORY (FACTS)
 // ----------------------------------------------------
+export const dailyReports = sqliteTable('daily_reports', {
+  id: text('id').primaryKey(),
+  repId: text('rep_id').notNull().references(() => representatives.id, { onDelete: 'restrict' }),
+  reportDate: text('report_date').notNull(),
+  submittedAt: integer('submitted_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
+}, (table) => [index('idx_daily_reports_rep_date').on(table.repId, table.reportDate)]);
+
 export const hospitalVisits = sqliteTable('hospital_visits', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   repId: text('rep_id').notNull().references(() => representatives.id, { onDelete: 'restrict' }),
+  dailyReportId: text('daily_report_id').references(() => dailyReports.id, { onDelete: 'cascade' }),
   hospitalId: text('hospital_id').notNull().references(() => hospitals.id, { onDelete: 'restrict' }),
   objective: text('objective'),
+  objectiveOtherText: text('objective_other_text'),
   dept: text('dept'),
   drsVisited: integer('drs_visited').default(0),
   doctorNames: text('doctor_names'),
@@ -306,11 +349,20 @@ export const hospitalVisits = sqliteTable('hospital_visits', {
   index('idx_hosp_visits_date').on(table.lastVisitDate),
 ]);
 
+export const hospitalVisitDoctors = sqliteTable('hospital_visit_doctors', {
+  id: text('id').primaryKey(),
+  hospitalVisitId: text('hospital_visit_id').notNull().references(() => hospitalVisits.id, { onDelete: 'cascade' }),
+  doctorId: text('doctor_id').notNull().references(() => doctors.id, { onDelete: 'restrict' }),
+  specialtySnapshot: text('specialty_snapshot'),
+  comment: text('comment'),
+}, (table) => [index('idx_hospital_visit_doctors_visit').on(table.hospitalVisitId)]);
+
 export const pharmacyVisits = sqliteTable('pharmacy_visits', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   repId: text('rep_id').notNull().references(() => representatives.id, { onDelete: 'restrict' }),
   pharmacyId: text('pharmacy_id').notNull().references(() => pharmacies.id, { onDelete: 'restrict' }),
   objective: text('objective'),
+  objectiveOtherText: text('objective_other_text'),
   cycleDays: integer('cycle_days').default(0),
   lastVisitDate: text('last_visit_date'), // YYYY-MM-DD
   nextVisitDate: text('next_visit_date'), // YYYY-MM-DD
@@ -332,6 +384,7 @@ export const doctorVisits = sqliteTable('doctor_visits', {
   repId: text('rep_id').notNull().references(() => representatives.id, { onDelete: 'restrict' }),
   doctorId: text('doctor_id').notNull().references(() => doctors.id, { onDelete: 'restrict' }),
   objective: text('objective'),
+  objectiveOtherText: text('objective_other_text'),
   prescriptionRate: text('prescription_rate'), // 'Awareness' | 'Trial' | 'Regular' | 'Loyal'
   nearbyPharmacy: text('nearby_pharmacy'),
   visitDate: text('visit_date'), // YYYY-MM-DD
@@ -355,6 +408,7 @@ export const branchVisits = sqliteTable('branch_visits', {
   repId: text('rep_id').notNull().references(() => representatives.id, { onDelete: 'restrict' }),
   branchId: text('branch_id').notNull().references(() => distributionBranches.id, { onDelete: 'restrict' }),
   objective: text('objective'),
+  objectiveOtherText: text('objective_other_text'),
   lastVisitDate: text('last_visit_date'), // YYYY-MM-DD
   cycleDays: integer('cycle_days').default(0),
   nextVisitDate: text('next_visit_date'), // YYYY-MM-DD

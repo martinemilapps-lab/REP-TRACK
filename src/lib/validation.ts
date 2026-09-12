@@ -31,6 +31,17 @@ export const HospitalVisitSchema = z.object({
   rep: z.string().optional(), // optional legacy field, overridden on server
 });
 
+export const HospitalDailyReportSchema = z.object({
+  id: z.string().uuid().optional(), reportDate: z.string().date(),
+  visits: z.array(z.object({
+    hospitalId: z.string().min(1), objective: z.string().min(1), dept: z.string().optional().default(''),
+    cycle: z.coerce.number().int().min(0).default(0), nextVisit: z.string().optional().default(''),
+    visitType: z.enum(['Single','Double']).default('Single'), companion: z.string().optional().default(''),
+    ourProducts: z.string().optional().default(''), competitor: z.string().optional().default(''), notes: z.string().optional().default(''),
+    doctors: z.array(z.object({ doctorId:z.string().min(1), comment:z.string().optional().default('') })).default([]),
+  })).min(1),
+}).superRefine((data,ctx)=>data.visits.forEach((visit,index)=>{if(visit.objective.includes('Others:')&&!/Others:\s*\S/.test(visit.objective))ctx.addIssue({code:'custom',path:['visits',index,'objective'],message:'Others explanation is required'});if(visit.visitType==='Double'&&!visit.companion.trim())ctx.addIssue({code:'custom',path:['visits',index,'companion'],message:'Companion is required for a double visit'})}));
+
 export const PharmacyVisitSchema = z.object({
   name: z.string().min(1, 'اسم الصيدلية مطلوب').trim(),
   area: z.string().optional().default('').transform((v) => v.trim()),
@@ -55,7 +66,6 @@ export const PharmacyVisitSchema = z.object({
 
 export const DoctorVisitSchema = z.object({
   name: z.string().min(1, 'اسم الدكتور مطلوب').trim(),
-  code: z.string().optional().default(''),
   objective: z.string().optional().default(''),
   prescriptionRate: z.string().optional().default('Awareness'),
   nearbyPharmacy: z.string().optional().default(''),
@@ -101,6 +111,12 @@ export const MasterHospitalSchema = z.object({
   name: z.string().min(1, 'اسم المستشفى مطلوب').trim(),
   area: z.string().optional().default('').transform((v) => v.trim()),
   type: z.string().optional().default('Private'),
+  hospitalTypes: z.array(z.string().trim().min(1)).min(1, 'يجب اختيار نوع مستشفى واحد على الأقل').optional(),
+  address: z.string().optional().default(''),
+  keyPersonName: z.string().optional().default(''),
+  keyPersonPhone: z.string().optional().default(''),
+  purchasingContactName: z.string().optional().default(''),
+  purchasingContactPhone: z.string().optional().default(''),
   dept: z.string().optional().default(''),
   contact: z.string().optional().default(''),
   phone: z.string().optional().default(''),
@@ -119,16 +135,17 @@ export const MasterPharmacySchema = z.object({
   mobile: z.string().optional().default(''),
   classification: z.string().optional().default('A'),
   defaultCycle: z.coerce.number().min(0).optional().default(7),
-  targetProducts: z.string().optional().default(''),
   rep: z.string().optional(),
 });
 
 export const MasterDoctorSchema = z.object({
   id: z.string().optional(),
-  code: z.string().optional().default(''),
   name: z.string().min(1, 'اسم الطبيب مطلوب').trim(),
   specialty: z.string().optional().default(''),
   workplace: z.string().optional().default(''),
+  clinicAddress: z.string().optional().default(''),
+  workingHospitalIds: z.array(z.string().min(1)).optional().default([]),
+  nearbyPharmacyIds: z.array(z.string().min(1)).optional().default([]),
   area: z.string().optional().default('').transform((v) => v.trim()),
   address: z.string().optional().default(''),
   mobile: z.string().optional().default(''),
@@ -165,6 +182,20 @@ export const ProductAvailabilitySchema = z.object({
   status: z.string().optional().default('Available'),
   notes: z.string().optional().default(''),
   rep: z.string().optional(),
+});
+
+export const ProductAvailabilityBatchSchema = z.object({
+  hospitalId: z.string().min(1),
+  month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+  items: z.array(z.object({
+    productId: z.string().min(1),
+    status: z.enum(['Available', 'Not Available']),
+  })).min(1),
+  notes: z.string().optional().default(''),
+}).superRefine((data, ctx) => {
+  if (new Set(data.items.map((item) => item.productId)).size !== data.items.length) {
+    ctx.addIssue({ code: 'custom', path: ['items'], message: 'Duplicate products are not allowed' });
+  }
 });
 
 export const ProductAnalysisSchema = ProductAvailabilitySchema;

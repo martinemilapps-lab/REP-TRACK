@@ -1,28 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ProductAvailabilitySchema } from '@/lib/validation';
 import { requireAuthenticatedUser } from '@/lib/auth';
-import { upsertProductAvailability } from '@/lib/services/availabilityService';
+import { saveProductAvailabilityBatch } from '@/lib/services/availabilityService';
 import { handleApiError } from '@/lib/errors';
 
 export async function POST(req: NextRequest) {
   try {
     const session = await requireAuthenticatedUser();
     const rawData = await req.json();
-    const validatedData = ProductAvailabilitySchema.parse(rawData);
-
-    const { record, isUpdate, hospitalName, productName } = await upsertProductAvailability(
-      session,
-      validatedData
-    );
-
-    return NextResponse.json({
-      success: true,
-      message: isUpdate
-        ? `تم تحديث توفر منتج ${productName} في ${hospitalName} لشهر ${validatedData.month} بنجاح ✓`
-        : `تم تسجيل توفر منتج ${productName} في ${hospitalName} لشهر ${validatedData.month} بنجاح ✓`,
-      record,
-      isUpdate,
-    });
+    const result = await saveProductAvailabilityBatch(session, rawData);
+    return NextResponse.json({ success: true, message: 'Product availability saved', ...result });
   } catch (error) {
     return handleApiError(error);
   }

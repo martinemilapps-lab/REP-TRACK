@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useTranslation } from '@/lib/i18nContext';
 import { LogOut, User, Briefcase, Award } from 'lucide-react';
 
-export type MRViewType = 'submit' | 'mylists' | 'myreports' | 'weeklyplan' | 'analysis';
+export type MRViewType = 'submit' | 'mylists' | 'myreports' | 'weeklyplan' | 'availability' | 'analysis';
 
 interface TopbarProps {
   currentUser?: {

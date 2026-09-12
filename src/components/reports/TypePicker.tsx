@@ -1,6 +1,6 @@
 'use client';
 
-import { Hospital, Pill, Stethoscope, Building2, CalendarDays, GraduationCap, ClipboardList, PackageSearch, MapPin } from 'lucide-react';
+import { Hospital, Pill, Stethoscope, Building2, CalendarDays, GraduationCap, ClipboardList, MapPin } from 'lucide-react';
 import React from 'react';
 import { ActivityType, VisitEntityType } from '@/types';
 import { useTranslation } from '@/lib/i18nContext';
@@ -31,7 +31,6 @@ export function TypePicker({
   const isEventCategory = selectedType === 'event';
   const isTrainingCategory = selectedType === 'training';
   const isTaskCategory = selectedType === 'special_task';
-  const isAnalysisCategory = selectedType === 'availability' || selectedType === 'product_analysis';
 
   const mainItems: {
     key: string;
@@ -78,15 +77,6 @@ export function TypePicker({
       subtitle: language==='ar'?'مسح سوقي، مهام إدارية، أخرى':'Market surveys and special tasks',
       isSelected: isTaskCategory,
     },
-    {
-      key: 'analysis',
-      targetType: 'availability',
-      icon: <PackageSearch className="size-5"/>,
-      badgeNumber: '5',
-      title: language==='ar'?'توافر المنتجات':'Product availability',
-      subtitle: language==='ar'?'تسجيل توافر المنتجات':'Record product availability',
-      isSelected: isAnalysisCategory,
-    },
   ];
 
   const visitSubtypes: { type: VisitEntityType; icon: React.ReactNode; label: string }[] = [
@@ -98,8 +88,7 @@ export function TypePicker({
 
   return (
     <div className="space-y-3.5">
-      {/* 5 Main Items Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         {mainItems.map((item) => {
           return (
             <button

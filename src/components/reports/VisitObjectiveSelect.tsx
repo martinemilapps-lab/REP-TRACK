@@ -53,9 +53,9 @@ export function VisitObjectiveSelect({
   const handleAddCustom = (e: React.FormEvent) => {
     e.preventDefault();
     if (!customText.trim()) return;
-    const trimmed = customText.trim();
+    const trimmed = `Others: ${customText.trim()}`;
     if (!selectedMultiValues.includes(trimmed)) {
-      const next = [...selectedMultiValues, trimmed];
+      const next = [...selectedMultiValues.filter((item) => !item.startsWith('Others: ')), trimmed];
       onChange(next.join('، '));
     }
     setCustomText('');
@@ -87,6 +87,7 @@ export function VisitObjectiveSelect({
   // Keep custom mode synced when value changes externally (e.g. draft restore)
   useEffect(() => {
     if (!isMulti && value && !matchedPredefined) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsCustomMode(true);
     }
   }, [isMulti, value, matchedPredefined]);
@@ -150,9 +151,6 @@ export function VisitObjectiveSelect({
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-[var(--ink-muted)]">
-                {t('form.multiObjectivesNotice')}
-              </p>
             </div>
           </div>
 
@@ -243,12 +241,13 @@ export function VisitObjectiveSelect({
               className="text-xs font-bold text-[var(--gold-dark)] hover:text-amber-900 flex items-center gap-1.5 transition-colors cursor-pointer py-1"
             >
               <span>➕</span>
-              <span>{t('form.addCustomObjectiveBtn')}</span>
+              <span>{language === 'ar' ? 'أخرى' : 'Others'}</span>
             </button>
           ) : (
             <div className="flex items-center gap-2 animate-fade-in">
               <input
                 type="text"
+                required
                 value={customText}
                 onChange={(e) => setCustomText(e.target.value)}
                 onKeyDown={(e) => {
@@ -257,7 +256,7 @@ export function VisitObjectiveSelect({
                     handleAddCustom(e);
                   }
                 }}
-                placeholder={language === 'ar' ? 'اكتب هدف الزيارة الإضافي واضغط إضافة...' : 'Type additional objective and click Add...'}
+                placeholder={language === 'ar' ? 'اشرح الهدف الآخر (مطلوب)...' : 'Explain the other objective (required)...'}
                 autoFocus
                 className="flex-1 px-3 py-1.5 text-xs bg-white border border-[var(--line)] focus:border-[var(--gold)] rounded-lg outline-none font-medium text-[var(--ink)]"
               />

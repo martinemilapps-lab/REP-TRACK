@@ -142,6 +142,12 @@ export interface MasterHospital {
   name: string;
   area: string;
   type: string;
+  hospitalTypes?: string[];
+  address?: string;
+  keyPersonName?: string;
+  keyPersonPhone?: string;
+  purchasingContactName?: string;
+  purchasingContactPhone?: string;
   dept?: string;
   contact?: string;
   phone?: string;
@@ -172,6 +178,9 @@ export interface MasterDoctor {
   name: string;
   specialty?: string;
   workplace?: string;
+  clinicAddress?: string;
+  workingHospitalIds?: string[];
+  nearbyPharmacyIds?: string[];
   area: string;
   address?: string;
   mobile?: string;

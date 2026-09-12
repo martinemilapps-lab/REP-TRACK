@@ -121,7 +121,8 @@ function HomePageContent() {
     { id:'myreports', label: t('nav.myReports'), icon:<FileText className="size-4"/> },
     { id:'weeklyplan', label: t('nav.weeklyPlan'), icon:<CalendarDays className="size-4"/> },
     { id:'mylists', label: t('nav.myLists'), icon:<ListChecks className="size-4"/> },
-    { id:'analysis', label: t('nav.productAvailability'), icon:<PackageSearch className="size-4"/> },
+    { id:'availability', label: t('nav.productAvailability'), icon:<PackageSearch className="size-4"/> },
+    { id:'analysis', label: language==='ar'?'تحليل المنتجات':'Product Analysis', icon:<BarChart3 className="size-4"/> },
     { id:'export', label:t('nav.export'), icon:<Download className="size-4"/> },
   ];
   const managerItems: ShellNavItem[] = [

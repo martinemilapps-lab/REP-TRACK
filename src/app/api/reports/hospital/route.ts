@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { HospitalVisitSchema } from '@/lib/validation';
 import { requireAuthenticatedUser } from '@/lib/auth';
-import { createHospitalVisit } from '@/lib/services/hospitalService';
+import { createHospitalVisit, saveHospitalDailyReport } from '@/lib/services/hospitalService';
 import { handleApiError } from '@/lib/errors';
 
 export async function POST(req: NextRequest) {
   try {
     const session = await requireAuthenticatedUser();
     const rawData = await req.json();
+    if(Array.isArray(rawData?.visits)){const report=await saveHospitalDailyReport(session,rawData);return NextResponse.json({success:true,message:'Hospital daily report saved',report})}
     const validatedData = HospitalVisitSchema.parse(rawData);
 
     const result = await createHospitalVisit(session, validatedData);

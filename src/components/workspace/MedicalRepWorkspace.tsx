@@ -20,7 +20,7 @@ import { RepresentativeOverview } from '@/components/overview/RepresentativeOver
 import { SalesAnalyticsView } from '@/components/sales/SalesAnalyticsView';
 import { ExportCenter } from '@/components/exports/ExportCenter';
 
-export type MRViewType = 'overview' | 'submit' | 'mylists' | 'myreports' | 'weeklyplan' | 'analysis' | 'export';
+export type MRViewType = 'overview' | 'submit' | 'mylists' | 'myreports' | 'weeklyplan' | 'availability' | 'analysis' | 'export';
 
 interface MedicalRepWorkspaceProps {
   currentUser: {
@@ -85,6 +85,7 @@ export function MedicalRepWorkspace({
 
         {/* Workspace Views Navigation Pills */}
         <nav className="flex gap-1.5 bg-[var(--surface-muted)] p-1 rounded-xl border border-[var(--line)] flex-wrap justify-center">
+          <button onClick={() => onViewChange('availability')} className={`px-3.5 py-2 rounded-lg text-xs md:text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 ${activeView === 'availability' ? 'bg-gradient-to-r from-[var(--gold)] to-[var(--gold-light)] text-white shadow-xs font-extrabold' : 'text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--surface-hover)]'}`}><PackageSearch className="size-4"/><span>{language === 'ar' ? 'توافر المنتجات' : 'Product Availability'}</span></button>
           <button
             onClick={() => onViewChange('submit')}
             className={`px-3.5 py-2 rounded-lg text-xs md:text-sm font-bold transition-all cursor-pointer ${
@@ -221,14 +222,10 @@ export function MedicalRepWorkspace({
             />
           )}
 
-          {(selectedType === 'availability' || selectedType === 'product_analysis') && (
-            <AvailabilityForm
-              onSuccess={(msg) => onShowToast(msg)}
-              onError={(msg) => onShowToast(msg, true)}
-            />
-          )}
         </div>
       )}
+
+      {activeView === 'availability' && <div className="animate-fade-in"><AvailabilityForm onSuccess={(msg) => onShowToast(msg)} onError={(msg) => onShowToast(msg, true)}/></div>}
 
       {/* ============ VIEW 2: MY LISTS ============ */}
       {activeView === 'mylists' && (
@@ -263,12 +260,6 @@ export function MedicalRepWorkspace({
       {activeView === 'analysis' && (
         <div className="animate-fade-in space-y-6">
           <SalesAnalyticsView />
-          <div className="border-t border-[var(--line)] pt-6"><h2 className="mb-3 text-lg font-black">{language==='ar'?'تسجيل التوافر':'Availability entry'}</h2>
-          <AvailabilityForm
-            onSuccess={(msg) => onShowToast(msg)}
-            onError={(msg) => onShowToast(msg, true)}
-          />
-          </div>
         </div>
       )}
       {activeView === 'export' && <ExportCenter reps={reps}/>}
