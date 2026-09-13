@@ -469,6 +469,35 @@ export const events = sqliteTable('events', {
   index('idx_events_date').on(table.eventDate),
 ]);
 
+export const managerActivityEntries = sqliteTable('manager_activity_entries', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  activityId: text('activity_id').notNull().references(() => managerActivities.id, { onDelete: 'cascade' }),
+  period: text('period', { enum: ['AM', 'PM'] }).notNull(),
+  entryType: text('entry_type', { enum: ['HOSPITAL', 'DIRECT_DOCTOR'] }).notNull(),
+  hospitalId: text('hospital_id').references(() => hospitals.id, { onDelete: 'restrict' }),
+  doctorId: text('doctor_id').references(() => doctors.id, { onDelete: 'restrict' }),
+  nameSnapshot: text('name_snapshot').notNull(),
+  specialtySnapshot: text('specialty_snapshot'),
+  generalComment: text('general_comment'),
+  displayOrder: integer('display_order').notNull().default(0),
+}, (table) => [index('idx_mgr_activity_entries_activity').on(table.activityId), index('idx_mgr_activity_entries_period').on(table.period)]);
+
+export const managerActivityEntryDoctors = sqliteTable('manager_activity_entry_doctors', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  entryId: text('entry_id').notNull().references(() => managerActivityEntries.id, { onDelete: 'cascade' }),
+  doctorId: text('doctor_id').notNull().references(() => doctors.id, { onDelete: 'restrict' }),
+  nameSnapshot: text('name_snapshot').notNull(),
+  specialtySnapshot: text('specialty_snapshot'),
+  generalComment: text('general_comment'),
+  displayOrder: integer('display_order').notNull().default(0),
+}, (table) => [index('idx_mgr_activity_entry_doctors_entry').on(table.entryId)]);
+
+export const managerActivityProducts = sqliteTable('manager_activity_products', {
+  activityId: text('activity_id').notNull().references(() => managerActivities.id, { onDelete: 'cascade' }),
+  productId: text('product_id').notNull().references(() => products.id, { onDelete: 'restrict' }),
+  productNameSnapshot: text('product_name_snapshot').notNull(),
+}, (table) => [uniqueIndex('idx_mgr_activity_products_unique').on(table.activityId, table.productId)]);
+
 export const trainings = sqliteTable('trainings', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   repId: text('rep_id').notNull().references(() => representatives.id, { onDelete: 'restrict' }),
@@ -543,6 +572,7 @@ export const managerActivities = sqliteTable('manager_activities', {
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   activityType: text('activity_type', { enum: ['Visit', 'Event', 'Training', 'Office Working', 'Others'] }).notNull(),
   activityDate: text('activity_date').notNull(), // YYYY-MM-DD
+  eventFeedback: text('event_feedback'),
 
   // Visit specific fields
   visitType: text('visit_type', { enum: ['Single', 'Double'] }),

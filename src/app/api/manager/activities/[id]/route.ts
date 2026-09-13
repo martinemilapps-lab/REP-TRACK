@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuthenticatedUser } from '@/lib/auth';
-import { getManagerActivityById, deleteManagerActivity } from '@/lib/services/managerActivityService';
+import { getManagerActivityById, deleteManagerActivity, saveManagerActivity } from '@/lib/services/managerActivityService';
 import { handleApiError } from '@/lib/errors';
 
 export async function GET(
@@ -24,6 +24,11 @@ export async function GET(
   } catch (error) {
     return handleApiError(error);
   }
+}
+
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try { const session=await requireAuthenticatedUser(); const {id}=await params; const activity=await saveManagerActivity(session,{...(await request.json()),id}); return NextResponse.json({success:true,activity,message:'Activity updated'}); }
+  catch(error){return handleApiError(error);}
 }
 
 export async function DELETE(

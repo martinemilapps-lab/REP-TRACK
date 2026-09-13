@@ -14,6 +14,7 @@ import { runPasswordLifecycleTests } from './passwordLifecycle.test';
 import { runUnifiedWorkspaceTests } from './unifiedWorkspace.test';
 import { runMrListsOwnershipTests } from './mrListsOwnership.test';
 import { runTask1Tests } from './task1.test';
+import { runTask2Tests } from './task2.test';
 
 async function main() {
   console.log('====================================================');
@@ -62,6 +63,7 @@ async function main() {
   const weeklyPlanResults = runRemoteIntegration ? await runWeeklyPlanTests() : { passed: 0, failed: 0 };
   const myListsResults = runRemoteIntegration ? await runMyListsTests() : { passed: 0, failed: 0 };
   const task1Results = runTask1Tests();
+  const task2Results = runTask2Tests();
 
   if (!runRemoteIntegration) {
     console.log('🛡️ Remote database integration suites skipped. Use an explicitly designated NON_PRODUCTION target to run them.');
@@ -78,7 +80,8 @@ async function main() {
     integrationResults.passed +
     weeklyPlanResults.passed +
     myListsResults.passed +
-    task1Results.passed;
+    task1Results.passed +
+    task2Results.passed;
   const totalFailed =
     securityResults.failed +
     orgResults.failed +
@@ -90,7 +93,8 @@ async function main() {
     integrationResults.failed +
     weeklyPlanResults.failed +
     myListsResults.failed +
-    task1Results.failed;
+    task1Results.failed +
+    task2Results.failed;
 
   console.log('\n====================================================');
   console.log(`📊 Test Summary: ${totalPassed} Passed, ${totalFailed} Failed`);

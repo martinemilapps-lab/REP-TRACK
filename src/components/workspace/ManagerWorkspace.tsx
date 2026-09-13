@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useState } from 'react';
-import { Representative, WeeklyPlanRecord } from '@/types';
+import { ManagerActivityRecord, Representative, WeeklyPlanRecord } from '@/types';
 import { ManagerDashboardView } from '@/components/manager/ManagerDashboardView';
 import { ManagerActivityForm } from '@/components/manager/ManagerActivityForm';
 import { ManagerTeamPlansView } from '@/components/manager/ManagerTeamPlansView';
@@ -10,7 +10,6 @@ import { ManagerMyReportsView } from '@/components/manager/ManagerMyReportsView'
 import { WeeklyPlanView } from '@/components/weekly-plan/WeeklyPlanView';
 import { MyListsView } from '@/components/my-lists/MyListsView';
 import { useTranslation } from '@/lib/i18nContext';
-import { SalesAnalyticsView } from '@/components/sales/SalesAnalyticsView';
 import { ComplianceView } from '@/components/compliance/ComplianceView';
 import { ExportCenter } from '@/components/exports/ExportCenter';
 import { AdminWorkspace } from '@/components/admin/AdminWorkspace';
@@ -71,6 +70,7 @@ export function ManagerWorkspace({
   const [selectedTeamRep, setSelectedTeamRep] = useState<string>('');
 
   const [selectedPlan, setSelectedPlan] = useState<WeeklyPlanRecord | null>(null);
+  const [selectedActivity, setSelectedActivity] = useState<ManagerActivityRecord | null>(null);
   const showSuccess = useCallback((msg: string) => onShowToast(msg), [onShowToast]);
   const showError = useCallback((msg: string) => onShowToast(msg, true), [onShowToast]);
 
@@ -81,7 +81,7 @@ export function ManagerWorkspace({
     { id: 'team_reports', label: language === 'ar' ? 'تقارير الفريق' : 'Received / Team Reports', icon: <Inbox className="size-4"/> },
     { id: 'team_plans', label: language === 'ar' ? 'خطط الفريق' : 'Team Plans', icon: <ClipboardList className="size-4"/> },
     { id: 'team_lists', label: language === 'ar' ? 'قوائم الفريق' : 'Team Lists', icon: <Users className="size-4"/> },
-    { id: 'product_analysis', label: language === 'ar' ? 'تحليل المنتجات' : 'Product Analysis', icon: <PackageSearch className="size-4"/> },
+    { id: 'product_analysis', label: language === 'ar' ? 'توافر المنتجات' : 'Product Availability', icon: <PackageSearch className="size-4"/> },
     { id: 'compliance', label: language === 'ar' ? 'متابعة الالتزام' : 'Submission Compliance', icon: <Target className="size-4"/> },
     { id: 'export', label: language === 'ar' ? 'تصدير البيانات' : 'Export', icon: <Download className="size-4"/> },
   ];
@@ -168,8 +168,11 @@ export function ManagerWorkspace({
             onSuccess={showSuccess}
             onError={showError}
             onSubmitted={() => {
+              setSelectedActivity(null);
               setActiveNav('my_reports');
             }}
+            initialActivity={selectedActivity}
+            onCancelEdit={() => setSelectedActivity(null)}
           />
         </div>
       )}
@@ -202,6 +205,7 @@ export function ManagerWorkspace({
             }}
             onSuccess={showSuccess}
             onError={showError}
+            onEditActivity={(activity) => { setSelectedActivity(activity); setActiveNav('submit_activity'); }}
           />
         </div>
       )}
@@ -236,7 +240,7 @@ export function ManagerWorkspace({
 
       {/* 7. Product Analysis */}
       {activeNav === 'product_analysis' && (
-        <div className="space-y-6"><SalesAnalyticsView manager/><div className="border-t border-[var(--line)] pt-6"><h2 className="mb-3 text-lg font-black">{language==='ar'?'توافر المنتجات':'Product Availability'}</h2><ManagerDashboardView key="product-availability" reps={reps} initialTab="availability" onLock={onLogout} onError={showError} onSuccess={showSuccess}/></div></div>
+        <ManagerDashboardView key="product-availability" reps={reps} initialTab="availability" onLock={onLogout} onError={showError} onSuccess={showSuccess}/>
       )}
 
       {activeNav==='compliance'&&<ComplianceView/>}

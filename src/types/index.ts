@@ -484,6 +484,13 @@ export interface ManagerActivityRecord {
   location?: string;
   attendees?: string;
   budget?: string;
+  eventFeedback?: string;
+  productsDiscussed?: Array<{ id: string; name: string }>;
+  visits?: Array<{
+    id: string; period: 'AM' | 'PM'; entryType: 'HOSPITAL' | 'DIRECT_DOCTOR'; hospitalId?: string; doctorId?: string;
+    name: string; specialty?: string; generalComment?: string;
+    doctors: Array<{ id: string; doctorId: string; name: string; specialty?: string; generalComment?: string }>;
+  }>;
   trainingType?: string;
   trainingTopic?: string;
   trainingLocation?: string;

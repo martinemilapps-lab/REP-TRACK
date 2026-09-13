@@ -1,0 +1,7 @@
+-- Task 2 additive migration. Historical manager_activities columns remain for compatibility.
+ALTER TABLE manager_activities ADD COLUMN event_feedback TEXT;
+CREATE TABLE manager_activity_entries (id TEXT PRIMARY KEY NOT NULL, activity_id TEXT NOT NULL REFERENCES manager_activities(id) ON DELETE CASCADE, period TEXT NOT NULL CHECK(period IN ('AM','PM')), entry_type TEXT NOT NULL CHECK(entry_type IN ('HOSPITAL','DIRECT_DOCTOR')), hospital_id TEXT REFERENCES hospitals(id) ON DELETE RESTRICT, doctor_id TEXT REFERENCES doctors(id) ON DELETE RESTRICT, name_snapshot TEXT NOT NULL, specialty_snapshot TEXT, general_comment TEXT, display_order INTEGER NOT NULL DEFAULT 0);
+CREATE INDEX idx_mgr_activity_entries_activity ON manager_activity_entries(activity_id);
+CREATE TABLE manager_activity_entry_doctors (id TEXT PRIMARY KEY NOT NULL, entry_id TEXT NOT NULL REFERENCES manager_activity_entries(id) ON DELETE CASCADE, doctor_id TEXT NOT NULL REFERENCES doctors(id) ON DELETE RESTRICT, name_snapshot TEXT NOT NULL, specialty_snapshot TEXT, general_comment TEXT, display_order INTEGER NOT NULL DEFAULT 0);
+CREATE INDEX idx_mgr_activity_entry_doctors_entry ON manager_activity_entry_doctors(entry_id);
+CREATE TABLE manager_activity_products (activity_id TEXT NOT NULL REFERENCES manager_activities(id) ON DELETE CASCADE, product_id TEXT NOT NULL REFERENCES products(id) ON DELETE RESTRICT, product_name_snapshot TEXT NOT NULL, UNIQUE(activity_id, product_id));

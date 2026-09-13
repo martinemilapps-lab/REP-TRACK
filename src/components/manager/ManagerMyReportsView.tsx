@@ -1,6 +1,6 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import type { WeeklyPlanRecord } from '@/types';
+import type { ManagerActivityRecord, WeeklyPlanRecord } from '@/types';
 import { useTranslation } from '@/lib/i18nContext';
 import { normalizeReports, type ReportRow } from '@/lib/reportExplorer';
 import { ReportExplorer } from '@/components/reports/ReportExplorer';
@@ -18,8 +18,9 @@ interface ManagerMyReportsViewProps {
     onOpenPlan?: (plan: WeeklyPlanRecord) => void;
     onSuccess?: (msg: string) => void;
     onError?: (msg: string) => void;
+    onEditActivity?: (activity: ManagerActivityRecord) => void;
 }
-export function ManagerMyReportsView({ currentUser, onOpenPlan, onSuccess, onError }: ManagerMyReportsViewProps) {
+export function ManagerMyReportsView({ currentUser, onOpenPlan, onSuccess, onError, onEditActivity }: ManagerMyReportsViewProps) {
     const { language } = useTranslation();
     const ar = language === 'ar';
     const [tab, setTab] = useState<'activities' | 'plans'>('activities');
@@ -73,7 +74,7 @@ export function ManagerMyReportsView({ currentUser, onOpenPlan, onSuccess, onErr
     <div className="flex flex-wrap gap-2" role="group" aria-label={ar ? 'نوع التقارير' : 'Report category'}>{(['activities', 'plans'] as const).map(value => <Button key={value} type="button" aria-pressed={tab === value} variant={tab === value ? 'primary' : 'secondary'} onClick={() => { setLoading(true); setRows([]); setTab(value); }}>{value === 'activities' ? (ar ? 'أنشطتي' : 'My activities') : (ar ? 'خططي الأسبوعية' : 'My weekly plans')}</Button>)}</div>{deleteError && <InlineAlert tone="error">{ar ? 'تعذر حذف السجل. يمكنك المحاولة مرة أخرى.' : 'Unable to delete the record. You can try again.'}</InlineAlert>}<ReportExplorer key={tab} rows={rows} loading={loading} error={error} retry={() => void load()} actions={row => <>{row.type === 'plan' && <>
             <Button type="button" size="sm" variant="secondary" disabled={deleting} onClick={() => onOpenPlan?.(row.record as unknown as WeeklyPlanRecord)}>{ar ? 'فتح الخطة' : 'Open plan'}</Button>
             <a className="inline-flex min-h-11 items-center rounded-lg border border-[var(--line)] px-3 text-sm" href={`/api/weekly-plans/${row.record.id}/export`}>{ar ? 'تصدير Excel' : 'Export Excel'}</a>
-            </>}<Button type="button" size="sm" variant="danger" disabled={deleting} onClick={() => setPending(row)}>{ar ? 'حذف' : 'Delete'}</Button>
+            </>}{row.type !== 'plan' && <Button type="button" size="sm" variant="secondary" disabled={deleting} onClick={() => onEditActivity?.(row.record as unknown as ManagerActivityRecord)}>{ar ? 'تعديل' : 'Edit'}</Button>}<Button type="button" size="sm" variant="danger" disabled={deleting} onClick={() => setPending(row)}>{ar ? 'حذف' : 'Delete'}</Button>
         </>}/>
     <ConfirmDialog open={Boolean(pending)} title={ar ? 'حذف التقرير' : 'Delete report'} description={ar ? 'سيتم حذف هذا السجل نهائياً.' : 'This record will be permanently deleted.'} destructive onClose={() => setPending(null)} onConfirm={() => void remove()} confirmLabel={ar ? 'حذف' : 'Delete'}/>
     </div>;

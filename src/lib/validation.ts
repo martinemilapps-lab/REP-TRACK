@@ -284,6 +284,7 @@ export const ManagerActivityFiltersSchema = z.object({
 });
 
 export const ManagerActivitySchema = z.object({
+  id: z.string().uuid().optional(),
   activityType: z.enum(['Visit', 'Event', 'Training', 'Office Working', 'Others'], {
     message: 'نوع النشاط غير صالح',
   }),
@@ -315,6 +316,19 @@ export const ManagerActivitySchema = z.object({
   location: z.string().trim().optional().default(''),
   attendees: z.string().trim().optional().default(''),
   budget: z.string().trim().optional().default(''),
+  eventFeedback: z.string().trim().max(5000).optional().default(''),
+  productIds: z.array(z.string().min(1)).max(78).optional().default([]),
+  visits: z.array(z.object({
+    period: z.enum(['AM', 'PM']),
+    entryType: z.enum(['HOSPITAL', 'DIRECT_DOCTOR']),
+    hospitalId: z.string().min(1).optional(),
+    doctorId: z.string().min(1).optional(),
+    generalComment: z.string().trim().max(3000).optional().default(''),
+    doctors: z.array(z.object({ doctorId: z.string().min(1), generalComment: z.string().trim().max(3000).optional().default('') })).optional().default([]),
+  }).superRefine((entry, ctx) => {
+    if (entry.entryType === 'HOSPITAL' && !entry.hospitalId) ctx.addIssue({ code: 'custom', path: ['hospitalId'], message: 'Hospital is required' });
+    if (entry.entryType === 'DIRECT_DOCTOR' && !entry.doctorId) ctx.addIssue({ code: 'custom', path: ['doctorId'], message: 'Doctor is required' });
+  })).max(500).optional().default([]),
 
   // Training specific
   trainingType: z.string().trim().optional().default(''),

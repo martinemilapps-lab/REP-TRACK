@@ -17,7 +17,7 @@ type ComplianceInput = z.infer<typeof complianceExportSchema>;
 type SalesInput = z.infer<typeof salesExportSchema>;
 type AnyRow = Record<string, unknown> & { id: string };
 
-const value = (input: unknown): string | number | boolean => input instanceof Date ? input.toISOString() : typeof input === 'number' || typeof input === 'boolean' ? input : typeof input === 'string' ? input : '';
+const value = (input: unknown): string | number | boolean => input instanceof Date ? input.toISOString() : typeof input === 'number' || typeof input === 'boolean' ? input : typeof input === 'string' ? input : input && typeof input === 'object' ? JSON.stringify(input) : '';
 const pick = (row: Record<string, unknown>, keys: Array<[string, string]>): ExportRow => Object.fromEntries(keys.map(([key, label]) => [label, value(row[key])]));
 const dateOf = (row: Record<string, unknown>) => String(row.submittedAt ?? row.activityDate ?? row.eventDate ?? row.trainingDate ?? row.taskDate ?? row.month ?? '');
 const inRange = (row: Record<string, unknown>, start?: string, end?: string) => (!start || dateOf(row).slice(0, 10) >= start) && (!end || dateOf(row).slice(0, 10) <= end);
@@ -28,7 +28,7 @@ const reportColumns: Array<[string, string]> = [
   ['area','Area'],['location','Location'],['specialty','Specialty'],['workplace','Workplace'],['month','Month'],['product','Product'],
   ['sales','Sales Units'],['status','Status'],['isAvailable','Available'],['visitType','Visit Type'],['companion','Companion'],
   ['lastVisit','Visit Date'],['visitDate','Visit Date'],['eventDate','Event Date'],['trainingDate','Training Date'],['taskDate','Task Date'],['activityDate','Activity Date'],
-  ['attendeesCount','Attendees'],['durationHours','Duration Hours'],['budget','Budget'],['notes','Notes'],['submittedAt','Submitted At'],
+  ['attendeesCount','Attendees'],['durationHours','Duration Hours'],['budget','Budget'],['eventFeedback','Event Feedback'],['productsDiscussed','Products Discussed'],['visits','AM / PM Visits'],['notes','Notes'],['submittedAt','Submitted At'],
 ];
 
 export async function buildReportsExport(session: UserSessionPayload, input: ReportInput) {
@@ -38,10 +38,14 @@ export async function buildReportsExport(session: UserSessionPayload, input: Rep
   }
   const data = await getVisibleReports(session, { requestedRepId: input.repId, scopeMode: input.scopeMode, limit: 5000 });
   if(input.type==='availability'){
-    const rows=(data.availabilities as AnyRow[]).filter(row=>inRange(row,input.startDate,input.endDate));
+    const allRows=data.availabilities as AnyRow[];
+    if(input.hospitalId&&!allRows.some(row=>row.hospitalId===input.hospitalId))throw new AppError('Hospital is outside your authorized hierarchy',403);
+    if(input.productId&&!allRows.some(row=>row.productId===input.productId))throw new AppError('Product is not present in your authorized availability scope',403);
+    const rows=allRows.filter(row=>inRange(row,input.startDate,input.endDate)&&(!input.hospitalId||row.hospitalId===input.hospitalId)&&(!input.productId||row.productId===input.productId)&&(!input.availabilityStatus||row.status===input.availabilityStatus)&&(!input.month||row.month===input.month));
     const detail=rows.map(row=>pick(row,[['rep','MR Name'],['username','Username'],['positionCode','Position'],['area','Territory / Area'],['month','Reporting Period'],['hospital','Hospital'],['hospitalType','Hospital Type'],['product','Product'],['productCode','Product Code'],['status','Availability Status'],['submittedAt','Submitted At']]));
     const productNames=[...new Set(rows.map(row=>String(row.product||'')).filter(Boolean))];const grouped=new Map<string,ExportRow>();for(const row of rows){const key=`${row.rep}|${row.month}|${row.hospital}`;if(!grouped.has(key))grouped.set(key,{'MR Name':value(row.rep),'Reporting Period':value(row.month),Hospital:value(row.hospital)});grouped.get(key)![String(row.product)]=value(row.status)}
-    return createWorkbook([{name:'Export Info',rows:metadataRows(session,{Scope:session.role==='REPRESENTATIVE'?'MY_RECORDS':input.scopeMode,'Start Date':input.startDate,'End Date':input.endDate,Legend:'Available = green; Not Available = red'})},{name:'Availability Detail',rows:detail},{name:'Hospital Matrix',rows:[...grouped.values()].map(row=>Object.fromEntries([['MR Name',row['MR Name']],['Reporting Period',row['Reporting Period']],['Hospital',row.Hospital],...productNames.map(name=>[name,row[name]||''])]))}]);
+    const summary=[...new Map(rows.map(row=>[`${row.rep}|${row.product}|${row.status}`,row])).values()].map(row=>({'MR Name':value(row.rep),Product:value(row.product),Status:value(row.status),Count:rows.filter(item=>item.rep===row.rep&&item.product===row.product&&item.status===row.status).length}));
+    return createWorkbook([{name:'Export Info',rows:metadataRows(session,{Scope:session.role==='REPRESENTATIVE'?'MY_RECORDS':input.scopeMode,'Start Date':input.startDate,'End Date':input.endDate,Legend:'Available = green; Not Available = red'})},{name:'Detailed Availability',rows:detail},{name:'Hospital Product Matrix',rows:[...grouped.values()].map(row=>Object.fromEntries([['MR Name',row['MR Name']],['Reporting Period',row['Reporting Period']],['Hospital',row.Hospital],...productNames.map(name=>[name,row[name]||''])]))},{name:'Summary',rows:summary}]);
   }
   const sets: Array<[string, AnyRow[]]> = [
     ['Hospitals', data.hospitals as AnyRow[]], ['Pharmacies', data.pharmacies as AnyRow[]], ['Doctors', data.doctors as AnyRow[]],
