@@ -1,4 +1,4 @@
-import { db, hospitals, pharmacies, doctors, distributionBranches, representatives, doctorWorkingHospitals, doctorNearbyPharmacies } from '@/lib/db';
+import { db, hospitals, pharmacies, doctors, distributionBranches, representatives, doctorNearbyPharmacies } from '@/lib/db';
 import { eq, or, isNull, desc } from 'drizzle-orm';
 import {
   MasterHospital,
@@ -86,7 +86,7 @@ export async function getMasterListsForRep(
 ): Promise<MasterListsPayload> {
   const repId = await resolveRepId(repIdOrName);
 
-  const [hList, pList, dList, bList, doctorHospitalLinks, doctorPharmacyLinks] = await Promise.all([
+  const [hList, pList, dList, bList, doctorPharmacyLinks] = await Promise.all([
     repId
       ? db
           .select()
@@ -122,7 +122,6 @@ export async function getMasterListsForRep(
           .orderBy(desc(distributionBranches.createdAt))
           .all()
       : db.select().from(distributionBranches).orderBy(desc(distributionBranches.createdAt)).all(),
-    db.select().from(doctorWorkingHospitals).all(),
     db.select().from(doctorNearbyPharmacies).all(),
   ]);
 
@@ -135,14 +134,6 @@ export async function getMasterListsForRep(
       type: h.type,
       hospitalTypes: parseStringArray(h.hospitalTypes, h.type ? [h.type] : []),
       address: h.address || undefined,
-      keyPersonName: h.keyPersonName || undefined,
-      keyPersonPhone: h.keyPersonPhone || undefined,
-      purchasingContactName: h.purchasingContactName || undefined,
-      purchasingContactPhone: h.purchasingContactPhone || undefined,
-      dept: h.dept || undefined,
-      contact: h.contact || undefined,
-      phone: h.phone || undefined,
-      doctorNames: h.doctorNames || undefined,
       defaultCycle: h.defaultCycle ?? 7,
       targetProducts: h.targetProducts || undefined,
       createdAt: h.createdAt ? new Date(h.createdAt).toISOString() : undefined,
@@ -153,9 +144,9 @@ export async function getMasterListsForRep(
       name: p.name,
       area: p.area,
       address: p.address || undefined,
-      pharmacist: p.pharmacist || undefined,
-      mobile: p.mobile || undefined,
       classification: p.classification,
+      distributors: parseStringArray(p.distributors),
+      distributorOther: p.distributorOther || undefined,
       defaultCycle: p.defaultCycle ?? 7,
       targetProducts: p.targetProducts || undefined,
       createdAt: p.createdAt ? new Date(p.createdAt).toISOString() : undefined,
@@ -165,15 +156,11 @@ export async function getMasterListsForRep(
       repId: d.repId || undefined,
       name: d.name,
       specialty: d.specialty || undefined,
-      workplace: d.workplace || undefined,
       clinicAddress: d.clinicAddress || undefined,
-      workingHospitalIds: doctorHospitalLinks.filter((x) => x.doctorId === d.id).map((x) => x.hospitalId),
       nearbyPharmacyIds: doctorPharmacyLinks.filter((x) => x.doctorId === d.id).map((x) => x.pharmacyId),
       area: d.area,
       address: d.address || undefined,
-      mobile: d.mobile || undefined,
       classification: d.classification,
-      bestTime: d.bestTime || undefined,
       defaultCycle: d.defaultCycle ?? 7,
       targetProducts: d.targetProducts || undefined,
       createdAt: d.createdAt ? new Date(d.createdAt).toISOString() : undefined,
@@ -274,14 +261,6 @@ export async function saveMasterHospital(
         type: data.type || 'Private',
         hospitalTypes: JSON.stringify(data.hospitalTypes?.length ? data.hospitalTypes : [data.type || 'Private']),
         address: data.address || null,
-        keyPersonName: data.keyPersonName || null,
-        keyPersonPhone: data.keyPersonPhone || null,
-        purchasingContactName: data.purchasingContactName || null,
-        purchasingContactPhone: data.purchasingContactPhone || null,
-        dept: data.dept || null,
-        contact: data.contact || null,
-        phone: data.phone || null,
-        doctorNames: data.doctorNames || null,
         defaultCycle: data.defaultCycle ?? 7,
         targetProducts: data.targetProducts || null,
         repId: repId || null,
@@ -300,14 +279,6 @@ export async function saveMasterHospital(
       type: data.type || 'Private',
       hospitalTypes: JSON.stringify(data.hospitalTypes?.length ? data.hospitalTypes : [data.type || 'Private']),
       address: data.address || null,
-      keyPersonName: data.keyPersonName || null,
-      keyPersonPhone: data.keyPersonPhone || null,
-      purchasingContactName: data.purchasingContactName || null,
-      purchasingContactPhone: data.purchasingContactPhone || null,
-      dept: data.dept || null,
-      contact: data.contact || null,
-      phone: data.phone || null,
-      doctorNames: data.doctorNames || null,
       defaultCycle: data.defaultCycle ?? 7,
       targetProducts: data.targetProducts || null,
       repId: repId || null,
@@ -346,9 +317,8 @@ export async function saveMasterPharmacy(
         name: cleanName,
         area: cleanArea,
         address: data.address || null,
-        pharmacist: data.pharmacist || null,
-        mobile: data.mobile || null,
-        classification: data.classification || 'A',
+        distributors: JSON.stringify(data.distributors || []),
+        distributorOther: data.distributors?.includes('OTHERS') ? data.distributorOther || null : null,
         defaultCycle: data.defaultCycle ?? 7,
         repId: repId || null,
         updatedAt: new Date(),
@@ -364,9 +334,8 @@ export async function saveMasterPharmacy(
       name: cleanName,
       area: cleanArea,
       address: data.address || null,
-      pharmacist: data.pharmacist || null,
-      mobile: data.mobile || null,
-      classification: data.classification || 'A',
+      distributors: JSON.stringify(data.distributors || []),
+      distributorOther: data.distributors?.includes('OTHERS') ? data.distributorOther || null : null,
       defaultCycle: data.defaultCycle ?? 7,
       repId: repId || null,
     })
@@ -403,13 +372,10 @@ export async function saveMasterDoctor(
       .set({
         name: cleanName,
         specialty: data.specialty || null,
-        workplace: data.workplace || null,
         clinicAddress: data.clinicAddress || null,
         area: cleanArea,
         address: data.address || null,
-        mobile: data.mobile || null,
         classification: data.classification || 'A',
-        bestTime: data.bestTime || null,
         defaultCycle: data.defaultCycle ?? 7,
         targetProducts: data.targetProducts || null,
         repId: repId || null,
@@ -417,7 +383,7 @@ export async function saveMasterDoctor(
       })
       .where(eq(doctors.id, targetId))
       .returning();
-    await replaceDoctorLinks(targetId, repId, data.workingHospitalIds || [], data.nearbyPharmacyIds || []);
+    await replaceDoctorNearbyPharmacies(targetId, repId, data.nearbyPharmacyIds || []);
     return updated;
   }
 
@@ -426,38 +392,29 @@ export async function saveMasterDoctor(
     .values({
       name: cleanName,
       specialty: data.specialty || null,
-      workplace: data.workplace || null,
       clinicAddress: data.clinicAddress || null,
       area: cleanArea,
       address: data.address || null,
-      mobile: data.mobile || null,
       classification: data.classification || 'A',
-      bestTime: data.bestTime || null,
       defaultCycle: data.defaultCycle ?? 7,
       targetProducts: data.targetProducts || null,
       repId: repId || null,
     })
     .returning();
-  await replaceDoctorLinks(inserted.id, repId, data.workingHospitalIds || [], data.nearbyPharmacyIds || []);
+  await replaceDoctorNearbyPharmacies(inserted.id, repId, data.nearbyPharmacyIds || []);
   return inserted;
 }
 
-async function replaceDoctorLinks(doctorId: string, repId: string | null, hospitalIds: string[], pharmacyIds: string[]) {
+async function replaceDoctorNearbyPharmacies(doctorId: string, repId: string | null, pharmacyIds: string[]) {
   if (!repId) throw new AppError('Doctor ownership is required', 400);
-  const [ownedHospitals, ownedPharmacies] = await Promise.all([
-    Promise.all(hospitalIds.map((id) => db.select({ id: hospitals.id }).from(hospitals).where(eq(hospitals.id, id)).get())),
-    Promise.all(pharmacyIds.map((id) => db.select({ id: pharmacies.id }).from(pharmacies).where(eq(pharmacies.id, id)).get())),
-  ]);
-  if (ownedHospitals.some((row, i) => !row || !hospitalIds[i]) || ownedPharmacies.some((row, i) => !row || !pharmacyIds[i])) {
+  const ownedPharmacies = await Promise.all(pharmacyIds.map((id) => db.select({ id: pharmacies.id }).from(pharmacies).where(eq(pharmacies.id, id)).get()));
+  if (ownedPharmacies.some((row, i) => !row || !pharmacyIds[i])) {
     throw new AppError('Invalid linked customer', 400);
   }
-  const hospitalOwners = await Promise.all(hospitalIds.map((id) => db.select({ repId: hospitals.repId }).from(hospitals).where(eq(hospitals.id, id)).get()));
   const pharmacyOwners = await Promise.all(pharmacyIds.map((id) => db.select({ repId: pharmacies.repId }).from(pharmacies).where(eq(pharmacies.id, id)).get()));
-  if (hospitalOwners.some((row) => row?.repId !== repId) || pharmacyOwners.some((row) => row?.repId !== repId)) throw new AppError('Linked customer is outside your list', 403);
+  if (pharmacyOwners.some((row) => row?.repId !== repId)) throw new AppError('Linked customer is outside your list', 403);
   await db.batch([
-    db.delete(doctorWorkingHospitals).where(eq(doctorWorkingHospitals.doctorId, doctorId)),
     db.delete(doctorNearbyPharmacies).where(eq(doctorNearbyPharmacies.doctorId, doctorId)),
-    ...hospitalIds.map((hospitalId) => db.insert(doctorWorkingHospitals).values({ doctorId, hospitalId }).onConflictDoNothing()),
     ...pharmacyIds.map((pharmacyId) => db.insert(doctorNearbyPharmacies).values({ doctorId, pharmacyId }).onConflictDoNothing()),
   ]);
 }

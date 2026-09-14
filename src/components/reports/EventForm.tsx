@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { useTranslation } from '@/lib/i18nContext';
 import { Button } from '@/components/ui/Button';
 import { CustomSelect, SelectOption } from '@/components/ui/CustomSelect';
-import { OUR_PRODUCTS_DISCUSSED_LIST } from '@/lib/constants';
 
 interface EventFormProps {
   selectedRep: string;
@@ -44,17 +43,6 @@ export function EventForm({ selectedRep, onSuccess, onError }: EventFormProps) {
   ) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
-  };
-
-  const handleProductChipToggle = (product: string) => {
-    const current = formData.products ? formData.products.split('، ') : [];
-    let updated: string[];
-    if (current.includes(product)) {
-      updated = current.filter((p) => p !== product);
-    } else {
-      updated = [...current, product];
-    }
-    setFormData((prev) => ({ ...prev, products: updated.join('، ') }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -234,37 +222,18 @@ export function EventForm({ selectedRep, onSuccess, onError }: EventFormProps) {
           </div>
         </div>
 
-        {/* Row 4: Products Discussed with Focus Chips */}
+        {/* Products are intentionally free text and never mutate the catalog. */}
         <div>
           <label className="block text-xs font-bold text-[var(--ink-soft)] mb-1.5">
             {t('event.products')}
           </label>
-          <div className="flex flex-wrap gap-1.5 mb-2">
-            {OUR_PRODUCTS_DISCUSSED_LIST.map((prod) => {
-              const selected = formData.products.includes(prod);
-              return (
-                <button
-                  key={prod}
-                  type="button"
-                  onClick={() => handleProductChipToggle(prod)}
-                  className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
-                    selected
-                      ? 'bg-[var(--gold)] text-white border-[var(--gold)] shadow-xs'
-                      : 'bg-[var(--bg-subtle)] text-[var(--ink-soft)] border-[var(--line)] hover:border-[var(--gold-light)]'
-                  }`}
-                >
-                  {selected ? '✓ ' : '+ '}
-                  {prod}
-                </button>
-              );
-            })}
-          </div>
-          <input
-            type="text"
+          <textarea
             id="products"
             value={formData.products}
             onChange={handleChange}
-            placeholder="المنتجات المحددة أو كتابة منتجات إضافية..."
+            maxLength={2000}
+            rows={4}
+            placeholder="اكتب أسماء المنتجات التي تمت مناقشتها، كل منتج في سطر..."
             className="w-full px-3.5 py-2 rounded-[var(--radius-sm)] border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] text-xs focus:outline-none focus:border-[var(--gold)] transition-colors"
           />
         </div>

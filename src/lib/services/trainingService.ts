@@ -28,13 +28,9 @@ export async function createTrainingRecord(
     .values({
       repId,
       title: input.title,
-      trainingType: input.trainingType,
+      trainingType: 'TRAINING',
       trainingDate: input.trainingDate,
-      trainer: input.trainer || null,
-      attendees: input.attendees || null,
-      durationHours: input.durationHours ?? 1,
-      outcomes: input.outcomes || null,
-      notes: input.notes || null,
+      location: input.location || null,
     })
     .returning();
 
@@ -68,6 +64,7 @@ export async function getTrainingsList(
       title: trainings.title,
       trainingType: trainings.trainingType,
       trainingDate: trainings.trainingDate,
+      location: trainings.location,
       trainer: trainings.trainer,
       attendees: trainings.attendees,
       durationHours: trainings.durationHours,

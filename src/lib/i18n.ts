@@ -105,7 +105,7 @@ export const translations: Record<string, { ar: string; en: string }> = {
   'activity.visitType': { ar: 'أنواع الزيارات (Visit Type)', en: 'Visit Type' },
   'activity.events': { ar: 'الفعاليات والأحداث (Events)', en: 'Events' },
   'activity.training': { ar: 'التدريب (Training)', en: 'Training' },
-  'activity.specialTasks': { ar: 'مهام خاصة وأخرى (Special Task / Others)', en: 'Special Task / Others' },
+  'activity.specialTasks': { ar: 'مراجعة المبيعات / العمل الإداري', en: 'Sales Review / Admin Work' },
   'activity.productsAnalysis': { ar: 'تحليل المنتجات (Products Analysis)', en: 'Products Analysis' },
   'activity.hospital': { ar: 'مستشفى', en: 'Hospital' },
   'activity.pharmacy': { ar: 'صيدلية', en: 'Pharmacy' },
@@ -144,7 +144,7 @@ export const translations: Record<string, { ar: string; en: string }> = {
   'training.submitting': { ar: 'جاري الحفظ...', en: 'Saving...' },
 
   // Special Tasks / Others Translations
-  'task.formTitle': { ar: 'توثيق المهام الخاصة والأنشطة الأخرى (Special Task / Others)', en: 'Log Special Task / Others' },
+  'task.formTitle': { ar: 'مراجعة المبيعات / العمل الإداري', en: 'Sales Review / Admin Work' },
   'task.title': { ar: 'عنوان المهمة / النشاط', en: 'Task Title' },
   'task.titlePlaceholder': { ar: 'مثال: مسح سوقي للأسعار والمنافسين، تسليم عينات، مهمة إدارية...', en: 'e.g., Market survey, Competitor intelligence, Admin work...' },
   'task.category': { ar: 'تصنيف المهمة', en: 'Task Category' },

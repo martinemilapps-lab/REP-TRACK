@@ -166,6 +166,8 @@ export interface MasterPharmacy {
   pharmacist?: string;
   mobile?: string;
   classification: string;
+  distributors?: string[];
+  distributorOther?: string;
   defaultCycle?: number;
   targetProducts?: string;
   createdAt?: string;

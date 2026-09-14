@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { BranchVisitSchema } from '@/lib/validation';
 import { requireAuthenticatedUser } from '@/lib/auth';
 import { createBranchVisit } from '@/lib/services/branchService';
 import { handleApiError } from '@/lib/errors';
@@ -8,9 +7,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await requireAuthenticatedUser();
     const rawData = await req.json();
-    const validatedData = BranchVisitSchema.parse(rawData);
-
-    const result = await createBranchVisit(session, validatedData);
+    const result = await createBranchVisit(session, rawData);
 
     return NextResponse.json({
       success: true,

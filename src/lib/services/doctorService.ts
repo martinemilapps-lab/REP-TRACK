@@ -1,13 +1,15 @@
-import { db, doctors, doctorVisits, representatives } from '@/lib/db';
-import { eq, desc } from 'drizzle-orm';
+import { db, doctors, doctorVisitProducts, doctorVisits, representatives } from '@/lib/db';
+import { and, eq, desc } from 'drizzle-orm';
 import { UserSessionPayload, resolveAuthorizedRepId } from '@/lib/auth';
 import { findOrCreateDoctor } from './masterEntityService';
 import { deriveVisitStatus } from '@/lib/business/status';
 import { z } from 'zod';
-import { DoctorVisitSchema } from '@/lib/validation';
+import { DoctorVisitSchema, DoctorVisitV3Schema } from '@/lib/validation';
 import { FilterOptions } from './hospitalService';
 import { assertAuthenticatedSession } from '@/lib/authPolicy';
 import { resolveWritableRepId } from '@/lib/repAccessPolicy';
+import { AppError } from '@/lib/errors';
+import { requireBusinessProducts } from './businessProductService';
 
 export type DoctorVisitInput = z.input<typeof DoctorVisitSchema>;
 
@@ -19,6 +21,8 @@ export async function createDoctorVisit(
   rawInput: DoctorVisitInput
 ) {
   assertAuthenticatedSession(session);
+  const modern=DoctorVisitV3Schema.safeParse(rawInput);
+  if(modern.success){const repId=resolveWritableRepId(session);const doctor=await db.select().from(doctors).where(and(eq(doctors.id,modern.data.doctorId),eq(doctors.repId,repId))).get();if(!doctor)throw new AppError('Doctor is not in your saved list',403);const names=await requireBusinessProducts(modern.data.products.map(x=>x.productId));const visitId=crypto.randomUUID();const ops=[db.insert(doctorVisits).values({id:visitId,repId,doctorId:doctor.id,prescriptionRate:null,visitDate:new Date().toISOString().slice(0,10)}),...modern.data.products.map((item,displayOrder)=>db.insert(doctorVisitProducts).values({id:crypto.randomUUID(),doctorVisitId:visitId,productId:item.productId,productNameSnapshot:names.get(item.productId)!,prescriptionRate:item.prescriptionRate,displayOrder}))];const[first,...rest]=ops;await db.batch([first,...rest]);return{id:visitId,doctorName:doctor.name,specialty:doctor.specialty,products:modern.data.products}}
   const input = DoctorVisitSchema.parse(rawInput);
   const repId = resolveWritableRepId(session);
 
@@ -157,15 +161,15 @@ export async function getDoctorReports(
       .all();
   }
 
-  return results.map((d) => ({
-    ...d,
+  return Promise.all(results.map(async(d) => ({
+    ...d, products: await db.select({productId:doctorVisitProducts.productId,name:doctorVisitProducts.productNameSnapshot,prescriptionRate:doctorVisitProducts.prescriptionRate,displayOrder:doctorVisitProducts.displayOrder}).from(doctorVisitProducts).where(eq(doctorVisitProducts.doctorVisitId,d.id)).orderBy(doctorVisitProducts.displayOrder).all(),
     status: deriveVisitStatus({
       lastVisitDate: d.visitDate,
       nextVisitDate: d.nextVisit,
       cycleDays: d.cycle,
     }),
     submittedAt: d.submittedAt ? new Date(d.submittedAt).toISOString() : undefined,
-  }));
+  })));
 }
 
 /**

@@ -119,9 +119,8 @@ export function MyListsView({ reps, selectedRep, onSelectRep, onLogVisitForCusto
                 name: '',
                 area: '',
                 address: '',
-                pharmacist: '',
-                mobile: '',
-                classification: 'A',
+                distributors: [],
+                distributorOther: '',
                 defaultCycle: 7,
             });
         }
@@ -129,15 +128,12 @@ export function MyListsView({ reps, selectedRep, onSelectRep, onLogVisitForCusto
             setModalFormData({
                 name: '',
                 specialty: '',
-                workplace: '',
                 clinicAddress: '',
                 workingHospitalIds: [],
                 nearbyPharmacyIds: [],
                 area: '',
                 address: '',
-                mobile: '',
                 classification: 'A',
-                bestTime: '',
                 defaultCycle: 7,
             });
         }
@@ -172,6 +168,8 @@ export function MyListsView({ reps, selectedRep, onSelectRep, onLogVisitForCusto
             return;
         }
         if(activeCategory==='hospitals'&&!(modalFormData.hospitalTypes?.length)){showNotification(language==='ar'?'اختر نوع مستشفى واحداً على الأقل':'Select at least one hospital type',true);return}
+        if(activeCategory==='pharmacies'&&!(modalFormData.distributors?.length)){showNotification(language==='ar'?'اختر موزعاً واحداً على الأقل':'Select at least one distributor',true);return}
+        if(activeCategory==='pharmacies'&&modalFormData.distributors?.includes('OTHERS')&&!modalFormData.distributorOther?.trim()){showNotification(language==='ar'?'اشرح خيار موزعون آخرون':'Explain the Others distributor choice',true);return}
         if (!Number.isInteger(Number(modalFormData.defaultCycle)) || Number(modalFormData.defaultCycle) < 1) {
             showNotification(language === 'ar' ? 'يجب أن تكون دورة الزيارة يوماً واحداً على الأقل' : 'Visit cycle must be at least one whole day', true);
             return;
@@ -267,9 +265,8 @@ export function MyListsView({ reps, selectedRep, onSelectRep, onLogVisitForCusto
                 item.address?.toLowerCase().includes(term) ||
                 item.coverageArea?.toLowerCase().includes(term) ||
                 item.contact?.toLowerCase().includes(term) ||
-                item.pharmacist?.toLowerCase().includes(term) ||
                 item.specialty?.toLowerCase().includes(term) ||
-                item.workplace?.toLowerCase().includes(term));
+                item.distributorOther?.toLowerCase().includes(term));
         });
     }, [currentList, search]);
     const ar = language === 'ar';
@@ -287,10 +284,10 @@ export function MyListsView({ reps, selectedRep, onSelectRep, onLogVisitForCusto
         string,
         string
     ]> = {
-        name: ['Name', 'الاسم'], area: ['Area', 'المنطقة'], address: ['Address', 'العنوان'], keyPersonName: ['Pharmacist / Key Person', 'الصيدلي / الشخص المسؤول'], keyPersonPhone: ['Key Person phone', 'هاتف الشخص المسؤول'], purchasingContactName: ['Purchasing contact', 'مسؤول المشتريات'], purchasingContactPhone: ['Purchasing phone', 'هاتف مسؤول المشتريات'], pharmacist: ['Pharmacist', 'الصيدلي'], mobile: ['Mobile', 'الهاتف المحمول'], classification: ['Classification', 'التصنيف'], specialty: ['Specialty', 'التخصص'], workplace: ['Workplace', 'مكان العمل'], clinicAddress: ['Clinic address', 'عنوان العيادة'], bestTime: ['Best visit time', 'أفضل وقت للزيارة'], coverageArea: ['Coverage area', 'منطقة التغطية'], distributedProducts: ['Distributed products', 'المنتجات الموزعة'], defaultCycle: ['Visit cycle (days)', 'دورة الزيارة (أيام)']
+        name: ['Name', 'الاسم'], area: ['Area', 'المنطقة'], address: ['Address', 'العنوان'], classification: ['Classification', 'التصنيف'], specialty: ['Specialty', 'التخصص'], clinicAddress: ['Clinic address', 'عنوان العيادة'], distributorOther: ['Other distributor', 'موزع آخر'], coverageArea: ['Coverage area', 'منطقة التغطية'], distributedProducts: ['Distributed products', 'المنتجات الموزعة'], defaultCycle: ['Visit cycle (days)', 'دورة الزيارة (أيام)']
     };
     const keys: Record<ListCategory, string[]> = {
-        hospitals: ['name', 'area', 'address', 'keyPersonName', 'keyPersonPhone', 'purchasingContactName', 'purchasingContactPhone'], pharmacies: ['name', 'area', 'address', 'pharmacist', 'mobile', 'classification'], doctors: ['name', 'area', 'address', 'specialty', 'workplace', 'clinicAddress', 'mobile', 'classification', 'bestTime'], branches: ['name', 'coverageArea', 'address', 'contact', 'phone', 'distributedProducts']
+        hospitals: ['name', 'area', 'address'], pharmacies: ['name', 'area', 'address'], doctors: ['name', 'area', 'address', 'specialty', 'clinicAddress', 'classification'], branches: ['name', 'coverageArea', 'address', 'contact', 'phone', 'distributedProducts']
     };
     const visible = filteredList.filter(item => !areaFilter || (item as unknown as Record<string, string>).area === areaFilter || (item as unknown as Record<string, string>).coverageArea === areaFilter);
     const actions = (item: typeof currentList[number]) => <div className="flex flex-wrap gap-2">
@@ -344,7 +341,7 @@ export function MyListsView({ reps, selectedRep, onSelectRep, onLogVisitForCusto
         setIsModalOpen(false); }}>
     <form onSubmit={handleSaveModal}>{statusMsg?.isError && <InlineAlert tone="error">{statusMsg.text}</InlineAlert>}<fieldset disabled={saving} className="grid min-w-0 gap-4 sm:grid-cols-2">{activeCategory==='hospitals'&&<fieldset className="sm:col-span-2"><legend className="text-sm font-semibold">{l('Hospital type','نوع المستشفى')} *</legend><div className="mt-2 flex flex-wrap gap-3">{['Private','Government','University','Insurance','Other'].map(type=><label key={type} className="flex items-center gap-2"><input type="checkbox" checked={(modalFormData.hospitalTypes||[]).includes(type)} onChange={e=>setModalFormData({...modalFormData,hospitalTypes:e.target.checked?[...(modalFormData.hospitalTypes||[]),type]:(modalFormData.hospitalTypes||[]).filter(x=>x!==type),type:e.target.checked?type:modalFormData.type})}/>{type}</label>)}</div></fieldset>}{[...keys[activeCategory], 'defaultCycle'].map(key => <FormField key={key} label={fields[key][ar ? 1 : 0]} value={String(modalFormData[key as keyof CustomerFields] ?? '')} required={key === 'name' || key === 'defaultCycle'} type={key === 'defaultCycle' ? 'number' : 'text'} onChange={value => setModalFormData({
             ...modalFormData, [key]: key === 'defaultCycle' ? Number(value) : value
-        })}/>)}{activeCategory==='doctors'&&<><label className="text-sm font-semibold">{l('Working hospitals','المستشفيات التي يعمل بها')}<select multiple className="input mt-1 min-h-28 w-full" value={modalFormData.workingHospitalIds||[]} onChange={e=>setModalFormData({...modalFormData,workingHospitalIds:Array.from(e.target.selectedOptions,x=>x.value)})}>{listsData.hospitals.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label><label className="text-sm font-semibold">{l('Nearby pharmacies','الصيدليات القريبة')}<select multiple className="input mt-1 min-h-28 w-full" value={modalFormData.nearbyPharmacyIds||[]} onChange={e=>setModalFormData({...modalFormData,nearbyPharmacyIds:Array.from(e.target.selectedOptions,x=>x.value)})}>{listsData.pharmacies.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label></>}<div className="flex flex-wrap gap-2 sm:col-span-2">
+        })}/>)}{activeCategory==='pharmacies'&&<fieldset className="sm:col-span-2"><legend className="text-sm font-semibold">{l('Distributor Dealt With','الموزع المتعامل معه')} *</legend><div className="mt-2 flex flex-wrap gap-3">{[['PHARMAOVERSEAS','PharmaOverseas'],['ETO','ETO'],['DIRECT','Direct'],['OTHERS','Others']].map(([value,label])=><label key={value} className="flex items-center gap-2"><input type="checkbox" checked={(modalFormData.distributors||[]).includes(value)} onChange={e=>setModalFormData({...modalFormData,distributors:e.target.checked?[...(modalFormData.distributors||[]),value]:(modalFormData.distributors||[]).filter(x=>x!==value)})}/>{label}</label>)}</div>{modalFormData.distributors?.includes('OTHERS')&&<div className="mt-3"><FormField required label={l('Others explanation','شرح موزع آخر')} value={modalFormData.distributorOther||''} onChange={distributorOther=>setModalFormData({...modalFormData,distributorOther})}/></div>}</fieldset>}{activeCategory==='doctors'&&<label className="text-sm font-semibold">{l('Nearby pharmacies','الصيدليات القريبة')}<select multiple className="input mt-1 min-h-28 w-full" value={modalFormData.nearbyPharmacyIds||[]} onChange={e=>setModalFormData({...modalFormData,nearbyPharmacyIds:Array.from(e.target.selectedOptions,x=>x.value)})}>{listsData.pharmacies.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>}<div className="flex flex-wrap gap-2 sm:col-span-2">
     <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>{l('Cancel', 'إلغاء')}</Button>
     <Button type="submit" isLoading={saving}>{l('Save', 'حفظ')}</Button>
     </div>

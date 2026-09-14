@@ -29,6 +29,7 @@ const reportColumns: Array<[string, string]> = [
   ['sales','Sales Units'],['status','Status'],['isAvailable','Available'],['visitType','Visit Type'],['companion','Companion'],
   ['lastVisit','Visit Date'],['visitDate','Visit Date'],['eventDate','Event Date'],['trainingDate','Training Date'],['taskDate','Task Date'],['activityDate','Activity Date'],
   ['attendeesCount','Attendees'],['durationHours','Duration Hours'],['budget','Budget'],['eventFeedback','Event Feedback'],['productsDiscussed','Products Discussed'],['visits','AM / PM Visits'],['notes','Notes'],['submittedAt','Submitted At'],
+  ['products','Product Details'],['productObservations','Product Observations'],['departments','Departments / Doctors'],['description','Description'],
 ];
 
 export async function buildReportsExport(session: UserSessionPayload, input: ReportInput) {
@@ -50,9 +51,9 @@ export async function buildReportsExport(session: UserSessionPayload, input: Rep
   const sets: Array<[string, AnyRow[]]> = [
     ['Hospitals', data.hospitals as AnyRow[]], ['Pharmacies', data.pharmacies as AnyRow[]], ['Doctors', data.doctors as AnyRow[]],
     ['Distribution Branches', data.branches as AnyRow[]], ['Product Availability', data.availabilities as AnyRow[]], ['Events', data.events as AnyRow[]],
-    ['Training', data.trainings as AnyRow[]], ['Special Tasks', data.specialTasks as AnyRow[]], ['Manager Activities', data.managerActivities as unknown as AnyRow[]],
+    ['Training', data.trainings as AnyRow[]], ['Sales Review Admin Work', data.specialTasks as AnyRow[]], ['Manager Activities', data.managerActivities as unknown as AnyRow[]],
   ];
-  const typeNames: Record<string,string> = { hospital:'Hospitals', pharmacy:'Pharmacies', doctor:'Doctors', branch:'Distribution Branches', availability:'Product Availability', event:'Events', training:'Training', specialTask:'Special Tasks', managerActivity:'Manager Activities' };
+  const typeNames: Record<string,string> = { hospital:'Hospitals', pharmacy:'Pharmacies', doctor:'Doctors', branch:'Distribution Branches', availability:'Product Availability', event:'Events', training:'Training', specialTask:'Sales Review Admin Work', managerActivity:'Manager Activities' };
   const selected = input.type === 'all' ? sets : sets.filter(([name]) => name === typeNames[input.type]);
   const sheets = selected.map(([name, rows]) => ({ name, rows: dedupeById(rows).filter((row) => inRange(row, input.startDate, input.endDate)).map((row) => pick(row, reportColumns)) }));
   return createWorkbook([{ name: 'Export Info', rows: metadataRows(session, { Scope: session.role === 'REPRESENTATIVE' ? 'MY_RECORDS' : input.scopeMode, 'Start Date': input.startDate, 'End Date': input.endDate, 'Report Type': input.type }) }, ...sheets]);
@@ -80,7 +81,7 @@ export async function buildListsExport(session: UserSessionPayload, input: ListI
     const result = await getScopedMasterListsForManager(session, input.repId);
     lists = result.lists; owner = result.targetRep?.name ?? owner;
   }
-  const common: Array<[string,string]> = [['id','Record ID'],['name','Name'],['area','Area'],['type','Type'],['specialty','Specialty'],['workplace','Workplace'],['address','Address'],['contact','Contact'],['phone','Phone'],['mobile','Mobile'],['classification','Classification'],['defaultCycle','Default Cycle (Days)'],['createdAt','Created At']];
+  const common: Array<[string,string]> = [['id','Record ID'],['name','Name'],['area','Area'],['type','Type'],['hospitalTypes','Hospital Types'],['specialty','Specialty'],['clinicAddress','Clinic Address'],['address','Address'],['classification','Classification'],['distributors','Distributor Dealt With'],['distributorOther','Other Distributor'],['defaultCycle','Default Cycle (Days)'],['createdAt','Created At']];
   const listSheets: Array<[string, Array<{ id: string }>]> = [['Hospitals',lists.hospitals],['Doctors',lists.doctors],['Pharmacies',lists.pharmacies],['Distribution Branches',lists.branches]];
   return createWorkbook([{ name: 'Export Info', rows: metadataRows(session, { 'List Owner': owner }) }, ...listSheets.map(([name, rows]) => ({ name, rows: dedupeById(rows).map((row) => pick(row as unknown as Record<string, unknown>, common)) }))]);
 }

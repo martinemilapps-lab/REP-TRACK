@@ -74,7 +74,7 @@ export function TypePicker({
       icon: <ClipboardList className="size-5"/>,
       badgeNumber: '4',
       title: t('activity.specialTasks'),
-      subtitle: language==='ar'?'مسح سوقي، مهام إدارية، أخرى':'Market surveys and special tasks',
+      subtitle: language==='ar'?'مراجعة المبيعات والمهام الإدارية':'Sales review and administrative work',
       isSelected: isTaskCategory,
     },
   ];

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { HOSPITAL_DEPARTMENTS, PHARMACY_DISTRIBUTORS, PRESCRIPTION_RATE_OPTIONS } from './constants';
 
 export const LoginSchema = z.object({
   username: z.string().min(1, 'اسم المستخدم مطلوب').trim(),
@@ -34,13 +35,10 @@ export const HospitalVisitSchema = z.object({
 export const HospitalDailyReportSchema = z.object({
   id: z.string().uuid().optional(), reportDate: z.string().date(),
   visits: z.array(z.object({
-    hospitalId: z.string().min(1), objective: z.string().min(1), dept: z.string().optional().default(''),
-    cycle: z.coerce.number().int().min(0).default(0), nextVisit: z.string().optional().default(''),
-    visitType: z.enum(['Single','Double']).default('Single'), companion: z.string().optional().default(''),
-    ourProducts: z.string().optional().default(''), competitor: z.string().optional().default(''), notes: z.string().optional().default(''),
-    doctors: z.array(z.object({ doctorId:z.string().min(1), comment:z.string().optional().default('') })).default([]),
+    hospitalId: z.string().min(1), productIds: z.array(z.string().min(1)).default([]),
+    departments: z.array(z.object({ department: z.enum(HOSPITAL_DEPARTMENTS), doctors: z.array(z.string().trim().min(1).max(120)).min(1) })).default([]),
   })).min(1),
-}).superRefine((data,ctx)=>data.visits.forEach((visit,index)=>{if(visit.objective.includes('Others:')&&!/Others:\s*\S/.test(visit.objective))ctx.addIssue({code:'custom',path:['visits',index,'objective'],message:'Others explanation is required'});if(visit.visitType==='Double'&&!visit.companion.trim())ctx.addIssue({code:'custom',path:['visits',index,'companion'],message:'Companion is required for a double visit'})}));
+}).superRefine((data,ctx)=>data.visits.forEach((visit,index)=>{if(new Set(visit.productIds).size!==visit.productIds.length)ctx.addIssue({code:'custom',path:['visits',index,'productIds'],message:'Duplicate products are not allowed'});if(new Set(visit.departments.map(x=>x.department)).size!==visit.departments.length)ctx.addIssue({code:'custom',path:['visits',index,'departments'],message:'Duplicate departments are not allowed'})}));
 
 export const PharmacyVisitSchema = z.object({
   name: z.string().min(1, 'اسم الصيدلية مطلوب').trim(),
@@ -94,7 +92,7 @@ export const BranchVisitSchema = z.object({
   objective: z.string().optional().default(''),
   contact: z.string().optional().default(''),
   phone: z.string().optional().default(''),
-  products: z.string().optional().default(''),
+  products: z.string().trim().max(2000).optional().default(''),
   monthlyStock: z.string().optional().default(''),
   monthlySales: z.string().optional().default(''),
   cycle: z.coerce.number().min(0).optional().default(0),
@@ -113,14 +111,6 @@ export const MasterHospitalSchema = z.object({
   type: z.string().optional().default('Private'),
   hospitalTypes: z.array(z.string().trim().min(1)).min(1, 'يجب اختيار نوع مستشفى واحد على الأقل').optional(),
   address: z.string().optional().default(''),
-  keyPersonName: z.string().optional().default(''),
-  keyPersonPhone: z.string().optional().default(''),
-  purchasingContactName: z.string().optional().default(''),
-  purchasingContactPhone: z.string().optional().default(''),
-  dept: z.string().optional().default(''),
-  contact: z.string().optional().default(''),
-  phone: z.string().optional().default(''),
-  doctorNames: z.string().optional().default(''),
   defaultCycle: z.coerce.number().min(0).optional().default(7),
   targetProducts: z.string().optional().default(''),
   rep: z.string().optional(),
@@ -131,26 +121,21 @@ export const MasterPharmacySchema = z.object({
   name: z.string().min(1, 'اسم الصيدلية مطلوب').trim(),
   area: z.string().optional().default('').transform((v) => v.trim()),
   address: z.string().optional().default(''),
-  pharmacist: z.string().optional().default(''),
-  mobile: z.string().optional().default(''),
-  classification: z.string().optional().default('A'),
+  distributors: z.array(z.enum(PHARMACY_DISTRIBUTORS)).min(1, 'Distributor Dealt With is required'),
+  distributorOther: z.string().trim().max(200).optional().default(''),
   defaultCycle: z.coerce.number().min(0).optional().default(7),
   rep: z.string().optional(),
-});
+}).superRefine((data,ctx)=>{if(data.distributors.includes('OTHERS')&&!data.distributorOther)ctx.addIssue({code:'custom',path:['distributorOther'],message:'Others explanation is required'})});
 
 export const MasterDoctorSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1, 'اسم الطبيب مطلوب').trim(),
   specialty: z.string().optional().default(''),
-  workplace: z.string().optional().default(''),
   clinicAddress: z.string().optional().default(''),
-  workingHospitalIds: z.array(z.string().min(1)).optional().default([]),
   nearbyPharmacyIds: z.array(z.string().min(1)).optional().default([]),
   area: z.string().optional().default('').transform((v) => v.trim()),
   address: z.string().optional().default(''),
-  mobile: z.string().optional().default(''),
   classification: z.string().optional().default('A'),
-  bestTime: z.string().optional().default(''),
   defaultCycle: z.coerce.number().min(0).optional().default(7),
   targetProducts: z.string().optional().default(''),
   rep: z.string().optional(),
@@ -207,7 +192,7 @@ export const EventSchema = z.object({
   location: z.string().optional().default(''),
   attendeesCount: z.coerce.number().min(0).optional().default(0),
   targetSpecialty: z.string().optional().default(''),
-  products: z.string().optional().default(''),
+  products: z.string().trim().max(2000).optional().default(''),
   budget: z.string().optional().default(''),
   feedback: z.string().optional().default(''),
   notes: z.string().optional().default(''),
@@ -216,27 +201,21 @@ export const EventSchema = z.object({
 
 export const TrainingSchema = z.object({
   title: z.string().min(1, 'عنوان التدريب مطلوب').trim(),
-  trainingType: z.string().min(1, 'نوع التدريب مطلوب').default('تدريب علمي ومنتجات'),
   trainingDate: z.string().min(1, 'تاريخ التدريب مطلوب').trim(),
-  trainer: z.string().optional().default(''),
-  attendees: z.string().optional().default(''),
-  durationHours: z.coerce.number().min(0).optional().default(1),
-  outcomes: z.string().optional().default(''),
-  notes: z.string().optional().default(''),
+  location: z.string().trim().max(300).optional().default(''),
   rep: z.string().optional(),
 });
 
 export const SpecialTaskSchema = z.object({
-  title: z.string().min(1, 'عنوان المهمة مطلوب').trim(),
-  taskCategory: z.string().min(1, 'تصنيف المهمة مطلوب').default('مسح ميداني للسوق'),
-  taskDate: z.string().min(1, 'تاريخ المهمة مطلوب').trim(),
-  assignedBy: z.string().optional().default(''),
-  priority: z.string().optional().default('Normal'),
-  status: z.string().optional().default('Completed'),
-  description: z.string().optional().default(''),
-  notes: z.string().optional().default(''),
+  title: z.string().min(1, 'Sales Review / Admin Work is required').trim().max(200),
+  description: z.string().min(1, 'Description is required').trim().max(4000),
   rep: z.string().optional(),
 });
+
+const rateValues = PRESCRIPTION_RATE_OPTIONS.map((option) => option.value) as [string, ...string[]];
+export const DoctorVisitV3Schema = z.object({ doctorId:z.string().min(1), products:z.array(z.object({ productId:z.string().min(1), prescriptionRate:z.enum(rateValues) })).min(1) });
+export const PharmacyVisitV3Schema = z.object({ pharmacyId:z.string().min(1), productIds:z.array(z.string().min(1)).min(1), notes:z.string().trim().max(4000).optional().default('') });
+export const BranchVisitV3Schema = z.object({ branchId:z.string().min(1), products:z.array(z.object({productId:z.string().min(1),observation:z.string().trim().max(2000)})).min(1) });
 
 export const CalendarDateSchema = z.string().trim().date('تاريخ غير صالح (YYYY-MM-DD)');
 export const WeeklyPlanStatusSchema = z.enum(['Draft', 'Submitted', 'Approved']);

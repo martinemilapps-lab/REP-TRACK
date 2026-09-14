@@ -16,6 +16,7 @@
     "test:remote": "tsx tests/runAll.ts --remote-integration",
     "db:migrate:d1:step19": "tsx scripts/migrate_step19.ts",
     "db:migrate:d1:admin-phase1": "tsx scripts/migrate_admin_phase1.ts",
+    "db:migrate:d1:task3": "tsx scripts/migrate_task3.ts",
     "test:step19": "tsx tests/step19.test.ts",
     "test:step20": "tsx tests/step20.test.ts",
     "test:step21": "tsx tests/step21.test.ts",

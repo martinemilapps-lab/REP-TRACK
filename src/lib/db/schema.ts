@@ -227,6 +227,8 @@ export const pharmacies = sqliteTable('pharmacies', {
   pharmacist: text('pharmacist'),
   mobile: text('mobile'),
   classification: text('classification').notNull().default('A'), // A, B, C
+  distributors: text('distributors').notNull().default('[]'),
+  distributorOther: text('distributor_other'),
   defaultCycle: integer('default_cycle').default(7),
   targetProducts: text('target_products'),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
@@ -357,6 +359,20 @@ export const hospitalVisitDoctors = sqliteTable('hospital_visit_doctors', {
   comment: text('comment'),
 }, (table) => [index('idx_hospital_visit_doctors_visit').on(table.hospitalVisitId)]);
 
+export const hospitalVisitDepartments = sqliteTable('hospital_visit_departments', {
+  id: text('id').primaryKey(),
+  hospitalVisitId: text('hospital_visit_id').notNull().references(() => hospitalVisits.id, { onDelete: 'cascade' }),
+  department: text('department').notNull(),
+  displayOrder: integer('display_order').notNull().default(0),
+}, (table) => [index('idx_hospital_visit_departments_visit').on(table.hospitalVisitId)]);
+
+export const hospitalVisitDepartmentDoctors = sqliteTable('hospital_visit_department_doctors', {
+  id: text('id').primaryKey(),
+  departmentId: text('department_id').notNull().references(() => hospitalVisitDepartments.id, { onDelete: 'cascade' }),
+  doctorName: text('doctor_name').notNull(),
+  displayOrder: integer('display_order').notNull().default(0),
+}, (table) => [index('idx_hospital_visit_department_doctors_department').on(table.departmentId)]);
+
 export const pharmacyVisits = sqliteTable('pharmacy_visits', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   repId: text('rep_id').notNull().references(() => representatives.id, { onDelete: 'restrict' }),
@@ -403,6 +419,15 @@ export const doctorVisits = sqliteTable('doctor_visits', {
   index('idx_dr_visits_doctor').on(table.doctorId),
 ]);
 
+export const doctorVisitProducts = sqliteTable('doctor_visit_products', {
+  id: text('id').primaryKey(),
+  doctorVisitId: text('doctor_visit_id').notNull().references(() => doctorVisits.id, { onDelete: 'cascade' }),
+  productId: text('product_id').notNull().references(() => products.id, { onDelete: 'restrict' }),
+  productNameSnapshot: text('product_name_snapshot').notNull(),
+  prescriptionRate: text('prescription_rate').notNull(),
+  displayOrder: integer('display_order').notNull().default(0),
+}, (table) => [uniqueIndex('idx_doctor_visit_products_unique').on(table.doctorVisitId, table.productId)]);
+
 export const branchVisits = sqliteTable('branch_visits', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   repId: text('rep_id').notNull().references(() => representatives.id, { onDelete: 'restrict' }),
@@ -423,6 +448,15 @@ export const branchVisits = sqliteTable('branch_visits', {
   index('idx_branch_visits_rep').on(table.repId),
   index('idx_branch_visits_branch').on(table.branchId),
 ]);
+
+export const branchVisitProducts = sqliteTable('branch_visit_products', {
+  id: text('id').primaryKey(),
+  branchVisitId: text('branch_visit_id').notNull().references(() => branchVisits.id, { onDelete: 'cascade' }),
+  productId: text('product_id').notNull().references(() => products.id, { onDelete: 'restrict' }),
+  productNameSnapshot: text('product_name_snapshot').notNull(),
+  observation: text('observation').notNull().default(''),
+  displayOrder: integer('display_order').notNull().default(0),
+}, (table) => [uniqueIndex('idx_branch_visit_products_unique').on(table.branchVisitId, table.productId)]);
 
 // ----------------------------------------------------
 // 4. PRODUCT AVAILABILITY (MONTHLY SNAPSHOTS)
@@ -504,6 +538,7 @@ export const trainings = sqliteTable('trainings', {
   title: text('title').notNull(),
   trainingType: text('training_type').notNull(), // Product Knowledge, Scientific Workshop, Selling Skills, Field Coaching, Other
   trainingDate: text('training_date').notNull(), // YYYY-MM-DD
+  location: text('location'),
   trainer: text('trainer'),
   attendees: text('attendees'),
   durationHours: integer('duration_hours').default(1),

@@ -1,4 +1,4 @@
-import { db, dailyReports, doctors, hospitalVisitDoctors, hospitals, hospitalVisits, representatives } from '@/lib/db';
+import { db, dailyReports, hospitalVisitDepartmentDoctors, hospitalVisitDepartments, hospitals, hospitalVisits, products, representatives } from '@/lib/db';
 import { and, eq, desc, inArray } from 'drizzle-orm';
 import { UserSessionPayload, resolveAuthorizedRepId } from '@/lib/auth';
 import { findOrCreateHospital } from './masterEntityService';
@@ -14,13 +14,14 @@ export type HospitalDailyReportInput = z.input<typeof HospitalDailyReportSchema>
 
 export async function saveHospitalDailyReport(session: UserSessionPayload | null, rawInput: HospitalDailyReportInput) {
   assertAuthenticatedSession(session); const input=HospitalDailyReportSchema.parse(rawInput); const repId=resolveWritableRepId(session); const reportId=input.id||crypto.randomUUID();
+  if(session?.positionCode!=='BUM'&&input.visits.some(visit=>visit.departments.length===0))throw new AppError('At least one Department and Doctor Visited entry is required',400);
   if(input.id){const existing=await db.select().from(dailyReports).where(eq(dailyReports.id,input.id)).get();if(!existing||existing.repId!==repId)throw new AppError('Hospital report not found or forbidden',403)}
   const hospitalIds=[...new Set(input.visits.map(v=>v.hospitalId))];const ownedHospitals=await db.select({id:hospitals.id}).from(hospitals).where(and(eq(hospitals.repId,repId),inArray(hospitals.id,hospitalIds))).all();
-  const doctorIds=[...new Set(input.visits.flatMap(v=>v.doctors.map(d=>d.doctorId)))];const ownedDoctors=doctorIds.length?await db.select({id:doctors.id,specialty:doctors.specialty}).from(doctors).where(and(eq(doctors.repId,repId),inArray(doctors.id,doctorIds))).all():[];
-  if(ownedHospitals.length!==hospitalIds.length||ownedDoctors.length!==doctorIds.length)throw new AppError('A selected hospital or doctor is outside your saved lists',403);
-  const specialty=new Map(ownedDoctors.map(d=>[d.id,d.specialty]));const visitRows=input.visits.map(v=>({id:crypto.randomUUID(),visit:v}));
-  const operations=[db.insert(dailyReports).values({id:reportId,repId,reportDate:input.reportDate,updatedAt:new Date()}).onConflictDoUpdate({target:dailyReports.id,set:{reportDate:input.reportDate,updatedAt:new Date()}}),db.delete(hospitalVisits).where(eq(hospitalVisits.dailyReportId,reportId)),...visitRows.map(({id,visit})=>db.insert(hospitalVisits).values({id,repId,dailyReportId:reportId,hospitalId:visit.hospitalId,objective:visit.objective,objectiveOtherText:visit.objective.match(/Others:\s*(.+)/i)?.[1]?.trim()||null,dept:visit.dept||null,drsVisited:visit.doctors.length,doctorNames:visit.doctors.map(d=>d.doctorId).join(','),cycleDays:visit.cycle,lastVisitDate:input.reportDate,nextVisitDate:visit.nextVisit||null,visitType:visit.visitType,companion:visit.companion||null,ourProducts:visit.ourProducts||null,competitor:visit.competitor||null,notes:visit.notes||null})),...visitRows.flatMap(({id,visit})=>visit.doctors.map(d=>db.insert(hospitalVisitDoctors).values({id:crypto.randomUUID(),hospitalVisitId:id,doctorId:d.doctorId,specialtySnapshot:specialty.get(d.doctorId)||null,comment:d.comment||null})) )];
-  const[first,...rest]=operations;await db.batch([first,...rest]);return{id:reportId,visitCount:visitRows.length,doctorVisitCount:visitRows.reduce((n,x)=>n+x.visit.doctors.length,0)};
+  if(ownedHospitals.length!==hospitalIds.length)throw new AppError('A selected hospital is outside your saved lists',403);
+  const productIds=[...new Set(input.visits.flatMap(v=>v.productIds))];const activeProducts=productIds.length?await db.select({id:products.id,name:products.name}).from(products).where(and(eq(products.isActive,true),inArray(products.id,productIds))).all():[];if(activeProducts.length!==productIds.length)throw new AppError('Invalid or inactive product',400);const productNames=new Map(activeProducts.map(p=>[p.id,p.name]));
+  const visitRows=input.visits.map(v=>({id:crypto.randomUUID(),visit:v}));const departmentRows=visitRows.flatMap(({id,visit})=>visit.departments.map((department,displayOrder)=>({id:crypto.randomUUID(),hospitalVisitId:id,department,displayOrder})));
+  const operations=[db.insert(dailyReports).values({id:reportId,repId,reportDate:input.reportDate,updatedAt:new Date()}).onConflictDoUpdate({target:dailyReports.id,set:{reportDate:input.reportDate,updatedAt:new Date()}}),db.delete(hospitalVisits).where(eq(hospitalVisits.dailyReportId,reportId)),...visitRows.map(({id,visit})=>db.insert(hospitalVisits).values({id,repId,dailyReportId:reportId,hospitalId:visit.hospitalId,drsVisited:visit.departments.reduce((n,d)=>n+d.doctors.length,0),doctorNames:JSON.stringify(visit.departments.flatMap(d=>d.doctors)),lastVisitDate:input.reportDate,ourProducts:JSON.stringify(visit.productIds.map(productId=>({productId,name:productNames.get(productId)})))})),...departmentRows.map(row=>db.insert(hospitalVisitDepartments).values({id:row.id,hospitalVisitId:row.hospitalVisitId,department:row.department.department,displayOrder:row.displayOrder})),...departmentRows.flatMap(row=>row.department.doctors.map((doctorName,displayOrder)=>db.insert(hospitalVisitDepartmentDoctors).values({id:crypto.randomUUID(),departmentId:row.id,doctorName,displayOrder})))];
+  const[first,...rest]=operations;await db.batch([first,...rest]);return{id:reportId,visitCount:visitRows.length,doctorVisitCount:visitRows.reduce((n,x)=>n+x.visit.departments.reduce((sum,d)=>sum+d.doctors.length,0),0)};
 }
 
 export interface FilterOptions {
@@ -173,15 +174,15 @@ export async function getHospitalReports(
   }
 
   // Hydrate dynamic status and ISO timestamp
-  return results.map((h) => ({
-    ...h,
+  return Promise.all(results.map(async(h) => ({
+    ...h, departments: await Promise.all((await db.select().from(hospitalVisitDepartments).where(eq(hospitalVisitDepartments.hospitalVisitId,h.id)).orderBy(hospitalVisitDepartments.displayOrder).all()).map(async department=>({...department,doctors:await db.select({name:hospitalVisitDepartmentDoctors.doctorName,displayOrder:hospitalVisitDepartmentDoctors.displayOrder}).from(hospitalVisitDepartmentDoctors).where(eq(hospitalVisitDepartmentDoctors.departmentId,department.id)).orderBy(hospitalVisitDepartmentDoctors.displayOrder).all()}))),
     status: deriveVisitStatus({
       lastVisitDate: h.lastVisit,
       nextVisitDate: h.nextVisit,
       cycleDays: h.cycle,
     }),
     submittedAt: h.submittedAt ? new Date(h.submittedAt).toISOString() : undefined,
-  }));
+  })));
 }
 
 /**

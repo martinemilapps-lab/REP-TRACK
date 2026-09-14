@@ -62,7 +62,6 @@ export const PRODUCTS_LIST = [
   'Propofol 1% 20 ml',
   'Rocuronium 10 mg/ml Vial',
   'Setronosunny 3 mg/ 3ml',
-  'Todosunny 350 mg',
   'Sevoflurane Bottle 250 ml',
   'Sodium Bicarbonate 8.4% 50 ml Vial',
   'Sugammadex 200 mg/ 2 ml Vial',
@@ -100,12 +99,24 @@ export const PRODUCTS_LIST = [
   'Sunnymorph 10 mg/ml 1 ml Amp',
   'Flexsosunny Hard Gelatin Capsule',
   'Glucosunny Hard Gelatin Capsule',
-  'Herpasunny Hard Gelatin Capsule'
+  'Herpasunny Hard Gelatin Capsule',
+  'Levosimendan Sunny',
+  'Lodosunny',
+  'Sunnyprixat'
 ];
 
 // Compatibility aliases deliberately point at the one authoritative catalog.
-export const OUR_PRODUCTS_DISCUSSED_LIST = PRODUCTS_LIST;
+export const BUSINESS_PRODUCT_OPTIONS = [
+  { label: 'Nitron', canonicalName: 'Nitronal Aqueous (50 ml) vial' },
+  { label: 'Danasetron', canonicalName: 'Danasetron 4 mg/2 ml Amp, 8 mg/ 4 ml Amp' },
+  { label: 'Beconeurin', canonicalName: 'Beconeurin 2 ml Amp' },
+  { label: 'Levosimendan Sunny', canonicalName: 'Levosimendan Sunny' },
+] as const;
+export const OUR_PRODUCTS_DISCUSSED_LIST = BUSINESS_PRODUCT_OPTIONS.map((product) => product.canonicalName);
 export const SUNNY_PRODUCTS_LIST = PRODUCTS_LIST;
+
+export const HOSPITAL_DEPARTMENTS = ['ICU','CCU','Cardio','Anaesthesia','IM','Pedia','Onco','Neuro','Neuro ICU','Gyna','Cardiosurgery','Emergency','Nephro'] as const;
+export const PHARMACY_DISTRIBUTORS = ['PHARMAOVERSEAS','ETO','DIRECT','OTHERS'] as const;
 
 export const HOSPITAL_TYPES = [
   { value: 'Private', label: 'خاص (Private)' },

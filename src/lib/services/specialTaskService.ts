@@ -28,13 +28,11 @@ export async function createSpecialTaskRecord(
     .values({
       repId,
       title: input.title,
-      taskCategory: input.taskCategory,
-      taskDate: input.taskDate,
-      assignedBy: input.assignedBy || null,
-      priority: input.priority || 'Normal',
-      status: input.status || 'Completed',
+      taskCategory: 'SALES_REVIEW_ADMIN_WORK',
+      taskDate: new Date().toISOString().slice(0,10),
+      priority: 'Normal',
+      status: 'Completed',
       description: input.description || null,
-      notes: input.notes || null,
     })
     .returning();
 

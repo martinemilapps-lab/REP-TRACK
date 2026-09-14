@@ -1,12 +1,14 @@
-import { db, distributionBranches, branchVisits, representatives } from '@/lib/db';
-import { eq, desc } from 'drizzle-orm';
+import { db, distributionBranches, branchVisitProducts, branchVisits, representatives } from '@/lib/db';
+import { and, eq, desc } from 'drizzle-orm';
 import { UserSessionPayload, resolveAuthorizedRepId } from '@/lib/auth';
 import { findOrCreateBranch } from './masterEntityService';
 import { z } from 'zod';
-import { BranchVisitSchema } from '@/lib/validation';
+import { BranchVisitSchema, BranchVisitV3Schema } from '@/lib/validation';
 import { FilterOptions } from './hospitalService';
 import { assertAuthenticatedSession } from '@/lib/authPolicy';
 import { resolveWritableRepId } from '@/lib/repAccessPolicy';
+import { AppError } from '@/lib/errors';
+import { requireBusinessProducts } from './businessProductService';
 
 export type BranchVisitInput = z.input<typeof BranchVisitSchema>;
 
@@ -18,6 +20,7 @@ export async function createBranchVisit(
   rawInput: BranchVisitInput
 ) {
   assertAuthenticatedSession(session);
+  const modern=BranchVisitV3Schema.safeParse(rawInput);if(modern.success){const repId=resolveWritableRepId(session);const branch=await db.select().from(distributionBranches).where(and(eq(distributionBranches.id,modern.data.branchId),eq(distributionBranches.repId,repId))).get();if(!branch)throw new AppError('Distribution branch is not in your saved list',403);const names=await requireBusinessProducts(modern.data.products.map(x=>x.productId));const visitId=crypto.randomUUID();const ops=[db.insert(branchVisits).values({id:visitId,repId,branchId:branch.id,products:JSON.stringify(modern.data.products.map(item=>({productId:item.productId,name:names.get(item.productId),observation:item.observation})))}),...modern.data.products.map((item,displayOrder)=>db.insert(branchVisitProducts).values({id:crypto.randomUUID(),branchVisitId:visitId,productId:item.productId,productNameSnapshot:names.get(item.productId)!,observation:item.observation,displayOrder}))];const[first,...rest]=ops;await db.batch([first,...rest]);return{id:visitId,branchName:branch.name,products:modern.data.products}}
   const input = BranchVisitSchema.parse(rawInput);
   const repId = resolveWritableRepId(session);
 
@@ -137,9 +140,9 @@ export async function getBranchReports(
       .all();
   }
 
-  return results.map((b) => ({
-    ...b,
+  return Promise.all(results.map(async(b) => ({
+    ...b, productObservations: await db.select({productId:branchVisitProducts.productId,name:branchVisitProducts.productNameSnapshot,observation:branchVisitProducts.observation,displayOrder:branchVisitProducts.displayOrder}).from(branchVisitProducts).where(eq(branchVisitProducts.branchVisitId,b.id)).orderBy(branchVisitProducts.displayOrder).all(),
     status: 'Visited',
     submittedAt: b.submittedAt ? new Date(b.submittedAt).toISOString() : undefined,
-  }));
+  })));
 }

@@ -1,13 +1,15 @@
 import { db, pharmacies, pharmacyVisits, representatives } from '@/lib/db';
-import { eq, desc } from 'drizzle-orm';
+import { and, eq, desc } from 'drizzle-orm';
 import { UserSessionPayload, resolveAuthorizedRepId } from '@/lib/auth';
 import { findOrCreatePharmacy } from './masterEntityService';
 import { deriveVisitStatus } from '@/lib/business/status';
 import { z } from 'zod';
-import { PharmacyVisitSchema } from '@/lib/validation';
+import { PharmacyVisitSchema, PharmacyVisitV3Schema } from '@/lib/validation';
 import { FilterOptions } from './hospitalService';
 import { assertAuthenticatedSession } from '@/lib/authPolicy';
 import { resolveWritableRepId } from '@/lib/repAccessPolicy';
+import { AppError } from '@/lib/errors';
+import { requireBusinessProducts } from './businessProductService';
 
 export type PharmacyVisitInput = z.input<typeof PharmacyVisitSchema>;
 
@@ -19,6 +21,7 @@ export async function createPharmacyVisit(
   rawInput: PharmacyVisitInput
 ) {
   assertAuthenticatedSession(session);
+  const modern=PharmacyVisitV3Schema.safeParse(rawInput);if(modern.success){const repId=resolveWritableRepId(session);const pharmacy=await db.select().from(pharmacies).where(and(eq(pharmacies.id,modern.data.pharmacyId),eq(pharmacies.repId,repId))).get();if(!pharmacy)throw new AppError('Pharmacy is not in your saved list',403);const names=await requireBusinessProducts(modern.data.productIds);const [visit]=await db.insert(pharmacyVisits).values({repId,pharmacyId:pharmacy.id,ourProducts:JSON.stringify(modern.data.productIds.map(productId=>({productId,name:names.get(productId)}))),notes:modern.data.notes||null}).returning();return{...visit,pharmacyName:pharmacy.name}}
   const input = PharmacyVisitSchema.parse(rawInput);
   const repId = resolveWritableRepId(session);
 
