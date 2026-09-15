@@ -36,7 +36,7 @@ export function EntityTabs({
         { type: 'pharmacy', label: t('activity.pharmacy'), icon: <Pill className="size-5"/> },
         { type: 'doctor', label: t('activity.doctor'), icon: <Stethoscope className="size-5"/> },
         { type: 'branch', label: t('activity.branch'), icon: <Building2 className="size-5"/> },
-        { type: 'availability', label: t('activity.productsAnalysis'), icon: <PackageSearch className="size-5"/> },
+        { type: 'availability', label: t('nav.productAvailability'), icon: <PackageSearch className="size-5"/> },
       ];
 
   return (

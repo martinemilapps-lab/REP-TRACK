@@ -183,8 +183,6 @@ export const ProductAvailabilityBatchSchema = z.object({
   }
 });
 
-export const ProductAnalysisSchema = ProductAvailabilitySchema;
-
 export const EventSchema = z.object({
   title: z.string().min(1, 'اسم الفعالية / الحدث مطلوب').trim(),
   eventType: z.string().min(1, 'نوع الفعالية مطلوب').default('مؤتمر طبي'),
@@ -281,7 +279,8 @@ export const ManagerActivityFiltersSchema = z.object({
 
 export const ManagerActivitySchema = z.object({
   id: z.string().uuid().optional(),
-  selectedRepId: z.string().min(1),
+  reportContextType: z.enum(['EMPLOYEE', 'VACANT']).default('EMPLOYEE'),
+  selectedRepId: z.string().min(1).nullable().optional(),
   activities: z.array(PlanActivityCodeSchema).max(5).optional().default([]),
   salesReviewDescription: z.string().trim().max(2000).optional().default(''),
   othersDescription: z.string().trim().max(2000).optional().default(''),
@@ -325,13 +324,16 @@ export const ManagerActivitySchema = z.object({
     doctorId: z.string().min(1).optional(),
     pharmacyId: z.string().min(1).optional(),
     branchId: z.string().min(1).optional(),
+    manualData: z.object({
+      name: z.string().trim().min(1).max(200),
+      hospitalType: z.string().trim().max(120).optional().default(''), area: z.string().trim().max(200).optional().default(''), address: z.string().trim().max(500).optional().default(''),
+      specialty: z.string().trim().max(200).optional().default(''), distributor: z.string().trim().max(200).optional().default(''),
+      products: z.array(z.object({ productId: z.string().min(1), observation: z.string().trim().max(2000).default('') })).max(4).optional().default([]),
+    }).optional(),
     generalComment: z.string().trim().max(3000).optional().default(''),
     doctors: z.array(z.object({ doctorId: z.string().min(1).optional(), doctorName: z.string().trim().min(1).max(120).optional(), department: z.string().trim().max(120).optional(), generalComment: z.string().trim().max(3000).optional().default('') }).refine(d => Boolean(d.doctorId || d.doctorName), 'Doctor name is required')).optional().default([]),
   }).superRefine((entry, ctx) => {
-    if (entry.entryType === 'HOSPITAL' && !entry.hospitalId) ctx.addIssue({ code: 'custom', path: ['hospitalId'], message: 'Hospital is required' });
-    if (entry.entryType === 'DIRECT_DOCTOR' && !entry.doctorId) ctx.addIssue({ code: 'custom', path: ['doctorId'], message: 'Doctor is required' });
-    if (entry.entryType === 'PHARMACY' && !entry.pharmacyId) ctx.addIssue({ code: 'custom', path: ['pharmacyId'], message: 'Pharmacy is required' });
-    if (entry.entryType === 'DISTRIBUTION_BRANCH' && !entry.branchId) ctx.addIssue({ code: 'custom', path: ['branchId'], message: 'Distribution branch is required' });
+    if (!(entry.hospitalId || entry.doctorId || entry.pharmacyId || entry.branchId) && !entry.manualData) ctx.addIssue({ code: 'custom', path: ['manualData'], message: 'A list entity or manual Vacant entry is required' });
   })).max(500).optional().default([]),
 
   // Training specific
@@ -360,6 +362,9 @@ export const ManagerActivitySchema = z.object({
     path: ['accompaniedPerson'],
   }
 ).superRefine((data, ctx) => {
+  if (data.reportContextType === 'EMPLOYEE' && !data.selectedRepId) ctx.addIssue({ code: 'custom', path: ['selectedRepId'], message: 'Select an authorized Medical Representative' });
+  if (data.reportContextType === 'VACANT' && data.selectedRepId) ctx.addIssue({ code: 'custom', path: ['selectedRepId'], message: 'Vacant reports cannot select an employee' });
+  data.visits.forEach((visit,index)=>{ if(data.reportContextType==='VACANT'&&!visit.manualData)ctx.addIssue({code:'custom',path:['visits',index,'manualData'],message:'Vacant reports require manual entry'}); if(data.reportContextType==='EMPLOYEE'&&visit.manualData)ctx.addIssue({code:'custom',path:['visits',index,'manualData'],message:'Manual entry is available only for Vacant reports'}); });
   if (data.activities.includes('OTHERS') && !data.othersDescription) ctx.addIssue({ code: 'custom', path: ['othersDescription'], message: 'Others description is required' });
   if (data.activities.includes('SALES_REVIEW_ADMIN') && !data.salesReviewDescription) ctx.addIssue({ code: 'custom', path: ['salesReviewDescription'], message: 'Sales Review / Admin Work description is required' });
   const required = {

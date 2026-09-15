@@ -11,7 +11,7 @@ import { ChangePasswordModal } from '@/components/auth/ChangePasswordModal';
 import { MedicalRepWorkspace, MRViewType } from '@/components/workspace/MedicalRepWorkspace';
 import { ManagerWorkspace, ManagerNavType } from '@/components/workspace/ManagerWorkspace';
 import { AppShell, ShellNavItem } from '@/components/layout/AppShell';
-import { BarChart3, ClipboardList, FileText, CalendarDays, ListChecks, PackageSearch, Download, LayoutDashboard, Activity, Users, ShieldCheck } from 'lucide-react';
+import { ClipboardList, FileText, CalendarDays, ListChecks, PackageSearch, Download, LayoutDashboard, Activity, Users, ShieldCheck } from 'lucide-react';
 import { useTranslation } from '@/lib/i18nContext';
 import type { UserSessionPayload } from '@/lib/auth';
 
@@ -19,7 +19,7 @@ function HomePageContent() {
   const { t, language } = useTranslation();
   const searchParams = useSearchParams();
   const requestedView = searchParams.get('view');
-  const initialView = (requestedView === 'admin' ? 'overview' : requestedView as MRViewType) || 'overview';
+  const initialView = (requestedView === 'admin' ? 'overview' : requestedView === 'analysis' || requestedView === 'product_analysis' ? 'overview' : requestedView as MRViewType) || 'overview';
 
   const [activeView, setActiveView] = useState<MRViewType>(initialView);
   const [managerView, setManagerView] = useState<ManagerNavType>('overview');
@@ -122,7 +122,6 @@ function HomePageContent() {
     { id:'weeklyplan', label: t('nav.weeklyPlan'), icon:<CalendarDays className="size-4"/> },
     { id:'mylists', label: t('nav.myLists'), icon:<ListChecks className="size-4"/> },
     { id:'availability', label: t('nav.productAvailability'), icon:<PackageSearch className="size-4"/> },
-    { id:'analysis', label: language==='ar'?'تحليل المنتجات':'Product Analysis', icon:<BarChart3 className="size-4"/> },
     { id:'export', label:t('nav.export'), icon:<Download className="size-4"/> },
   ];
   const managerItems: ShellNavItem[] = [
@@ -133,7 +132,7 @@ function HomePageContent() {
     { id:'weekly_plan', label:t('nav.myWeeklyPlan'), icon:<CalendarDays className="size-4"/> },
     { id:'team_plans', label:t('nav.teamPlans'), icon:<ClipboardList className="size-4"/> },
     { id:'team_lists', label:t('nav.teamLists'), icon:<Users className="size-4"/> },
-    { id:'product_analysis', label:t('nav.productAvailability'), icon:<BarChart3 className="size-4"/> },
+    { id:'availability', label:t('nav.productAvailability'), icon:<PackageSearch className="size-4"/> },
     { id:'export', label:t('nav.export'), icon:<Download className="size-4"/> },
     ...(currentUser?.systemRole === 'ADMIN' ? [{ id:'admin', label:t('nav.admin'), icon:<ShieldCheck className="size-4"/> }] : []),
   ];

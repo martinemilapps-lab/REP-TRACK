@@ -512,6 +512,7 @@ export const managerActivityEntries = sqliteTable('manager_activity_entries', {
   doctorId: text('doctor_id').references(() => doctors.id, { onDelete: 'restrict' }),
   pharmacyId: text('pharmacy_id').references(() => pharmacies.id, { onDelete: 'restrict' }),
   branchId: text('branch_id').references(() => distributionBranches.id, { onDelete: 'restrict' }),
+  manualData: text('manual_data'),
   nameSnapshot: text('name_snapshot').notNull(),
   specialtySnapshot: text('specialty_snapshot'),
   generalComment: text('general_comment'),
@@ -532,7 +533,7 @@ export const managerActivityExtendedEntries = sqliteTable('manager_activity_exte
   id:text('id').primaryKey(), activityId:text('activity_id').notNull().references(()=>managerActivities.id,{onDelete:'cascade'}),
   period:text('period',{enum:['AM','PM']}).notNull(), entryType:text('entry_type',{enum:['PHARMACY','DISTRIBUTION_BRANCH']}).notNull(),
   pharmacyId:text('pharmacy_id').references(()=>pharmacies.id,{onDelete:'restrict'}), branchId:text('branch_id').references(()=>distributionBranches.id,{onDelete:'restrict'}),
-  nameSnapshot:text('name_snapshot').notNull(), generalComment:text('general_comment'), displayOrder:integer('display_order').notNull().default(0),
+  nameSnapshot:text('name_snapshot').notNull(), manualData:text('manual_data'), generalComment:text('general_comment'), displayOrder:integer('display_order').notNull().default(0),
 },table=>[index('idx_mgr_extended_activity').on(table.activityId)]);
 
 export const managerActivityProducts = sqliteTable('manager_activity_products', {
@@ -616,6 +617,7 @@ export const managerActivities = sqliteTable('manager_activities', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   selectedRepId: text('selected_rep_id').references(() => representatives.id, { onDelete: 'restrict' }),
+  reportContextType: text('report_context_type', { enum: ['EMPLOYEE', 'VACANT'] }).notNull().default('EMPLOYEE'),
   activitySelections: text('activity_selections'),
   activityType: text('activity_type', { enum: ['Visit', 'Event', 'Training', 'Office Working', 'Others'] }).notNull(),
   activityDate: text('activity_date').notNull(), // YYYY-MM-DD

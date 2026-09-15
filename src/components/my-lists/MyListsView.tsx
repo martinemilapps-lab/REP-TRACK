@@ -15,6 +15,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { InlineAlert } from '@/components/ui/InlineAlert';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Building2, Hospital, Pill, Stethoscope } from 'lucide-react';
+import { normalizeMasterListsPayload } from '@/lib/masterListsPayload';
 type Customer = MasterHospital | MasterPharmacy | MasterDoctor | MasterBranch;
 type CustomerFields = Partial<MasterHospital & MasterPharmacy & MasterDoctor & MasterBranch>;
 interface MyListsViewProps {
@@ -71,7 +72,7 @@ export function MyListsView({ reps, selectedRep, onSelectRep, onLogVisitForCusto
             const res = await fetch(url);
             const data = await res.json();
             if (res.ok && data.success && data.data) {
-                setListsData(data.data);
+                setListsData(normalizeMasterListsPayload(data.data));
             }
             else {
                 setLoadError(true);
@@ -284,7 +285,7 @@ export function MyListsView({ reps, selectedRep, onSelectRep, onLogVisitForCusto
         string,
         string
     ]> = {
-        name: ['Name', 'الاسم'], area: ['Area', 'المنطقة'], address: ['Address', 'العنوان'], classification: ['Classification', 'التصنيف'], specialty: ['Specialty', 'التخصص'], clinicAddress: ['Clinic address', 'عنوان العيادة'], distributorOther: ['Other distributor', 'موزع آخر'], coverageArea: ['Coverage area', 'منطقة التغطية'], distributedProducts: ['Distributed products', 'المنتجات الموزعة'], defaultCycle: ['Visit cycle (days)', 'دورة الزيارة (أيام)']
+        name: ['Name', 'الاسم'], area: ['Area', 'المنطقة'], address: ['Address', 'العنوان'], contact: ['Contact', 'جهة الاتصال'], phone: ['Phone', 'الهاتف'], classification: ['Classification', 'التصنيف'], specialty: ['Specialty', 'التخصص'], clinicAddress: ['Clinic address', 'عنوان العيادة'], distributorOther: ['Other distributor', 'موزع آخر'], coverageArea: ['Coverage area', 'منطقة التغطية'], distributedProducts: ['Distributed products', 'المنتجات الموزعة'], defaultCycle: ['Visit cycle (days)', 'دورة الزيارة (أيام)']
     };
     const keys: Record<ListCategory, string[]> = {
         hospitals: ['name', 'area', 'address'], pharmacies: ['name', 'area', 'address'], doctors: ['name', 'area', 'address', 'specialty', 'clinicAddress', 'classification'], branches: ['name', 'coverageArea', 'address', 'contact', 'phone', 'distributedProducts']

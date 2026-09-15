@@ -17,6 +17,8 @@ import { runTask1Tests } from './task1.test';
 import { runTask2Tests } from './task2.test';
 import { runTask3Tests } from './task3.test';
 import { runTask4Tests } from './task4.test';
+import { runDistributionBranchesRegressionTests } from './distributionBranchesRegression.test';
+import { runTask5Tests } from './task5.test';
 
 async function main() {
   console.log('====================================================');
@@ -68,6 +70,8 @@ async function main() {
   const task2Results = runTask2Tests();
   const task3Results = runTask3Tests();
   const task4Results = runTask4Tests();
+  const distributionBranchesResults = runDistributionBranchesRegressionTests();
+  const task5Results = runTask5Tests();
 
   if (!runRemoteIntegration) {
     console.log('🛡️ Remote database integration suites skipped. Use an explicitly designated NON_PRODUCTION target to run them.');
@@ -87,7 +91,8 @@ async function main() {
     task1Results.passed +
     task2Results.passed +
     task3Results.passed +
-    task4Results.passed;
+    task4Results.passed +
+    distributionBranchesResults.passed + task5Results.passed;
   const totalFailed =
     securityResults.failed +
     orgResults.failed +
@@ -102,7 +107,8 @@ async function main() {
     task1Results.failed +
     task2Results.failed +
     task3Results.failed +
-    task4Results.failed;
+    task4Results.failed +
+    distributionBranchesResults.failed + task5Results.failed;
 
   console.log('\n====================================================');
   console.log(`📊 Test Summary: ${totalPassed} Passed, ${totalFailed} Failed`);

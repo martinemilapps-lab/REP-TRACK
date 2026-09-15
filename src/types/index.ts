@@ -1,4 +1,4 @@
-export type RepSheetItem = 'visit' | 'event' | 'training' | 'special_task' | 'product_analysis';
+export type RepSheetItem = 'visit' | 'event' | 'training' | 'special_task';
 
 export type VisitEntityType = 'hospital' | 'pharmacy' | 'doctor' | 'branch';
 
@@ -11,8 +11,7 @@ export type ActivityType =
   | 'event'
   | 'training'
   | 'special_task'
-  | 'availability'
-  | 'product_analysis';
+  | 'availability';
 
 export type VisitStatus = 'Visited' | 'Overdue' | 'Not visited yet';
 
@@ -260,7 +259,7 @@ export interface SpecialTaskRecord {
   submittedAt?: string;
 }
 
-export interface ProductAnalysisRecord {
+export interface ProductAvailabilityRecord {
   id: string;
   repId?: string;
   rep: string;
@@ -283,7 +282,6 @@ export interface ProductAnalysisRecord {
   submittedAt?: string;
 }
 
-export type ProductAvailabilityRecord = ProductAnalysisRecord;
 
 export interface WeeklyPlanRecord {
   id: string;
@@ -291,6 +289,7 @@ export interface WeeklyPlanRecord {
   userId?: string;
   isManagerPlan?: boolean;
   selectedRepId?: string;
+  reportContextType?: 'EMPLOYEE' | 'VACANT';
   structuredPlan?: string | Record<string, unknown>;
   rep: string;
   startDate: string; // YYYY-MM-DD or DD-MM-YYYY
@@ -470,6 +469,7 @@ export interface ManagerActivityRecord {
   userName?: string;
   userPosition?: string;
   selectedRepId?: string;
+  reportContextType?: 'EMPLOYEE' | 'VACANT';
   activities?: string[];
   salesReviewDescription?: string;
   othersDescription?: string;
@@ -496,7 +496,7 @@ export interface ManagerActivityRecord {
   productsDiscussed?: Array<{ id: string; name: string }>;
   visits?: Array<{
     id: string; period: 'AM' | 'PM'; entryType: 'HOSPITAL' | 'DIRECT_DOCTOR' | 'PHARMACY' | 'DISTRIBUTION_BRANCH'; hospitalId?: string; doctorId?: string; pharmacyId?:string; branchId?:string;
-    name: string; specialty?: string; generalComment?: string;
+    name: string; specialty?: string; generalComment?: string; manualData?: { name:string; hospitalType?:string; area?:string; address?:string; specialty?:string; distributor?:string; products?:Array<{productId:string;observation:string}> };
     doctors: Array<{ id: string; doctorId?: string | null; name: string; specialty?: string; generalComment?: string }>;
   }>;
   trainingType?: string;

@@ -28,7 +28,7 @@ export type ManagerNavType =
   | 'team_reports'
   | 'team_plans'
   | 'team_lists'
-  | 'product_analysis'
+  | 'availability'
   | 'compliance'
   | 'export'
   | 'admin';
@@ -81,7 +81,7 @@ export function ManagerWorkspace({
     { id: 'team_reports', label: language === 'ar' ? 'تقارير الفريق' : 'Received / Team Reports', icon: <Inbox className="size-4"/> },
     { id: 'team_plans', label: language === 'ar' ? 'خطط الفريق' : 'Team Plans', icon: <ClipboardList className="size-4"/> },
     { id: 'team_lists', label: language === 'ar' ? 'قوائم الفريق' : 'Team Lists', icon: <Users className="size-4"/> },
-    { id: 'product_analysis', label: language === 'ar' ? 'توافر المنتجات' : 'Product Availability', icon: <PackageSearch className="size-4"/> },
+    { id: 'availability', label: language === 'ar' ? 'توافر المنتجات' : 'Product Availability', icon: <PackageSearch className="size-4"/> },
     { id: 'compliance', label: language === 'ar' ? 'متابعة الالتزام' : 'Submission Compliance', icon: <Target className="size-4"/> },
     { id: 'export', label: language === 'ar' ? 'تصدير البيانات' : 'Export', icon: <Download className="size-4"/> },
   ];
@@ -238,8 +238,8 @@ export function ManagerWorkspace({
         </div>
       )}
 
-      {/* 7. Product Analysis */}
-      {activeNav === 'product_analysis' && (
+      {/* Product Availability */}
+      {activeNav === 'availability' && (
         <ManagerDashboardView key="product-availability" reps={reps} initialTab="availability" onLock={onLogout} onError={showError} onSuccess={showSuccess}/>
       )}
 

@@ -4,18 +4,16 @@ import { getVisibleReports } from './reportService';
 import { getWeeklyPlans, getTeamWeeklyPlans } from './weeklyPlanService';
 import { getMasterListsForRep, getScopedMasterListsForManager, resolveRepOwnership } from './masterListService';
 import { getCompliance } from './complianceService';
-import { getSalesAnalytics } from './salesAnalyticsService';
 import { getManagerActivities } from './managerActivityService';
 import { getCycleCoverage } from './coverageService';
 import { createWorkbook, dedupeById, metadataRows, type ExportRow } from '@/lib/exportWorkbook';
 import type { z } from 'zod';
-import type { reportExportSchema, weeklyPlanExportSchema, listExportSchema, complianceExportSchema, salesExportSchema } from '@/lib/exportSchemas';
+import type { reportExportSchema, weeklyPlanExportSchema, listExportSchema, complianceExportSchema } from '@/lib/exportSchemas';
 
 type ReportInput = z.infer<typeof reportExportSchema>;
 type PlanInput = z.infer<typeof weeklyPlanExportSchema>;
 type ListInput = z.infer<typeof listExportSchema>;
 type ComplianceInput = z.infer<typeof complianceExportSchema>;
-type SalesInput = z.infer<typeof salesExportSchema>;
 type AnyRow = Record<string, unknown> & { id: string };
 
 const value = (input: unknown): string | number | boolean => input instanceof Date ? input.toISOString() : typeof input === 'number' || typeof input === 'boolean' ? input : typeof input === 'string' ? input : input && typeof input === 'object' ? JSON.stringify(input) : '';
@@ -92,16 +90,7 @@ export async function buildComplianceExport(session: UserSessionPayload, input: 
   const allRows=[...result.rows];
   for(let page=2;(page-1)*100<result.total&&page<=200;page++){const next=await getCompliance(session,{...input,page,pageSize:100});allRows.push(...next.rows)}
   const details = dedupeById(allRows).map((row) => ({ Employee: row.name, Username: row.username, Position: row.position, 'Assignment / Territory': row.assignmentSummary, 'Submission Type': row.submissionType, Period: row.period, Status: row.status, 'Submitted At': row.submittedAt ?? '' }));
-  return createWorkbook([{ name: 'Export Info', rows: metadataRows(session, { Scope: input.scopeMode, Type: input.type, Period: input.date ?? input.weekStart ?? input.month }) }, { name: 'Summary', rows: [{ Expected: result.summary.expected, Submitted: result.summary.submitted, 'Not Submitted': result.summary.notSubmitted, 'Submission Rate %': result.summary.submissionRate ?? '' }] }, { name: 'Employee Status', rows: details }]);
-}
-
-export async function buildSalesExport(session: UserSessionPayload, input: SalesInput) {
-  const result = await getSalesAnalytics(session, { ...input, page: 1, pageSize: 100 });
-  const metrics = (row: Record<string, unknown>): ExportRow => pick(row, [['label','Name'],['position','Position'],['assignmentType','Assignment Type'],['monthlySales','Monthly Sales'],['monthlyTarget','Monthly Target'],['achievementPct','Achievement %'],['ytdSales','YTD Sales'],['ytdTarget','YTD Target'],['ytdAchievementPct','YTD Achievement %'],['recordedPotentiality','Recorded Potentiality'],['recordCount','Record Count']]);
-  const allDetails=[...result.details];
-  for(let page=2;(page-1)*100<result.total&&page<=200;page++){const next=await getSalesAnalytics(session,{...input,page,pageSize:100});allDetails.push(...next.details)}
-  const detailRows = dedupeById(allDetails).map((row) => pick(row as unknown as Record<string, unknown>, [['id','Record ID'],['employee','Employee'],['position','Position'],['territory','Territory'],['assignmentType','Assignment Type'],['month','Month'],['product','Product'],['sales','Sales'],['monthlyTarget','Monthly Target'],['annualTarget','Annual Target'],['potentiality','Recorded Potentiality'],['assignmentActive','Assignment Current'],['productActive','Product Current']]));
-  return createWorkbook([{ name: 'Export Info', rows: metadataRows(session, { Month: input.month, Scope: input.scope, Note: result.potentialityDefinition }) }, { name: 'Summary', rows: [metrics({ label: 'Selected Scope', ...result.summary })] }, { name: 'Products', rows: result.products.map((row) => metrics(row)) }, { name: 'Employees', rows: result.employees.map((row) => metrics(row)) }, { name: 'Assignments', rows: result.assignments.map((row) => metrics(row)) }, { name: 'Detail', rows: detailRows }]);
+  return createWorkbook([{ name: 'Export Info', rows: metadataRows(session, { Scope: input.scopeMode, Type: input.type, Period: input.date ?? input.weekStart }) }, { name: 'Summary', rows: [{ Expected: result.summary.expected, Submitted: result.summary.submitted, 'Not Submitted': result.summary.notSubmitted, 'Submission Rate %': result.summary.submissionRate ?? '' }] }, { name: 'Employee Status', rows: details }]);
 }
 
 export async function buildCoverageExport(session:UserSessionPayload,input:{repId?:string;startDate:string;endDate:string}){

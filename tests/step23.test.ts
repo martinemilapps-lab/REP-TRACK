@@ -22,14 +22,13 @@ assert.doesNotMatch(JSON.stringify(XLSX.utils.sheet_to_json(workbook.Sheets.Deta
 const service=readFileSync('src/lib/services/exportService.ts','utf8');
 assert.match(service,/getVisibleReports\(session/,'team report export reuses canonical visibility');
 assert.match(service,/getTeamWeeklyPlans\(session/,'team plan export reuses canonical hierarchy');
-assert.match(service,/getSalesAnalytics\(session/,'sales export reuses STEP 21');
 assert.match(service,/getCompliance\(session/,'compliance export reuses STEP 22');
 assert.match(service,/getScopedMasterListsForManager\(session/,'manager list export requires scoped selection');
 assert.match(service,/dedupeById\(/,'canonical IDs are deduplicated');
 assert.match(service,/PERSONAL_MR|Assignment Type/,'personal assignments remain explicitly identified');
 assert.doesNotMatch(service,/passwordHash|sessionToken|apiKey/i,'security material is not exported');
 
-for(const name of ['reports','weekly-plans','lists','sales','compliance']){
+for(const name of ['reports','weekly-plans','lists','compliance']){
   const route=readFileSync(`src/app/api/exports/${name}/route.ts`,'utf8');
   assert.match(route,/requireAuthenticatedUser\(\)|requireManager\(\)/,`${name} authenticates on server`);
   assert.match(route,/\.parse\(/,`${name} validates browser parameters`);

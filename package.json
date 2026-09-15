@@ -18,6 +18,7 @@
     "db:migrate:d1:admin-phase1": "tsx scripts/migrate_admin_phase1.ts",
     "db:migrate:d1:task3": "tsx scripts/migrate_task3.ts",
     "db:migrate:d1:task4": "tsx scripts/migrate_task4.ts",
+    "db:migrate:d1:task5": "tsx scripts/migrate_task5.ts",
     "test:step19": "tsx tests/step19.test.ts",
     "test:step20": "tsx tests/step20.test.ts",
     "test:step21": "tsx tests/step21.test.ts",

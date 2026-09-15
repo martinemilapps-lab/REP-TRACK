@@ -33,7 +33,6 @@ export const translations: Record<string, { ar: string; en: string }> = {
   'nav.teamPlans': { ar: 'خطط الفريق', en: 'Team Plans' },
   'nav.teamLists': { ar: 'قوائم الفريق', en: 'Team Lists' },
   'nav.productAvailability': { ar: 'توافر المنتجات', en: 'Product Availability' },
-  'nav.productAnalysis': { ar: 'تحليل المنتجات', en: 'Product Analysis' },
   'nav.compliance': { ar: 'متابعة الالتزام', en: 'Submission Compliance' },
   'nav.export': { ar: 'تصدير', en: 'Export' },
   'nav.admin': { ar: 'الإدارة', en: 'Admin' },
@@ -106,7 +105,6 @@ export const translations: Record<string, { ar: string; en: string }> = {
   'activity.events': { ar: 'الفعاليات والأحداث (Events)', en: 'Events' },
   'activity.training': { ar: 'التدريب (Training)', en: 'Training' },
   'activity.specialTasks': { ar: 'مراجعة المبيعات / العمل الإداري', en: 'Sales Review / Admin Work' },
-  'activity.productsAnalysis': { ar: 'تحليل المنتجات (Products Analysis)', en: 'Products Analysis' },
   'activity.hospital': { ar: 'مستشفى', en: 'Hospital' },
   'activity.pharmacy': { ar: 'صيدلية', en: 'Pharmacy' },
   'activity.doctor': { ar: 'دكتور عيادة', en: 'Doctor' },
@@ -158,12 +156,6 @@ export const translations: Record<string, { ar: string; en: string }> = {
   'task.submitting': { ar: 'جاري الحفظ...', en: 'Saving...' },
 
   // Products Analysis Translations
-  'analysis.formTitle': { ar: 'تحليل المنتجات والتوافر في السوق (Products Analysis)', en: 'Products Analysis & Market Position' },
-  'analysis.formDesc': { ar: 'تحليل مبيعات وتوافر المنتج وحصته السوقية مقارنة بالبدائل المنافسة', en: 'Analyze sales, availability, and market dynamics against competitors' },
-  'analysis.salesUnits': { ar: 'مبيعات المنتج (بالوحدات / علب)', en: 'Product Sales (Units)' },
-  'analysis.availabilityStatus': { ar: 'حالة توافر المنتج بالمؤسسة', en: 'Product Availability Status' },
-  'analysis.competitorPresence': { ar: 'موقف المنتجات والبدائل المنافسة', en: 'Competitor Products & Market Presence' },
-  'analysis.actionPlan': { ar: 'الرؤية التحليلية وخطة التحرك المقترحة', en: 'Analytical Insights & Action Plan' },
 
   // Visit Classification (Single vs Double)
   'visit.type': { ar: 'طبيعة الزيارة', en: 'Visit Type' },
