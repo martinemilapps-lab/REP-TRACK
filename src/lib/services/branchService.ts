@@ -9,6 +9,7 @@ import { assertAuthenticatedSession } from '@/lib/authPolicy';
 import { resolveWritableRepId } from '@/lib/repAccessPolicy';
 import { AppError } from '@/lib/errors';
 import { requireBusinessProducts } from './businessProductService';
+import { assertReportSubmissionOpen } from '@/lib/business/reportDeadline';
 
 export type BranchVisitInput = z.input<typeof BranchVisitSchema>;
 
@@ -20,8 +21,10 @@ export async function createBranchVisit(
   rawInput: BranchVisitInput
 ) {
   assertAuthenticatedSession(session);
+  assertReportSubmissionOpen(new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' }));
   const modern=BranchVisitV3Schema.safeParse(rawInput);if(modern.success){const repId=resolveWritableRepId(session);const branch=await db.select().from(distributionBranches).where(and(eq(distributionBranches.id,modern.data.branchId),eq(distributionBranches.repId,repId))).get();if(!branch)throw new AppError('Distribution branch is not in your saved list',403);const names=await requireBusinessProducts(modern.data.products.map(x=>x.productId));const visitId=crypto.randomUUID();const ops=[db.insert(branchVisits).values({id:visitId,repId,branchId:branch.id,products:JSON.stringify(modern.data.products.map(item=>({productId:item.productId,name:names.get(item.productId),observation:item.observation})))}),...modern.data.products.map((item,displayOrder)=>db.insert(branchVisitProducts).values({id:crypto.randomUUID(),branchVisitId:visitId,productId:item.productId,productNameSnapshot:names.get(item.productId)!,observation:item.observation,displayOrder}))];const[first,...rest]=ops;await db.batch([first,...rest]);return{id:visitId,branchName:branch.name,products:modern.data.products}}
   const input = BranchVisitSchema.parse(rawInput);
+  if (input.lastVisit) assertReportSubmissionOpen(input.lastVisit);
   const repId = resolveWritableRepId(session);
 
   const branch = await findOrCreateBranch({

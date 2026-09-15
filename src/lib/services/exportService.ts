@@ -6,6 +6,7 @@ import { getMasterListsForRep, getScopedMasterListsForManager, resolveRepOwnersh
 import { getCompliance } from './complianceService';
 import { getSalesAnalytics } from './salesAnalyticsService';
 import { getManagerActivities } from './managerActivityService';
+import { getCycleCoverage } from './coverageService';
 import { createWorkbook, dedupeById, metadataRows, type ExportRow } from '@/lib/exportWorkbook';
 import type { z } from 'zod';
 import type { reportExportSchema, weeklyPlanExportSchema, listExportSchema, complianceExportSchema, salesExportSchema } from '@/lib/exportSchemas';
@@ -101,4 +102,8 @@ export async function buildSalesExport(session: UserSessionPayload, input: Sales
   for(let page=2;(page-1)*100<result.total&&page<=200;page++){const next=await getSalesAnalytics(session,{...input,page,pageSize:100});allDetails.push(...next.details)}
   const detailRows = dedupeById(allDetails).map((row) => pick(row as unknown as Record<string, unknown>, [['id','Record ID'],['employee','Employee'],['position','Position'],['territory','Territory'],['assignmentType','Assignment Type'],['month','Month'],['product','Product'],['sales','Sales'],['monthlyTarget','Monthly Target'],['annualTarget','Annual Target'],['potentiality','Recorded Potentiality'],['assignmentActive','Assignment Current'],['productActive','Product Current']]));
   return createWorkbook([{ name: 'Export Info', rows: metadataRows(session, { Month: input.month, Scope: input.scope, Note: result.potentialityDefinition }) }, { name: 'Summary', rows: [metrics({ label: 'Selected Scope', ...result.summary })] }, { name: 'Products', rows: result.products.map((row) => metrics(row)) }, { name: 'Employees', rows: result.employees.map((row) => metrics(row)) }, { name: 'Assignments', rows: result.assignments.map((row) => metrics(row)) }, { name: 'Detail', rows: detailRows }]);
+}
+
+export async function buildCoverageExport(session:UserSessionPayload,input:{repId?:string;startDate:string;endDate:string}){
+ const repId=session.role==='REPRESENTATIVE'?session.repId:input.repId;if(!repId)throw new AppError('Select an authorized Medical Representative',400);const c=await getCycleCoverage(session,repId,input.startDate,input.endDate);return createWorkbook([{name:'Export Info',rows:metadataRows(session,{Scope:session.role==='REPRESENTATIVE'?'MY_RECORDS':'AUTHORIZED_SELECTED_MR','Start Date':input.startDate,'End Date':input.endDate,Formula:c.formula})},{name:'Coverage Summary',rows:[{Category:'Hospitals','Required Visits':c.hospital.required,'Completed Visits':c.hospital.completed,'Coverage %':c.hospital.percentage,'Average Achievement %':c.hospital.averageAchievement},{Category:'Doctors','Required Visits':c.doctor.required,'Completed Visits':c.doctor.completed,'Coverage %':c.doctor.percentage,'Average Achievement %':c.doctor.averageAchievement}]}]);
 }

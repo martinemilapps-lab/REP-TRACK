@@ -1,4 +1,4 @@
-import { db, weeklyPlans, representatives, managerWeeklyPlans, users } from '@/lib/db';
+import { db, weeklyPlans, representatives, managerWeeklyPlans, users, hospitals, doctors, pharmacies, distributionBranches } from '@/lib/db';
 import { eq, and, desc, inArray } from 'drizzle-orm';
 import { UserSessionPayload, resolveAuthorizedRepId } from '@/lib/auth';
 import { AppError } from '@/lib/errors';
@@ -9,6 +9,11 @@ import { WeeklyPlanRecord } from '@/types';
 import { hierarchyService, HierarchyScopeMode } from './hierarchyService';
 
 export type WeeklyPlanInput = z.input<typeof WeeklyPlanSchema>;
+
+async function assertStructuredPlanScope(repId:string,plan:NonNullable<ReturnType<typeof WeeklyPlanSchema.parse>['structuredPlan']>){
+ const ids={hospitals:new Set<string>(),branches:new Set<string>(),doctors:new Set<string>(),pharmacies:new Set<string>()};for(const day of Object.values(plan)){day.am.hospitalIds.forEach(x=>ids.hospitals.add(x));day.am.branchIds.forEach(x=>ids.branches.add(x));day.pm.doctorIds.forEach(x=>ids.doctors.add(x));day.pm.pharmacyIds.forEach(x=>ids.pharmacies.add(x));if(day.am.doctorIds.length||day.am.pharmacyIds.length||day.pm.hospitalIds.length||day.pm.branchIds.length)throw new AppError('AM permits Hospitals/Distribution Branches; PM permits Doctors/Pharmacies',400);}
+ const checks=await Promise.all([ids.hospitals.size?db.select({id:hospitals.id}).from(hospitals).where(and(eq(hospitals.repId,repId),inArray(hospitals.id,[...ids.hospitals]),eq(hospitals.isActive,true))).all():[],ids.branches.size?db.select({id:distributionBranches.id}).from(distributionBranches).where(and(eq(distributionBranches.repId,repId),inArray(distributionBranches.id,[...ids.branches]),eq(distributionBranches.isActive,true))).all():[],ids.doctors.size?db.select({id:doctors.id}).from(doctors).where(and(eq(doctors.repId,repId),inArray(doctors.id,[...ids.doctors]),eq(doctors.isActive,true))).all():[],ids.pharmacies.size?db.select({id:pharmacies.id}).from(pharmacies).where(and(eq(pharmacies.repId,repId),inArray(pharmacies.id,[...ids.pharmacies]),eq(pharmacies.isActive,true))).all():[]]);if(checks[0].length!==ids.hospitals.size||checks[1].length!==ids.branches.size||checks[2].length!==ids.doctors.size||checks[3].length!==ids.pharmacies.size)throw new AppError('Plan contains an entity outside the selected MR My Lists',403);
+}
 
 /**
  * Saves or updates a weekly plan for a representative or a manager.
@@ -29,6 +34,9 @@ export async function saveWeeklyPlan(
     // STEP 19 supports submit/resubmit only. Approval and reviewer notes are STEP 20.
     ManagerPlanStatusSchema.parse(input.status);
     if (input.managerNotes) throw new AppError('Administrative notes are unavailable for personal plans', 400);
+    if(!input.selectedRepId)throw new AppError('Select an authorized Medical Representative',400);
+    await hierarchyService.assertRepVisible(session,input.selectedRepId);
+    if(input.structuredPlan)await assertStructuredPlanScope(input.selectedRepId,input.structuredPlan);
     const fields = {
       startDate: input.startDate, endDate: input.endDate,
       saturdayAm: input.saturdayAm, saturdayPm: input.saturdayPm,
@@ -42,6 +50,8 @@ export async function saveWeeklyPlan(
     const values = {
       ...fields,
       userId: session.id,
+      selectedRepId: input.selectedRepId,
+      structuredPlan: input.structuredPlan ? JSON.stringify(input.structuredPlan) : null,
       weekLabel: input.weekLabel || `${input.startDate} to ${input.endDate}`,
       status: 'Submitted' as const,
       managerNotes: '',
@@ -50,7 +60,7 @@ export async function saveWeeklyPlan(
     // One atomic statement; the database unique index arbitrates concurrent saves.
     const [record] = await db.insert(managerWeeklyPlans).values(values)
       .onConflictDoUpdate({
-        target: [managerWeeklyPlans.userId, managerWeeklyPlans.startDate],
+        target: [managerWeeklyPlans.userId, managerWeeklyPlans.selectedRepId, managerWeeklyPlans.startDate],
         set: values,
       }).returning();
     return {
@@ -78,6 +88,7 @@ export async function saveWeeklyPlan(
 
   if (!repId) throw new AppError('لم يتم العثور على المندوب المعتمد', 403);
   if (session.role === 'MANAGER') await hierarchyService.assertRepVisible(session, repId);
+  if(input.structuredPlan)await assertStructuredPlanScope(repId,input.structuredPlan);
 
   // Check if a plan already exists for this rep and start_date
   const existingPlan = await db
@@ -116,6 +127,7 @@ export async function saveWeeklyPlan(
         fridayPm: input.fridayPm ?? '',
         status: (input.status as 'Draft' | 'Submitted' | 'Approved') || 'Submitted',
         managerNotes: input.managerNotes ?? existingPlan.managerNotes,
+        structuredPlan: input.structuredPlan ? JSON.stringify(input.structuredPlan) : existingPlan.structuredPlan,
         updatedAt: new Date(),
       })
       .where(eq(weeklyPlans.id, existingPlan.id))
@@ -145,6 +157,7 @@ export async function saveWeeklyPlan(
         fridayPm: input.fridayPm ?? '',
         status: (input.status as 'Draft' | 'Submitted' | 'Approved') || 'Submitted',
         managerNotes: input.managerNotes ?? '',
+        structuredPlan: input.structuredPlan ? JSON.stringify(input.structuredPlan) : null,
       })
       .returning();
     record = inserted;
@@ -210,6 +223,8 @@ export async function getWeeklyPlans(
         fridayPm: managerWeeklyPlans.fridayPm,
         status: managerWeeklyPlans.status,
         managerNotes: managerWeeklyPlans.managerNotes,
+        selectedRepId: managerWeeklyPlans.selectedRepId,
+        structuredPlan: managerWeeklyPlans.structuredPlan,
         submittedAt: managerWeeklyPlans.submittedAt,
         updatedAt: managerWeeklyPlans.updatedAt,
       })
@@ -260,6 +275,7 @@ export async function getWeeklyPlans(
       fridayPm: weeklyPlans.fridayPm,
       status: weeklyPlans.status,
       managerNotes: weeklyPlans.managerNotes,
+      structuredPlan: weeklyPlans.structuredPlan,
       submittedAt: weeklyPlans.submittedAt,
       updatedAt: weeklyPlans.updatedAt,
     })
@@ -293,6 +309,7 @@ export async function getWeeklyPlans(
         fridayPm: weeklyPlans.fridayPm,
         status: weeklyPlans.status,
         managerNotes: weeklyPlans.managerNotes,
+        structuredPlan: weeklyPlans.structuredPlan,
         submittedAt: weeklyPlans.submittedAt,
         updatedAt: weeklyPlans.updatedAt,
       })
@@ -328,6 +345,7 @@ export async function getWeeklyPlans(
         fridayPm: weeklyPlans.fridayPm,
         status: weeklyPlans.status,
         managerNotes: weeklyPlans.managerNotes,
+        structuredPlan: weeklyPlans.structuredPlan,
         submittedAt: weeklyPlans.submittedAt,
         updatedAt: weeklyPlans.updatedAt,
       })
@@ -363,7 +381,7 @@ export async function getTeamWeeklyPlans(session: UserSessionPayload | null, mod
     mondayAm: managerWeeklyPlans.mondayAm, mondayPm: managerWeeklyPlans.mondayPm, tuesdayAm: managerWeeklyPlans.tuesdayAm,
     tuesdayPm: managerWeeklyPlans.tuesdayPm, wednesdayAm: managerWeeklyPlans.wednesdayAm, wednesdayPm: managerWeeklyPlans.wednesdayPm,
     thursdayAm: managerWeeklyPlans.thursdayAm, thursdayPm: managerWeeklyPlans.thursdayPm, fridayAm: managerWeeklyPlans.fridayAm,
-    fridayPm: managerWeeklyPlans.fridayPm, status: managerWeeklyPlans.status, managerNotes: managerWeeklyPlans.managerNotes,
+    fridayPm: managerWeeklyPlans.fridayPm, status: managerWeeklyPlans.status, managerNotes: managerWeeklyPlans.managerNotes, selectedRepId:managerWeeklyPlans.selectedRepId, structuredPlan:managerWeeklyPlans.structuredPlan,
     submittedAt: managerWeeklyPlans.submittedAt, updatedAt: managerWeeklyPlans.updatedAt,
   }).from(managerWeeklyPlans).innerJoin(users, eq(managerWeeklyPlans.userId, users.id))
     .where(and(inArray(managerWeeklyPlans.userId, userIds), eq(users.isActive, true))).orderBy(desc(managerWeeklyPlans.submittedAt)).all() : [];
@@ -400,6 +418,7 @@ export async function getWeeklyPlanById(id: string, session: UserSessionPayload 
       fridayPm: weeklyPlans.fridayPm,
       status: weeklyPlans.status,
       managerNotes: weeklyPlans.managerNotes,
+      structuredPlan: weeklyPlans.structuredPlan,
       submittedAt: weeklyPlans.submittedAt,
       updatedAt: weeklyPlans.updatedAt,
     })
@@ -448,6 +467,8 @@ export async function getWeeklyPlanById(id: string, session: UserSessionPayload 
       fridayPm: managerWeeklyPlans.fridayPm,
       status: managerWeeklyPlans.status,
       managerNotes: managerWeeklyPlans.managerNotes,
+      selectedRepId: managerWeeklyPlans.selectedRepId,
+      structuredPlan: managerWeeklyPlans.structuredPlan,
       submittedAt: managerWeeklyPlans.submittedAt,
       updatedAt: managerWeeklyPlans.updatedAt,
     })

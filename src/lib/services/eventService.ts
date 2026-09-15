@@ -9,6 +9,7 @@ import { assertAuthenticatedSession } from '@/lib/authPolicy';
 import { resolveWritableRepId } from '@/lib/repAccessPolicy';
 import { hierarchyService } from './hierarchyService';
 import { inArray } from 'drizzle-orm';
+import { assertReportSubmissionOpen } from '@/lib/business/reportDeadline';
 
 export type EventInput = z.input<typeof EventSchema>;
 
@@ -21,6 +22,7 @@ export async function createEventRecord(
 ) {
   assertAuthenticatedSession(session);
   const input = EventSchema.parse(rawInput);
+  assertReportSubmissionOpen(input.eventDate);
   const repId = resolveWritableRepId(session);
 
   const [record] = await db

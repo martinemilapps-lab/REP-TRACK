@@ -17,10 +17,9 @@ import { WeeklyPlanView } from '@/components/weekly-plan/WeeklyPlanView';
 import { useTranslation } from '@/lib/i18nContext';
 import { MapPin, User, CheckCircle2, ClipboardList, CalendarDays, PackageSearch } from 'lucide-react';
 import { RepresentativeOverview } from '@/components/overview/RepresentativeOverview';
-import { SalesAnalyticsView } from '@/components/sales/SalesAnalyticsView';
 import { ExportCenter } from '@/components/exports/ExportCenter';
 
-export type MRViewType = 'overview' | 'submit' | 'mylists' | 'myreports' | 'weeklyplan' | 'availability' | 'analysis' | 'export';
+export type MRViewType = 'overview' | 'submit' | 'mylists' | 'myreports' | 'weeklyplan' | 'availability' | 'export';
 
 interface MedicalRepWorkspaceProps {
   currentUser: {
@@ -127,17 +126,6 @@ export function MedicalRepWorkspace({
           >
             <CalendarDays className="size-4"/>
             <span>{t('nav.weeklyPlan')}</span>
-          </button>
-          <button
-            onClick={() => onViewChange('analysis')}
-            className={`px-3.5 py-2 rounded-lg text-xs md:text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-              activeView === 'analysis'
-                ? 'bg-gradient-to-r from-[var(--gold)] to-[var(--gold-light)] text-white shadow-xs font-extrabold'
-                : 'text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--surface-hover)]'
-            }`}
-          >
-            <PackageSearch className="size-4"/>
-            <span>{language === 'ar' ? 'تحليل المنتجات' : 'Product Analysis'}</span>
           </button>
         </nav>
       </div>}
@@ -256,12 +244,6 @@ export function MedicalRepWorkspace({
         </div>
       )}
 
-      {/* ============ VIEW 5: PRODUCT ANALYSIS ============ */}
-      {activeView === 'analysis' && (
-        <div className="animate-fade-in space-y-6">
-          <SalesAnalyticsView />
-        </div>
-      )}
       {activeView === 'export' && <ExportCenter reps={reps}/>}
     </div>
   );

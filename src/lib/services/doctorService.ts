@@ -10,6 +10,7 @@ import { assertAuthenticatedSession } from '@/lib/authPolicy';
 import { resolveWritableRepId } from '@/lib/repAccessPolicy';
 import { AppError } from '@/lib/errors';
 import { requireBusinessProducts } from './businessProductService';
+import { assertReportSubmissionOpen } from '@/lib/business/reportDeadline';
 
 export type DoctorVisitInput = z.input<typeof DoctorVisitSchema>;
 
@@ -21,9 +22,11 @@ export async function createDoctorVisit(
   rawInput: DoctorVisitInput
 ) {
   assertAuthenticatedSession(session);
+  assertReportSubmissionOpen(new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' }));
   const modern=DoctorVisitV3Schema.safeParse(rawInput);
   if(modern.success){const repId=resolveWritableRepId(session);const doctor=await db.select().from(doctors).where(and(eq(doctors.id,modern.data.doctorId),eq(doctors.repId,repId))).get();if(!doctor)throw new AppError('Doctor is not in your saved list',403);const names=await requireBusinessProducts(modern.data.products.map(x=>x.productId));const visitId=crypto.randomUUID();const ops=[db.insert(doctorVisits).values({id:visitId,repId,doctorId:doctor.id,prescriptionRate:null,visitDate:new Date().toISOString().slice(0,10)}),...modern.data.products.map((item,displayOrder)=>db.insert(doctorVisitProducts).values({id:crypto.randomUUID(),doctorVisitId:visitId,productId:item.productId,productNameSnapshot:names.get(item.productId)!,prescriptionRate:item.prescriptionRate,displayOrder}))];const[first,...rest]=ops;await db.batch([first,...rest]);return{id:visitId,doctorName:doctor.name,specialty:doctor.specialty,products:modern.data.products}}
   const input = DoctorVisitSchema.parse(rawInput);
+  if (input.visitDate) assertReportSubmissionOpen(input.visitDate);
   const repId = resolveWritableRepId(session);
 
   const doctor = await findOrCreateDoctor({

@@ -290,6 +290,8 @@ export interface WeeklyPlanRecord {
   repId?: string;
   userId?: string;
   isManagerPlan?: boolean;
+  selectedRepId?: string;
+  structuredPlan?: string | Record<string, unknown>;
   rep: string;
   startDate: string; // YYYY-MM-DD or DD-MM-YYYY
   endDate: string; // YYYY-MM-DD or DD-MM-YYYY
@@ -467,6 +469,10 @@ export interface ManagerActivityRecord {
   userId: string;
   userName?: string;
   userPosition?: string;
+  selectedRepId?: string;
+  activities?: string[];
+  salesReviewDescription?: string;
+  othersDescription?: string;
   activityType: ManagerActivityType;
   activityDate: string; // YYYY-MM-DD
   visitType?: 'Single' | 'Double' | string;
@@ -489,9 +495,9 @@ export interface ManagerActivityRecord {
   eventFeedback?: string;
   productsDiscussed?: Array<{ id: string; name: string }>;
   visits?: Array<{
-    id: string; period: 'AM' | 'PM'; entryType: 'HOSPITAL' | 'DIRECT_DOCTOR'; hospitalId?: string; doctorId?: string;
+    id: string; period: 'AM' | 'PM'; entryType: 'HOSPITAL' | 'DIRECT_DOCTOR' | 'PHARMACY' | 'DISTRIBUTION_BRANCH'; hospitalId?: string; doctorId?: string; pharmacyId?:string; branchId?:string;
     name: string; specialty?: string; generalComment?: string;
-    doctors: Array<{ id: string; doctorId: string; name: string; specialty?: string; generalComment?: string }>;
+    doctors: Array<{ id: string; doctorId?: string | null; name: string; specialty?: string; generalComment?: string }>;
   }>;
   trainingType?: string;
   trainingTopic?: string;

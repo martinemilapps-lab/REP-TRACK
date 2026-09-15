@@ -507,9 +507,11 @@ export const managerActivityEntries = sqliteTable('manager_activity_entries', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   activityId: text('activity_id').notNull().references(() => managerActivities.id, { onDelete: 'cascade' }),
   period: text('period', { enum: ['AM', 'PM'] }).notNull(),
-  entryType: text('entry_type', { enum: ['HOSPITAL', 'DIRECT_DOCTOR'] }).notNull(),
+  entryType: text('entry_type', { enum: ['HOSPITAL', 'DIRECT_DOCTOR', 'PHARMACY', 'DISTRIBUTION_BRANCH'] }).notNull(),
   hospitalId: text('hospital_id').references(() => hospitals.id, { onDelete: 'restrict' }),
   doctorId: text('doctor_id').references(() => doctors.id, { onDelete: 'restrict' }),
+  pharmacyId: text('pharmacy_id').references(() => pharmacies.id, { onDelete: 'restrict' }),
+  branchId: text('branch_id').references(() => distributionBranches.id, { onDelete: 'restrict' }),
   nameSnapshot: text('name_snapshot').notNull(),
   specialtySnapshot: text('specialty_snapshot'),
   generalComment: text('general_comment'),
@@ -519,12 +521,19 @@ export const managerActivityEntries = sqliteTable('manager_activity_entries', {
 export const managerActivityEntryDoctors = sqliteTable('manager_activity_entry_doctors', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   entryId: text('entry_id').notNull().references(() => managerActivityEntries.id, { onDelete: 'cascade' }),
-  doctorId: text('doctor_id').notNull().references(() => doctors.id, { onDelete: 'restrict' }),
+  doctorId: text('doctor_id').references(() => doctors.id, { onDelete: 'restrict' }),
   nameSnapshot: text('name_snapshot').notNull(),
   specialtySnapshot: text('specialty_snapshot'),
   generalComment: text('general_comment'),
   displayOrder: integer('display_order').notNull().default(0),
 }, (table) => [index('idx_mgr_activity_entry_doctors_entry').on(table.entryId)]);
+
+export const managerActivityExtendedEntries = sqliteTable('manager_activity_extended_entries', {
+  id:text('id').primaryKey(), activityId:text('activity_id').notNull().references(()=>managerActivities.id,{onDelete:'cascade'}),
+  period:text('period',{enum:['AM','PM']}).notNull(), entryType:text('entry_type',{enum:['PHARMACY','DISTRIBUTION_BRANCH']}).notNull(),
+  pharmacyId:text('pharmacy_id').references(()=>pharmacies.id,{onDelete:'restrict'}), branchId:text('branch_id').references(()=>distributionBranches.id,{onDelete:'restrict'}),
+  nameSnapshot:text('name_snapshot').notNull(), generalComment:text('general_comment'), displayOrder:integer('display_order').notNull().default(0),
+},table=>[index('idx_mgr_extended_activity').on(table.activityId)]);
 
 export const managerActivityProducts = sqliteTable('manager_activity_products', {
   activityId: text('activity_id').notNull().references(() => managerActivities.id, { onDelete: 'cascade' }),
@@ -592,6 +601,7 @@ export const weeklyPlans = sqliteTable('weekly_plans', {
   fridayPm: text('friday_pm').default(''),
   status: text('status', { enum: ['Draft', 'Submitted', 'Approved'] }).notNull().default('Submitted'),
   managerNotes: text('manager_notes'),
+  structuredPlan: text('structured_plan'),
   submittedAt: integer('submitted_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
 }, (table) => [
@@ -605,6 +615,8 @@ export const weeklyPlans = sqliteTable('weekly_plans', {
 export const managerActivities = sqliteTable('manager_activities', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  selectedRepId: text('selected_rep_id').references(() => representatives.id, { onDelete: 'restrict' }),
+  activitySelections: text('activity_selections'),
   activityType: text('activity_type', { enum: ['Visit', 'Event', 'Training', 'Office Working', 'Others'] }).notNull(),
   activityDate: text('activity_date').notNull(), // YYYY-MM-DD
   eventFeedback: text('event_feedback'),
@@ -662,6 +674,8 @@ export const managerActivities = sqliteTable('manager_activities', {
 export const managerWeeklyPlans = sqliteTable('manager_weekly_plans', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  selectedRepId: text('selected_rep_id').references(() => representatives.id, { onDelete: 'restrict' }),
+  structuredPlan: text('structured_plan'),
   startDate: text('start_date').notNull(), // YYYY-MM-DD
   endDate: text('end_date').notNull(), // YYYY-MM-DD
   weekLabel: text('week_label'),
@@ -685,7 +699,7 @@ export const managerWeeklyPlans = sqliteTable('manager_weekly_plans', {
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
 }, (table) => [
   index('idx_mgr_weekly_plans_user').on(table.userId),
-  uniqueIndex('idx_mgr_weekly_plans_user_week').on(table.userId, table.startDate),
+  uniqueIndex('idx_mgr_weekly_plans_user_rep_week').on(table.userId, table.selectedRepId, table.startDate),
   index('idx_mgr_weekly_plans_dates').on(table.startDate, table.endDate),
 ]);
 

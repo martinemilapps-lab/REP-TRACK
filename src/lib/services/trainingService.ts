@@ -4,6 +4,7 @@ import { UserSessionPayload } from '@/lib/auth';
 import { AppError } from '@/lib/errors';
 import { z } from 'zod';
 import { TrainingSchema } from '@/lib/validation';
+import { assertReportSubmissionOpen } from '@/lib/business/reportDeadline';
 import { FilterOptions } from './hospitalService';
 import { assertAuthenticatedSession } from '@/lib/authPolicy';
 import { resolveWritableRepId } from '@/lib/repAccessPolicy';
@@ -21,6 +22,7 @@ export async function createTrainingRecord(
 ) {
   assertAuthenticatedSession(session);
   const input = TrainingSchema.parse(rawInput);
+  assertReportSubmissionOpen(input.trainingDate);
   const repId = resolveWritableRepId(session);
 
   const [record] = await db

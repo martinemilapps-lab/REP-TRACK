@@ -225,11 +225,28 @@ export const WeeklyPlanStatusUpdateSchema = z.object({
   managerNotes: z.string().optional(),
 }).strict();
 
+export const PlanActivityCodeSchema = z.enum(['MEETING', 'TRAINING', 'EVENT', 'SALES_REVIEW_ADMIN', 'OTHERS']);
+export const StructuredPlanCellSchema = z.object({
+  hospitalIds: z.array(z.string().min(1)).max(200).default([]),
+  branchIds: z.array(z.string().min(1)).max(200).default([]),
+  doctorIds: z.array(z.string().min(1)).max(200).default([]),
+  pharmacyIds: z.array(z.string().min(1)).max(200).default([]),
+  activities: z.array(PlanActivityCodeSchema).max(5).default([]),
+  salesReviewDescription: z.string().trim().max(2000).optional().default(''),
+  othersDescription: z.string().trim().max(2000).optional().default(''),
+}).superRefine((cell, ctx) => {
+  if (cell.activities.includes('OTHERS') && !cell.othersDescription) ctx.addIssue({ code: 'custom', path: ['othersDescription'], message: 'Others description is required' });
+  if (cell.activities.includes('SALES_REVIEW_ADMIN') && !cell.salesReviewDescription) ctx.addIssue({ code: 'custom', path: ['salesReviewDescription'], message: 'Sales Review / Admin Work description is required' });
+});
+export const StructuredWeeklyPlanSchema = z.record(z.string(), z.object({ am: StructuredPlanCellSchema, pm: StructuredPlanCellSchema }));
+
 export const WeeklyPlanSchema = z.object({
   rep: z.string().optional(),
   repId: z.string().optional(),
   userId: z.string().optional(),
   isManagerPersonal: z.boolean().optional(),
+  selectedRepId: z.string().min(1).optional(),
+  structuredPlan: StructuredWeeklyPlanSchema.optional(),
   startDate: CalendarDateSchema,
   endDate: CalendarDateSchema,
   weekLabel: z.string().optional().default(''),
@@ -264,6 +281,10 @@ export const ManagerActivityFiltersSchema = z.object({
 
 export const ManagerActivitySchema = z.object({
   id: z.string().uuid().optional(),
+  selectedRepId: z.string().min(1),
+  activities: z.array(PlanActivityCodeSchema).max(5).optional().default([]),
+  salesReviewDescription: z.string().trim().max(2000).optional().default(''),
+  othersDescription: z.string().trim().max(2000).optional().default(''),
   activityType: z.enum(['Visit', 'Event', 'Training', 'Office Working', 'Others'], {
     message: 'نوع النشاط غير صالح',
   }),
@@ -299,14 +320,18 @@ export const ManagerActivitySchema = z.object({
   productIds: z.array(z.string().min(1)).max(78).optional().default([]),
   visits: z.array(z.object({
     period: z.enum(['AM', 'PM']),
-    entryType: z.enum(['HOSPITAL', 'DIRECT_DOCTOR']),
+    entryType: z.enum(['HOSPITAL', 'DIRECT_DOCTOR', 'PHARMACY', 'DISTRIBUTION_BRANCH']),
     hospitalId: z.string().min(1).optional(),
     doctorId: z.string().min(1).optional(),
+    pharmacyId: z.string().min(1).optional(),
+    branchId: z.string().min(1).optional(),
     generalComment: z.string().trim().max(3000).optional().default(''),
-    doctors: z.array(z.object({ doctorId: z.string().min(1), generalComment: z.string().trim().max(3000).optional().default('') })).optional().default([]),
+    doctors: z.array(z.object({ doctorId: z.string().min(1).optional(), doctorName: z.string().trim().min(1).max(120).optional(), department: z.string().trim().max(120).optional(), generalComment: z.string().trim().max(3000).optional().default('') }).refine(d => Boolean(d.doctorId || d.doctorName), 'Doctor name is required')).optional().default([]),
   }).superRefine((entry, ctx) => {
     if (entry.entryType === 'HOSPITAL' && !entry.hospitalId) ctx.addIssue({ code: 'custom', path: ['hospitalId'], message: 'Hospital is required' });
     if (entry.entryType === 'DIRECT_DOCTOR' && !entry.doctorId) ctx.addIssue({ code: 'custom', path: ['doctorId'], message: 'Doctor is required' });
+    if (entry.entryType === 'PHARMACY' && !entry.pharmacyId) ctx.addIssue({ code: 'custom', path: ['pharmacyId'], message: 'Pharmacy is required' });
+    if (entry.entryType === 'DISTRIBUTION_BRANCH' && !entry.branchId) ctx.addIssue({ code: 'custom', path: ['branchId'], message: 'Distribution branch is required' });
   })).max(500).optional().default([]),
 
   // Training specific
@@ -335,6 +360,8 @@ export const ManagerActivitySchema = z.object({
     path: ['accompaniedPerson'],
   }
 ).superRefine((data, ctx) => {
+  if (data.activities.includes('OTHERS') && !data.othersDescription) ctx.addIssue({ code: 'custom', path: ['othersDescription'], message: 'Others description is required' });
+  if (data.activities.includes('SALES_REVIEW_ADMIN') && !data.salesReviewDescription) ctx.addIssue({ code: 'custom', path: ['salesReviewDescription'], message: 'Sales Review / Admin Work description is required' });
   const required = {
     Event: ['eventName', 'اسم الفعالية مطلوب'],
     Training: ['trainingTopic', 'موضوع التدريب مطلوب'],

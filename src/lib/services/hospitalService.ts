@@ -8,12 +8,13 @@ import { HospitalDailyReportSchema, HospitalVisitSchema } from '@/lib/validation
 import { AppError } from '@/lib/errors';
 import { assertAuthenticatedSession } from '@/lib/authPolicy';
 import { resolveWritableRepId } from '@/lib/repAccessPolicy';
+import { assertReportSubmissionOpen } from '@/lib/business/reportDeadline';
 
 export type HospitalVisitInput = z.input<typeof HospitalVisitSchema>;
 export type HospitalDailyReportInput = z.input<typeof HospitalDailyReportSchema>;
 
 export async function saveHospitalDailyReport(session: UserSessionPayload | null, rawInput: HospitalDailyReportInput) {
-  assertAuthenticatedSession(session); const input=HospitalDailyReportSchema.parse(rawInput); const repId=resolveWritableRepId(session); const reportId=input.id||crypto.randomUUID();
+  assertAuthenticatedSession(session); const input=HospitalDailyReportSchema.parse(rawInput); assertReportSubmissionOpen(input.reportDate); const repId=resolveWritableRepId(session); const reportId=input.id||crypto.randomUUID();
   if(session?.positionCode!=='BUM'&&input.visits.some(visit=>visit.departments.length===0))throw new AppError('At least one Department and Doctor Visited entry is required',400);
   if(input.id){const existing=await db.select().from(dailyReports).where(eq(dailyReports.id,input.id)).get();if(!existing||existing.repId!==repId)throw new AppError('Hospital report not found or forbidden',403)}
   const hospitalIds=[...new Set(input.visits.map(v=>v.hospitalId))];const ownedHospitals=await db.select({id:hospitals.id}).from(hospitals).where(and(eq(hospitals.repId,repId),inArray(hospitals.id,hospitalIds))).all();
@@ -42,6 +43,7 @@ export async function createHospitalVisit(
 ) {
   assertAuthenticatedSession(session);
   const input = HospitalVisitSchema.parse(rawInput);
+  assertReportSubmissionOpen(input.lastVisit || new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' }));
   const repId = resolveWritableRepId(session);
 
   // 2. Find or Create Master Hospital

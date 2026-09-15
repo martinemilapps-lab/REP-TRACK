@@ -4,6 +4,7 @@ import { UserSessionPayload } from '@/lib/auth';
 import { AppError } from '@/lib/errors';
 import { z } from 'zod';
 import { SpecialTaskSchema } from '@/lib/validation';
+import { assertReportSubmissionOpen } from '@/lib/business/reportDeadline';
 import { FilterOptions } from './hospitalService';
 import { assertAuthenticatedSession } from '@/lib/authPolicy';
 import { resolveWritableRepId } from '@/lib/repAccessPolicy';
@@ -21,6 +22,7 @@ export async function createSpecialTaskRecord(
 ) {
   assertAuthenticatedSession(session);
   const input = SpecialTaskSchema.parse(rawInput);
+  assertReportSubmissionOpen(new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' }));
   const repId = resolveWritableRepId(session);
 
   const [record] = await db
