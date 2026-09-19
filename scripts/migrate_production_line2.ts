@@ -82,6 +82,22 @@ export function parseHierarchySql(sqlPath: string): WorkbookPerson[] {
   return [...peopleById.values()];
 }
 
+export function crossCheckAuthoritativeSources(workbookRows: WorkbookPerson[], sqlRows: WorkbookPerson[]) {
+  const workbookByName = new Map(workbookRows.map((row) => [normalize(row.name), row]));
+  const sqlByName = new Map(sqlRows.map((row) => [normalize(row.name), row]));
+  const issues: string[] = [];
+  for (const row of workbookRows) {
+    const sqlRow = sqlByName.get(normalize(row.name));
+    if (!sqlRow) issues.push(`${row.name}: missing from SQL flow`);
+    else if (row.title !== sqlRow.title || row.vacancy !== sqlRow.vacancy) issues.push(`${row.name}: title or vacancy status differs`);
+  }
+  for (const row of sqlRows) if (!workbookByName.has(normalize(row.name))) issues.push(`${row.name}: missing from spreadsheet`);
+  if (issues.length || workbookRows.length !== 34 || sqlRows.length !== 34) {
+    throw new Error(`Spreadsheet/SQL roster cross-check failed:\n${issues.join('\n')}`);
+  }
+  return sqlRows;
+}
+
 const stableRelationshipId = (subordinateId: string, managerId: string) => `line2-${createHash('sha256').update(`${subordinateId}:${managerId}`).digest('hex').slice(0, 20)}`;
 
 async function counts() {
@@ -91,7 +107,7 @@ async function counts() {
   return result;
 }
 
-async function reconcile(sourceRows: WorkbookPerson[], sourceName: string, apply: boolean) {
+async function reconcile(sourceRows: WorkbookPerson[], sourceName: string, apply: boolean, strictAuthoritative = false) {
   const workbookRows = sourceRows;
   const realPeople = workbookRows.filter((row) => !row.vacancy);
   const vacancies = workbookRows.filter((row) => row.vacancy);
@@ -144,12 +160,37 @@ async function reconcile(sourceRows: WorkbookPerson[], sourceName: string, apply
     changes.push({ employee: expected.person.name, userId: expected.subordinate.id, spreadsheetTitle: expected.person.title, databaseTitle: expected.subordinate.position_code, requiredManager: expected.manager?.name ?? null, currentManagers: activeManagerNames, action: correctBefore ? 'already correct' : expected.manager && currentActive.length === 0 ? 'add' : expected.manager ? 'replace/deduplicate' : 'remove stale', historicalOwnershipPreserved: true });
   }
 
+  const expectedEdgeKeys = new Set(
+    [...expectedBySubordinate.values()]
+      .filter((row) => row.manager)
+      .map((row) => `${row.subordinate.id}:${row.manager!.id}`),
+  );
+  const removedOutsideAuthority: Array<{ subordinate: string; manager: string; relationshipId: string }> = [];
+  if (strictAuthoritative) {
+    for (const row of resultingRelationships) {
+      if (row.is_active !== 1 || expectedEdgeKeys.has(`${row.subordinate_user_id}:${row.manager_user_id}`)) continue;
+      row.is_active = 0;
+      statements.push({ sql: 'update organization_relationships set is_active=0 where id=?', params: [row.id], method: 'run' });
+      removedOutsideAuthority.push({
+        subordinate: users.find((user) => user.id === row.subordinate_user_id)?.name ?? row.subordinate_user_id,
+        manager: users.find((user) => user.id === row.manager_user_id)?.name ?? row.manager_user_id,
+        relationshipId: row.id,
+      });
+    }
+  }
+
   const activeRelationships = resultingRelationships.filter((row) => row.is_active === 1);
   const graphCheck = validateHierarchyAcyclicity(activeRelationships.map((row) => ({ subordinateUserId: row.subordinate_user_id, managerUserId: row.manager_user_id })));
   if (!graphCheck.isValid) throw new Error(`Resulting hierarchy contains a cycle: ${graphCheck.cyclePath?.join(' -> ')}`);
   for (const expected of expectedBySubordinate.values()) {
     const managers = activeRelationships.filter((row) => row.subordinate_user_id === expected.subordinate.id);
     if (managers.length !== (expected.manager ? 1 : 0)) throw new Error(`Immediate-manager invariant failed for ${expected.person.name}`);
+  }
+  if (strictAuthoritative) {
+    const actualEdgeKeys = new Set(activeRelationships.map((row) => `${row.subordinate_user_id}:${row.manager_user_id}`));
+    if (actualEdgeKeys.size !== expectedEdgeKeys.size || [...actualEdgeKeys].some((key) => !expectedEdgeKeys.has(key))) {
+      throw new Error(`Strict hierarchy invariant failed: expected exactly ${expectedEdgeKeys.size} active user relationships.`);
+    }
   }
   const assignments = await client.execute('select id, user_id from sales_assignments where is_active=1') as Array<{ id: string; user_id: string }>;
   const assignmentsByUser = new Map<string, Array<{ id: string }>>();
@@ -158,7 +199,7 @@ async function reconcile(sourceRows: WorkbookPerson[], sourceName: string, apply
   statements.push({ sql: 'delete from hierarchy_paths', params: [], method: 'run' });
   for (const path of paths) statements.push({ sql: 'insert into hierarchy_paths (id, source_assignment_id, source_user_id, ancestor_user_id, ancestor_position, depth, created_at) values (?, ?, ?, ?, ?, ?, ?)', params: [path.id, path.sourceAssignmentId ?? null, path.sourceUserId, path.ancestorUserId, path.ancestorPosition, path.depth, Date.now()], method: 'run' });
   const beforeCounts = await counts();
-  const summary = { mode: apply ? 'apply' : 'dry-run', workbookRows: workbookRows.length, realEmployeesMatched: realPeople.length, vacancies: vacancies.map((row) => row.name), alreadyCorrect: changes.filter((row) => row.action === 'already correct').length, relationshipsAdded: changes.filter((row) => row.action === 'add').length, relationshipsCorrected: changes.filter((row) => row.action === 'replace/deduplicate').length, staleTopLevelRemoved: changes.filter((row) => row.action === 'remove stale').length, derivedPaths: paths.length, beforeCounts, changes };
+  const summary = { mode: apply ? 'apply' : 'dry-run', strictAuthoritative, workbookRows: workbookRows.length, realEmployeesMatched: realPeople.length, vacancies: vacancies.map((row) => row.name), alreadyCorrect: changes.filter((row) => row.action === 'already correct').length, relationshipsAdded: changes.filter((row) => row.action === 'add').length, relationshipsCorrected: changes.filter((row) => row.action === 'replace/deduplicate').length, staleTopLevelRemoved: changes.filter((row) => row.action === 'remove stale').length, relationshipsRemovedOutsideAuthority: removedOutsideAuthority.length, removedOutsideAuthority, activeRelationshipsAfter: activeRelationships.length, derivedPaths: paths.length, beforeCounts, changes };
   if (!apply) return summary;
   await dataGatewayClient.executeDrizzleProxyBatch(statements);
   return { ...summary, afterCounts: await counts() };
@@ -168,9 +209,11 @@ async function main() {
   const workbookArg = process.argv.find((arg) => arg.startsWith('--workbook='));
   const sqlArg = process.argv.find((arg) => arg.startsWith('--sql='));
   if (!workbookArg && !sqlArg) throw new Error('Use --workbook=<path> or --sql=<path>.');
-  const sourceName = sqlArg ? 'rep_track_hierarchy_d1.sql' : 'Final Areas sheet - Line 2.xlsx';
-  const rows = sqlArg ? parseHierarchySql(sqlArg.slice('--sql='.length)) : parseLine2Workbook(workbookArg!.slice('--workbook='.length));
-  console.log(JSON.stringify(await reconcile(rows, sourceName, process.argv.includes('--apply-production-line2')), null, 2));
+  const sourceName = sqlArg && workbookArg ? 'Final Areas sheet - Line 2.xlsx + rep_track_hierarchy_d1.sql' : sqlArg ? 'rep_track_hierarchy_d1.sql' : 'Final Areas sheet - Line 2.xlsx';
+  const sqlRows = sqlArg ? parseHierarchySql(sqlArg.slice('--sql='.length)) : null;
+  const workbookRows = workbookArg ? parseLine2Workbook(workbookArg.slice('--workbook='.length)) : null;
+  const rows = sqlRows && workbookRows ? crossCheckAuthoritativeSources(workbookRows, sqlRows) : sqlRows ?? workbookRows!;
+  console.log(JSON.stringify(await reconcile(rows, sourceName, process.argv.includes('--apply-production-line2'), process.argv.includes('--strict-authoritative')), null, 2));
 }
 
 if (process.argv[1]?.includes('migrate_production_line2')) main().catch((error) => { console.error(error instanceof Error ? error.message : error); process.exitCode = 1; });

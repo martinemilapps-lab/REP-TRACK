@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolveHierarchyAncestorIds, resolveHierarchyUserIds } from '../src/lib/services/hierarchyService';
-import { parseHierarchySql } from '../scripts/migrate_production_line2';
+import { crossCheckAuthoritativeSources, parseHierarchySql, parseLine2Workbook } from '../scripts/migrate_production_line2';
 
 const sqlPath = process.env.HIERARCHY_SQL_PATH ?? 'C:\\Users\\Martin\\Downloads\\rep_track_hierarchy_d1.sql';
 const expectedManagers: Record<string, string | null> = {
@@ -16,6 +16,8 @@ assert.equal(rows.filter((row) => !row.vacancy).length, 30);
 assert.equal(rows.filter((row) => row.managerName).length, 33);
 assert.equal(rows.filter((row) => !row.managerName).length, 1);
 if (existsSync(sqlPath)) assert.deepEqual(rows.filter((row) => row.vacancy).map((row) => id(row.name)), ['Vacant Maadi/Helwan', 'Vacant Nasr City', 'Vacant Alex 2', 'Vacant Minya'].map(id));
+const workbookPath = process.env.LINE2_WORKBOOK_PATH ?? 'C:\\Users\\Martin\\Downloads\\Final Areas sheet - Line 2.xlsx';
+if (existsSync(sqlPath) && existsSync(workbookPath)) assert.equal(crossCheckAuthoritativeSources(parseLine2Workbook(workbookPath), rows).length, 34);
 assert.deepEqual(Object.fromEntries(rows.filter((row) => !row.vacancy).map((row) => [id(row.name), row.managerName ? id(row.managerName) : null])), Object.fromEntries(Object.entries(expectedManagers).map(([name, manager]) => [id(name), manager ? id(manager) : null])));
 const real = rows.filter((row) => !row.vacancy);
 assert(rows.filter((row) => row.vacancy).every((row) => Boolean(row.managerName)));

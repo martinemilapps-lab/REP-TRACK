@@ -53,6 +53,17 @@ async function main() {
   const paths = await client.execute('select source_user_id sourceUserId, ancestor_user_id ancestorUserId, depth from hierarchy_paths');
   const actualPaths = new Set(paths.map((row) => `${row.sourceUserId}:${row.ancestorUserId}:${row.depth}`));
   for (const path of expectedPaths) if (!actualPaths.has(path)) throw new Error(`Missing hierarchy path ${path}.`);
+  if (actualPaths.size !== expectedPaths.size || [...actualPaths].some((path) => !expectedPaths.has(path))) {
+    throw new Error(`Production contains paths outside the authoritative hierarchy: expected ${expectedPaths.size}, found ${actualPaths.size}.`);
+  }
+
+  const expectedRelationships = new Set(
+    activeRows.filter((row) => row.managerName).map((row) => `${activeUsersByName.get(normalize(row.name))}:${activeUsersByName.get(normalize(row.managerName!))}`),
+  );
+  const actualRelationships = new Set(relationships.map((row) => `${row.subordinateUserId}:${row.managerUserId}`));
+  if (actualRelationships.size !== expectedRelationships.size || [...actualRelationships].some((edge) => !expectedRelationships.has(edge))) {
+    throw new Error(`Production contains relationships outside the authoritative hierarchy: expected ${expectedRelationships.size}, found ${actualRelationships.size}.`);
+  }
 
   const vacancyAccounts = vacancies.filter((vacancy) => activeUsersByName.has(normalize(vacancy.name)));
   if (vacancyAccounts.length) throw new Error(`Vacancies unexpectedly have active accounts: ${vacancyAccounts.map((row) => row.name).join(', ')}`);
