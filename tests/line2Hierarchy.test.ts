@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolveHierarchyAncestorIds, resolveHierarchyUserIds } from '../src/lib/services/hierarchyService';
 import { parseLine2Workbook } from '../scripts/migrate_production_line2';
 
@@ -38,4 +38,7 @@ assert(!descendants('Rafik Maged').has(id('Ahmed El Kot')));
 assert.equal(new Set(edges.map((edge) => `${edge.subordinateUserId}:${edge.managerUserId}`)).size, edges.length);
 assert(edges.every((edge) => edge.subordinateUserId !== edge.managerUserId));
 for (const person of real) assert(!ancestors(person.name).includes(id(person.name)));
+const hierarchyServiceSource = readFileSync('src/lib/services/hierarchyService.ts', 'utf8');
+assert.match(hierarchyServiceSource, /getDirectManagerIds[\s\S]*?assertAuthenticatedSession\(session\)/);
+assert.match(hierarchyServiceSource, /getAncestorIds[\s\S]*?assertAuthenticatedSession\(session\)/);
 console.log('Line 2 workbook hierarchy: 30 employees, 4 vacancies, direct, descendant, ancestor and isolation checks passed');

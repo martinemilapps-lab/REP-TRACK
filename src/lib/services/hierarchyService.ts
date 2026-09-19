@@ -1,7 +1,7 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import { db, hierarchyPaths, managerRepScopes, organizationRelationships, representatives, salesAssignments, users } from '@/lib/db';
 import type { UserSessionPayload } from '@/lib/auth';
-import { assertManagerSession } from '@/lib/authPolicy';
+import { assertAuthenticatedSession, assertManagerSession } from '@/lib/authPolicy';
 import { AppError } from '@/lib/errors';
 
 export type HierarchyScopeMode = 'DIRECT_REPORTS' | 'ALL_DESCENDANTS';
@@ -83,7 +83,7 @@ export const hierarchyService = {
     }
   },
   async getDirectManagerIds(session: UserSessionPayload | null) {
-    assertManagerSession(session);
+    assertAuthenticatedSession(session);
     try {
       const graph = await loadGraph();
       return resolveHierarchyAncestorIds(session.id, graph.edges, graph.activeUserIds, true);
@@ -92,7 +92,7 @@ export const hierarchyService = {
     }
   },
   async getAncestorIds(session: UserSessionPayload | null) {
-    assertManagerSession(session);
+    assertAuthenticatedSession(session);
     try {
       const rows = await db.select({ id: hierarchyPaths.ancestorUserId }).from(hierarchyPaths)
         .innerJoin(users, eq(users.id, hierarchyPaths.ancestorUserId))
