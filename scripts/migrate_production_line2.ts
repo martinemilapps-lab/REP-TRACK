@@ -1,170 +1,146 @@
 import * as dotenv from 'dotenv';
-import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
-import { client } from '../src/lib/db';
 import * as XLSX from 'xlsx';
+import { client } from '../src/lib/db';
+import { dataGatewayClient } from '../src/lib/dataGatewayClient';
+import { computeTransitiveClosure, validateHierarchyAcyclicity } from '../src/lib/services/organizationService';
 
 dotenv.config({ path: '.env.local', quiet: true });
 
-const APPLY_FLAG = '--apply-production-line2';
+type UserRow = { id: string; name: string; position_code: string; is_active: number };
+type RelationshipRow = { id: string; subordinate_user_id: string; manager_user_id: string; relationship_type: string; source_position: string; manager_position: string; subordinate_assignment_id: string | null; is_active: number };
+type WorkbookPerson = { name: string; title: string; territory: string; managerName: string | null; vacancy: boolean };
+type Statement = { sql: string; params: unknown[]; method: 'run' };
 
 const normalize = (value: unknown) => String(value ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
-const normalizePosition = (value: unknown) => String(value ?? '').trim().toUpperCase().replace(/\s*\d+\s*$/, '').replace(/\s+/g, '');
+const canonicalPosition = (value: unknown) => {
+  const title = String(value ?? '').trim().toUpperCase().replace(/\s+/g, '');
+  if (/^MR\d*$/.test(title)) return 'MR';
+  if (/^DM\d*$/.test(title)) return 'DM';
+  if (/^BUM\d*$/.test(title)) return 'BUM';
+  if (title === 'SANDMD' || title === 'S&MD') return 'SMD';
+  return title;
+};
+const populatedName = (value: unknown) => {
+  const text = String(value ?? '').trim().replace(/\s+/g, ' ');
+  return text && normalize(text) !== 'none' ? text : null;
+};
 
-async function syncLine2Workbook(workbookPath: string) {
-  const workbook = XLSX.readFile(workbookPath);
+export function parseLine2Workbook(workbookPath: string): WorkbookPerson[] {
+  const workbook = XLSX.readFile(resolve(workbookPath));
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const raw = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: '' });
-  const headers = raw[1].map((value) => String(value ?? '').trim());
-  const records = raw.slice(2).map((row) => Object.fromEntries(headers.map((header, index) => [header, row[index]])))
-    .filter((row) => normalize(row['Employee Name']));
-  const userRows = await client.execute('select id, name, position_code from users');
-  const byName = new Map<string, Array<Record<string, unknown>>>();
-  for (const user of userRows) {
-    const key = normalize(user.name);
-    byName.set(key, [...(byName.get(key) ?? []), user]);
+  const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: '' });
+  const headerIndex = rows.findIndex((row) => row.some((value) => normalize(value) === 'employee name'));
+  if (headerIndex < 0) throw new Error('Workbook header row containing Employee Name was not found.');
+  const headers = rows[headerIndex].map((value) => normalize(value));
+  const column = (name: string) => {
+    const index = headers.indexOf(normalize(name));
+    if (index < 0) throw new Error(`Workbook column was not found: ${name}`);
+    return index;
+  };
+  const employeeColumn = column('Employee Name');
+  const titleColumn = column('Title');
+  const territoryColumn = column('Territory');
+  const managerColumns: Record<string, string[]> = { MR: ['DM', 'AM', 'OM', 'BUM', 'MM', 'S and MD'], DM: ['AM', 'OM', 'BUM', 'MM', 'S and MD'], AM: ['OM', 'BUM', 'MM', 'S and MD'], OM: ['BUM', 'MM', 'S and MD'], BUM: ['MM', 'S and MD'], MM: ['S and MD'], SMD: [] };
+  const parsed: WorkbookPerson[] = [];
+  for (const row of rows.slice(headerIndex + 1)) {
+    const name = populatedName(row[employeeColumn]);
+    if (!name) continue;
+    const title = canonicalPosition(row[titleColumn]);
+    if (!managerColumns[title]) throw new Error(`Unsupported title for ${name}: ${String(row[titleColumn])}`);
+    const managerName = managerColumns[title].map((managerColumn) => populatedName(row[column(managerColumn)])).find(Boolean) ?? null;
+    parsed.push({ name, title, territory: String(row[territoryColumn] ?? '').trim(), managerName, vacancy: normalize(name).startsWith('vacant') });
   }
-  const realRecords = records.filter((row) => !normalize(row['Employee Name']).startsWith('vacant'));
-  for (const row of realRecords) {
-    const matches = byName.get(normalize(row['Employee Name'])) ?? [];
-    if (matches.length !== 1) throw new Error(`Workbook identity is missing or ambiguous: ${String(row['Employee Name']).trim()}`);
-    const expectedPosition = normalizePosition(row.Title);
-    if (expectedPosition && normalizePosition(matches[0].position_code) !== expectedPosition) {
-      throw new Error(`Workbook position mismatch for ${String(row['Employee Name']).trim()}`);
+  return parsed;
+}
+
+const stableRelationshipId = (subordinateId: string, managerId: string) => `line2-${createHash('sha256').update(`${subordinateId}:${managerId}`).digest('hex').slice(0, 20)}`;
+
+async function counts() {
+  const tables = ['users', 'representatives', 'hospital_visits', 'doctor_visits', 'pharmacy_visits', 'branch_visits', 'weekly_plans', 'manager_weekly_plans', 'hospitals', 'doctors', 'pharmacies', 'distribution_branches', 'product_availabilities'];
+  const result: Record<string, number> = {};
+  for (const table of tables) result[table] = Number((await client.execute(`select count(*) count from ${table}`))[0]?.count ?? 0);
+  return result;
+}
+
+async function reconcile(workbookPath: string, apply: boolean) {
+  const workbookRows = parseLine2Workbook(workbookPath);
+  const realPeople = workbookRows.filter((row) => !row.vacancy);
+  const vacancies = workbookRows.filter((row) => row.vacancy);
+  const users = await client.execute('select id, name, position_code, is_active from users') as UserRow[];
+  const byName = new Map<string, UserRow[]>();
+  for (const user of users) byName.set(normalize(user.name), [...(byName.get(normalize(user.name)) ?? []), user]);
+  const unresolved: string[] = [];
+  const resolved = new Map<string, UserRow>();
+  for (const person of realPeople) {
+    const matches = byName.get(normalize(person.name)) ?? [];
+    if (matches.length !== 1) { unresolved.push(`${person.name}: ${matches.length ? 'ambiguous' : 'missing'}`); continue; }
+    const user = matches[0];
+    if (canonicalPosition(user.position_code) !== person.title) unresolved.push(`${person.name}: title ${user.position_code} does not match ${person.title}`);
+    else resolved.set(normalize(person.name), user);
+  }
+  for (const person of realPeople) if (person.managerName && !resolved.has(normalize(person.managerName))) unresolved.push(`${person.name}: manager ${person.managerName} is unresolved`);
+  if (unresolved.length) throw new Error(`Identity preflight failed:\n${unresolved.join('\n')}`);
+
+  const relationships = await client.execute('select id, subordinate_user_id, manager_user_id, relationship_type, source_position, manager_position, subordinate_assignment_id, is_active from organization_relationships') as RelationshipRow[];
+  const expectedBySubordinate = new Map<string, { person: WorkbookPerson; subordinate: UserRow; manager: UserRow | null }>();
+  for (const person of realPeople) expectedBySubordinate.set(resolved.get(normalize(person.name))!.id, { person, subordinate: resolved.get(normalize(person.name))!, manager: person.managerName ? resolved.get(normalize(person.managerName))! : null });
+  const changes: Array<Record<string, unknown>> = [];
+  const statements: Statement[] = [];
+  const resultingRelationships = relationships.map((row) => ({ ...row }));
+  for (const expected of expectedBySubordinate.values()) {
+    const currentActive = resultingRelationships.filter((row) => row.subordinate_user_id === expected.subordinate.id && row.is_active === 1);
+    const matching = expected.manager ? resultingRelationships.filter((row) => row.subordinate_user_id === expected.subordinate.id && row.manager_user_id === expected.manager!.id) : [];
+    const keeper = matching.find((row) => row.relationship_type === 'DIRECT') ?? matching[0];
+    for (const row of currentActive) {
+      if (keeper && row.id === keeper.id) continue;
+      row.is_active = 0;
+      statements.push({ sql: 'update organization_relationships set is_active=0 where id=?', params: [row.id], method: 'run' });
     }
-  }
-  const affectedIds = [...new Set(realRecords.map((row) => String(byName.get(normalize(row['Employee Name']))![0].id)))];
-  if (affectedIds.length) {
-    await client.execute(`delete from hierarchy_paths where source_user_id in (${affectedIds.map(() => '?').join(',')})`, affectedIds);
-  }
-  const seenRelationships = new Set<string>();
-  const seenPaths = new Set<string>();
-  let relationshipCount = 0;
-  let pathCount = 0;
-  for (const row of realRecords) {
-    const employee = String(row['Employee Name']).trim();
-    const chainNames = [employee, ...['DM', 'AM', 'OM', 'BUM', 'MM', 'S and MD']
-      .map((column) => String(row[column] ?? '').trim())
-      .filter((name) => name && normalize(name) !== 'none')];
-    const chain = chainNames.map((name) => {
-      const matches = byName.get(normalize(name)) ?? [];
-      if (matches.length !== 1) throw new Error(`Workbook manager is missing or ambiguous: ${name}`);
-      return matches[0];
-    }).filter((user, index, list) => index === 0 || user.id !== list[index - 1].id);
-    for (let index = 0; index < chain.length - 1; index++) {
-      const subordinate = chain[index];
-      const manager = chain[index + 1];
-      const key = `${subordinate.id}:${manager.id}`;
-      if (seenRelationships.has(key)) continue;
-      seenRelationships.add(key);
-      const relationshipType = index === 0 && String(manager.position_code) !== 'DM' ? 'SKIP_LEVEL' : 'DIRECT';
-      await client.execute(
-        `insert or ignore into organization_relationships (id, subordinate_user_id, manager_user_id, relationship_type, source_position, manager_position, subordinate_assignment_id, is_active, source_metadata) values (?, ?, ?, ?, ?, ?, null, 1, ?)`,
-        [`line2-${subordinate.id}-${manager.id}`, subordinate.id, manager.id, relationshipType, subordinate.position_code, manager.position_code, JSON.stringify({ source: 'Final Areas sheet - Line 2.xlsx' })],
-      );
-      relationshipCount++;
-    }
-    const source = chain[0];
-    const assignments = await client.execute("select id from sales_assignments where user_id=? and is_active=1 and assignment_type in ('PRIMARY_REP','PERSONAL_MR')", [source.id]);
-    for (let depth = 1; depth < chain.length; depth++) {
-      const ancestor = chain[depth];
-      const userKey = `${source.id}:${ancestor.id}`;
-      if (!seenPaths.has(userKey)) {
-        seenPaths.add(userKey);
-        await client.execute('insert into hierarchy_paths (id, source_assignment_id, source_user_id, ancestor_user_id, ancestor_position, depth) values (?, null, ?, ?, ?, ?)', [`line2-u-${source.id}-${ancestor.id}`, source.id, ancestor.id, ancestor.position_code, depth]);
-        pathCount++;
+    if (expected.manager) {
+      const metadata = JSON.stringify({ source: 'Final Areas sheet - Line 2.xlsx', authoritative: true });
+      if (keeper) {
+        keeper.is_active = 1;
+        keeper.relationship_type = 'DIRECT';
+        keeper.source_position = expected.subordinate.position_code;
+        keeper.manager_position = expected.manager.position_code;
+        statements.push({ sql: 'update organization_relationships set is_active=1, relationship_type=?, source_position=?, manager_position=?, source_metadata=? where id=?', params: ['DIRECT', expected.subordinate.position_code, expected.manager.position_code, metadata, keeper.id], method: 'run' });
+      } else {
+        const created: RelationshipRow = { id: stableRelationshipId(expected.subordinate.id, expected.manager.id), subordinate_user_id: expected.subordinate.id, manager_user_id: expected.manager.id, relationship_type: 'DIRECT', source_position: expected.subordinate.position_code, manager_position: expected.manager.position_code, subordinate_assignment_id: null, is_active: 1 };
+        resultingRelationships.push(created);
+        statements.push({ sql: 'insert into organization_relationships (id, subordinate_user_id, manager_user_id, relationship_type, source_position, manager_position, subordinate_assignment_id, is_active, source_metadata, created_at) values (?, ?, ?, ?, ?, ?, null, 1, ?, ?)', params: [created.id, created.subordinate_user_id, created.manager_user_id, 'DIRECT', created.source_position, created.manager_position, metadata, Date.now()], method: 'run' });
       }
-      for (const assignment of assignments) {
-        const assignmentKey = `${assignment.id}:${ancestor.id}`;
-        if (seenPaths.has(assignmentKey)) continue;
-        seenPaths.add(assignmentKey);
-        await client.execute('insert into hierarchy_paths (id, source_assignment_id, source_user_id, ancestor_user_id, ancestor_position, depth) values (?, ?, ?, ?, ?, ?)', [`line2-sa-${assignment.id}-${ancestor.id}`, assignment.id, source.id, ancestor.id, ancestor.position_code, depth]);
-        pathCount++;
-      }
     }
+    const activeManagerNames = currentActive.map((row) => users.find((user) => user.id === row.manager_user_id)?.name ?? row.manager_user_id);
+    const correctBefore = expected.manager ? currentActive.length === 1 && currentActive[0].manager_user_id === expected.manager.id : currentActive.length === 0;
+    changes.push({ employee: expected.person.name, userId: expected.subordinate.id, spreadsheetTitle: expected.person.title, databaseTitle: expected.subordinate.position_code, requiredManager: expected.manager?.name ?? null, currentManagers: activeManagerNames, action: correctBefore ? 'already correct' : expected.manager && currentActive.length === 0 ? 'add' : expected.manager ? 'replace/deduplicate' : 'remove stale', historicalOwnershipPreserved: true });
   }
-  return { employees: realRecords.length, relationships: relationshipCount, paths: pathCount };
-}
 
-function statements(source: string) {
-  return source
-    .replace(/^\s*--.*$/gm, '')
-    .split(';')
-    .map((part) => part.trim())
-    .filter(Boolean);
-}
-
-async function tableColumns(table: string) {
-  return new Set((await client.execute(`pragma table_info(${table})`)).map((row) => String(row.name)));
-}
-
-async function addMissingColumns(table: string, definitions: Record<string, string>) {
-  const present = await tableColumns(table);
-  for (const [column, definition] of Object.entries(definitions)) {
-    if (!present.has(column)) await client.execute(`alter table ${table} add column ${column} ${definition}`);
+  const activeRelationships = resultingRelationships.filter((row) => row.is_active === 1);
+  const graphCheck = validateHierarchyAcyclicity(activeRelationships.map((row) => ({ subordinateUserId: row.subordinate_user_id, managerUserId: row.manager_user_id })));
+  if (!graphCheck.isValid) throw new Error(`Resulting hierarchy contains a cycle: ${graphCheck.cyclePath?.join(' -> ')}`);
+  for (const expected of expectedBySubordinate.values()) {
+    const managers = activeRelationships.filter((row) => row.subordinate_user_id === expected.subordinate.id);
+    if (managers.length !== (expected.manager ? 1 : 0)) throw new Error(`Immediate-manager invariant failed for ${expected.person.name}`);
   }
+  const assignments = await client.execute('select id, user_id from sales_assignments where is_active=1') as Array<{ id: string; user_id: string }>;
+  const assignmentsByUser = new Map<string, Array<{ id: string }>>();
+  for (const assignment of assignments) assignmentsByUser.set(assignment.user_id, [...(assignmentsByUser.get(assignment.user_id) ?? []), { id: assignment.id }]);
+  const paths = computeTransitiveClosure(activeRelationships.map((row) => ({ subordinateUserId: row.subordinate_user_id, managerUserId: row.manager_user_id, managerPosition: row.manager_position, subordinateAssignmentId: row.subordinate_assignment_id })), new Map(users.map((user) => [user.id, user.position_code])), assignmentsByUser);
+  statements.push({ sql: 'delete from hierarchy_paths', params: [], method: 'run' });
+  for (const path of paths) statements.push({ sql: 'insert into hierarchy_paths (id, source_assignment_id, source_user_id, ancestor_user_id, ancestor_position, depth, created_at) values (?, ?, ?, ?, ?, ?, ?)', params: [path.id, path.sourceAssignmentId ?? null, path.sourceUserId, path.ancestorUserId, path.ancestorPosition, path.depth, Date.now()], method: 'run' });
+  const beforeCounts = await counts();
+  const summary = { mode: apply ? 'apply' : 'dry-run', workbookRows: workbookRows.length, realEmployeesMatched: realPeople.length, vacancies: vacancies.map((row) => row.name), alreadyCorrect: changes.filter((row) => row.action === 'already correct').length, relationshipsAdded: changes.filter((row) => row.action === 'add').length, relationshipsCorrected: changes.filter((row) => row.action === 'replace/deduplicate').length, staleTopLevelRemoved: changes.filter((row) => row.action === 'remove stale').length, derivedPaths: paths.length, beforeCounts, changes };
+  if (!apply) return summary;
+  await dataGatewayClient.executeDrizzleProxyBatch(statements);
+  return { ...summary, afterCounts: await counts() };
 }
 
 async function main() {
-  if (!process.argv.includes(APPLY_FLAG)) throw new Error(`Explicit ${APPLY_FLAG} authorization is required.`);
-  const expected = ['Ahmed El Kot', 'Maher Khamis', 'Michael Antonyo', 'Osama Bert', 'Maged Raouf'];
-  const matches = await client.execute(
-    `select name, count(*) count from users where lower(trim(name)) in (${expected.map(() => '?').join(',')}) group by lower(trim(name))`,
-    expected.map((name) => name.toLowerCase()),
-  );
-  if (matches.length !== expected.length || matches.some((row) => Number(row.count) !== 1)) {
-    throw new Error('Production account preflight failed: expected hierarchy identities are missing or ambiguous.');
-  }
-
-  const foundation = readFileSync(resolve('scripts/migrations/step15b_organization_foundation.sql'), 'utf8');
-  for (const sql of statements(foundation)) await client.execute(sql);
-
-  const data = readFileSync(resolve('scripts/migrations/step15b_organization_data.sql'), 'utf8');
-  for (const sql of statements(data)) {
-    if (!/^INSERT OR REPLACE INTO `(positions|areas|sales_assignments|organization_relationships|hierarchy_paths|manager_rep_scopes|manager_area_scopes)`/i.test(sql)) continue;
-    await client.execute(sql.replace(/^INSERT OR REPLACE/i, 'INSERT OR IGNORE'));
-  }
-
   const workbookArg = process.argv.find((arg) => arg.startsWith('--workbook='));
-  if (!workbookArg) throw new Error('An authoritative --workbook=<path> is required.');
-  const workbookSync = await syncLine2Workbook(workbookArg.slice('--workbook='.length));
-
-  await addMissingColumns('hospitals', { rep_id: 'text', doctor_names: 'text', default_cycle: 'integer default 7', target_products: 'text' });
-  await addMissingColumns('pharmacies', { rep_id: 'text', default_cycle: 'integer default 7', target_products: 'text' });
-  await addMissingColumns('doctors', { rep_id: 'text', address: 'text', best_time: 'text', default_cycle: 'integer default 7', target_products: 'text' });
-  await addMissingColumns('distribution_branches', { rep_id: 'text', address: 'text', default_cycle: 'integer default 7' });
-  await addMissingColumns('hospital_visits', { objective: 'text', doctor_names: 'text' });
-  await addMissingColumns('pharmacy_visits', { stock_per_month: 'text', sales_per_month: 'text' });
-  await addMissingColumns('doctor_visits', { prescription_rate: 'text', nearby_pharmacy: 'text' });
-  await addMissingColumns('branch_visits', { products: 'text', monthly_stock: 'text', monthly_sales: 'text' });
-  await addMissingColumns('product_availabilities', { objective: 'text', annual_target: 'integer default 0', avg_monthly_target: 'integer default 0', potentiality: 'integer default 0' });
-
-  const factTables = [
-    `create table if not exists events (id text primary key not null, rep_id text not null references representatives(id) on delete restrict, title text not null, event_type text not null, event_date text not null, location text, attendees_count integer default 0, target_specialty text, products text, budget text, feedback text, notes text, submitted_at integer not null default (unixepoch() * 1000))`,
-    `create table if not exists trainings (id text primary key not null, rep_id text not null references representatives(id) on delete restrict, title text not null, training_type text not null, training_date text not null, trainer text, attendees text, duration_hours integer default 1, outcomes text, notes text, submitted_at integer not null default (unixepoch() * 1000))`,
-    `create table if not exists special_tasks (id text primary key not null, rep_id text not null references representatives(id) on delete restrict, title text not null, task_category text not null, task_date text not null, assigned_by text, priority text not null default 'Normal', status text not null default 'Completed', description text, notes text, submitted_at integer not null default (unixepoch() * 1000))`,
-    `create index if not exists idx_events_rep on events(rep_id)`,
-    `create index if not exists idx_events_date on events(event_date)`,
-    `create index if not exists idx_trainings_rep on trainings(rep_id)`,
-    `create index if not exists idx_trainings_date on trainings(training_date)`,
-    `create index if not exists idx_special_tasks_rep on special_tasks(rep_id)`,
-    `create index if not exists idx_special_tasks_date on special_tasks(task_date)`,
-    `create index if not exists idx_hospitals_rep on hospitals(rep_id)`,
-    `create index if not exists idx_pharmacies_rep on pharmacies(rep_id)`,
-    `create index if not exists idx_doctors_rep on doctors(rep_id)`,
-    `create index if not exists idx_dist_branches_rep on distribution_branches(rep_id)`,
-  ];
-  for (const sql of factTables) await client.execute(sql);
-
-  const chain = await client.execute(
-    `select su.name source, au.name ancestor, hp.depth from hierarchy_paths hp join users su on su.id=hp.source_user_id join users au on au.id=hp.ancestor_user_id where su.name=? order by hp.depth`,
-    ['Ahmed El Kot'],
-  );
-  const tables = await client.execute("select name from sqlite_master where type='table' and name in ('organization_relationships','hierarchy_paths','events','trainings','special_tasks') order by name");
-  console.log(JSON.stringify({ status: 'PASS', workbookSync, tables: tables.map((row) => row.name), ahmedChain: chain }, null, 2));
+  if (!workbookArg) throw new Error('Use --workbook=<path>.');
+  console.log(JSON.stringify(await reconcile(workbookArg.slice('--workbook='.length), process.argv.includes('--apply-production-line2')), null, 2));
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});
+if (process.argv[1]?.includes('migrate_production_line2')) main().catch((error) => { console.error(error instanceof Error ? error.message : error); process.exitCode = 1; });
