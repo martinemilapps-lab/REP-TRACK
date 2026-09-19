@@ -1,5 +1,6 @@
 import * as dotenv from 'dotenv';
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import * as XLSX from 'xlsx';
 import { client } from '../src/lib/db';
@@ -55,6 +56,32 @@ export function parseLine2Workbook(workbookPath: string): WorkbookPerson[] {
   return parsed;
 }
 
+export function parseHierarchySql(sqlPath: string): WorkbookPerson[] {
+  const source = readFileSync(resolve(sqlPath), 'utf8');
+  const employeeBlock = source.match(/INSERT INTO org_employees[\s\S]*?VALUES([\s\S]*?)ON CONFLICT\(id\)/i)?.[1];
+  const relationshipBlock = source.match(/INSERT INTO org_reporting_relationships[\s\S]*?VALUES([\s\S]*?)ON CONFLICT\(employee_id\)/i)?.[1];
+  if (!employeeBlock || !relationshipBlock) throw new Error('Authoritative org employee or relationship block was not found.');
+  const titleById: Record<string, string> = { title_mr:'MR', title_mr2:'MR', title_dm:'DM', title_dm2:'DM', title_dm_2:'DM', title_am:'AM', title_om:'OM', title_bum2:'BUM', title_smd:'SMD' };
+  const peopleById = new Map<string, WorkbookPerson>();
+  const employeePattern = /\('([^']+)',\s*'[^']+',\s*'([^']+)',\s*'[^']+',\s*'([^']+)',\s*(?:NULL|'([^']+)'),\s*'(ACTIVE|INACTIVE|VACANT)'\)/g;
+  for (const match of employeeBlock.matchAll(employeePattern)) {
+    const title = titleById[match[3]];
+    if (!title) throw new Error(`Unknown SQL title id: ${match[3]}`);
+    peopleById.set(match[1], { name: match[2], title, territory: match[4] ?? '', managerName: null, vacancy: match[5] === 'VACANT' });
+  }
+  const relationshipPattern = /\('([^']+)',\s*'([^']+)'\)/g;
+  let relationshipCount = 0;
+  for (const match of relationshipBlock.matchAll(relationshipPattern)) {
+    const person = peopleById.get(match[1]);
+    const manager = peopleById.get(match[2]);
+    if (!person || !manager) throw new Error(`Unknown SQL relationship identity: ${match[1]} -> ${match[2]}`);
+    person.managerName = manager.name;
+    relationshipCount++;
+  }
+  if (peopleById.size !== 34 || relationshipCount !== 33) throw new Error(`Expected 34 positions and 33 relationships; found ${peopleById.size} and ${relationshipCount}.`);
+  return [...peopleById.values()];
+}
+
 const stableRelationshipId = (subordinateId: string, managerId: string) => `line2-${createHash('sha256').update(`${subordinateId}:${managerId}`).digest('hex').slice(0, 20)}`;
 
 async function counts() {
@@ -64,8 +91,8 @@ async function counts() {
   return result;
 }
 
-async function reconcile(workbookPath: string, apply: boolean) {
-  const workbookRows = parseLine2Workbook(workbookPath);
+async function reconcile(sourceRows: WorkbookPerson[], sourceName: string, apply: boolean) {
+  const workbookRows = sourceRows;
   const realPeople = workbookRows.filter((row) => !row.vacancy);
   const vacancies = workbookRows.filter((row) => row.vacancy);
   const users = await client.execute('select id, name, position_code, is_active from users') as UserRow[];
@@ -99,7 +126,7 @@ async function reconcile(workbookPath: string, apply: boolean) {
       statements.push({ sql: 'update organization_relationships set is_active=0 where id=?', params: [row.id], method: 'run' });
     }
     if (expected.manager) {
-      const metadata = JSON.stringify({ source: 'Final Areas sheet - Line 2.xlsx', authoritative: true });
+      const metadata = JSON.stringify({ source: sourceName, authoritative: true });
       if (keeper) {
         keeper.is_active = 1;
         keeper.relationship_type = 'DIRECT';
@@ -139,8 +166,11 @@ async function reconcile(workbookPath: string, apply: boolean) {
 
 async function main() {
   const workbookArg = process.argv.find((arg) => arg.startsWith('--workbook='));
-  if (!workbookArg) throw new Error('Use --workbook=<path>.');
-  console.log(JSON.stringify(await reconcile(workbookArg.slice('--workbook='.length), process.argv.includes('--apply-production-line2')), null, 2));
+  const sqlArg = process.argv.find((arg) => arg.startsWith('--sql='));
+  if (!workbookArg && !sqlArg) throw new Error('Use --workbook=<path> or --sql=<path>.');
+  const sourceName = sqlArg ? 'rep_track_hierarchy_d1.sql' : 'Final Areas sheet - Line 2.xlsx';
+  const rows = sqlArg ? parseHierarchySql(sqlArg.slice('--sql='.length)) : parseLine2Workbook(workbookArg!.slice('--workbook='.length));
+  console.log(JSON.stringify(await reconcile(rows, sourceName, process.argv.includes('--apply-production-line2')), null, 2));
 }
 
 if (process.argv[1]?.includes('migrate_production_line2')) main().catch((error) => { console.error(error instanceof Error ? error.message : error); process.exitCode = 1; });
