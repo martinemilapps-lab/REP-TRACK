@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const hierarchyCreateSchema = z.object({ subordinateUserId:z.string().min(1), managerUserId:z.string().min(1) }).strict();
 export const hierarchyReplaceSchema = z.object({ subordinateUserId:z.string().min(1), managerUserId:z.string().min(1) }).strict();
+export const hierarchySwapSchema = z.object({ firstUserId:z.string().min(1), secondUserId:z.string().min(1) }).strict().refine(value => value.firstUserId !== value.secondUserId, { message:'Choose two different employees' });
 export const assignmentCreateSchema = z.object({ userId:z.string().min(1), assignmentType:z.enum(['PRIMARY_REP','PERSONAL_MR','TERRITORY_COVERAGE']), titleRaw:z.string().trim().min(1).max(120), businessLine:z.number().int().min(1).max(99).nullable().optional(), areaId:z.string().nullable().optional(), territoryName:z.string().trim().min(1).max(160), repId:z.string().nullable().optional(), isActive:z.boolean().default(true) }).strict();
 export const assignmentUpdateSchema = assignmentCreateSchema.omit({userId:true}).partial().strict();
 export const representativeCreateSchema = z.object({ name:z.string().trim().min(1).max(160), area:z.string().trim().min(1).max(160), assignedHospitals:z.number().int().min(0).default(0), assignedPharmacies:z.number().int().min(0).default(0), assignedDrs:z.number().int().min(0).default(0), isActive:z.boolean().default(true) }).strict();
