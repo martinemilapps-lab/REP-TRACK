@@ -1,4 +1,5 @@
 import './line2Hierarchy.test';
+import './adminUserHierarchy.test';
 const runRemoteIntegration = process.argv.includes('--remote-integration') && process.env.REP_TRACK_REMOTE_TEST_TARGET === 'NON_PRODUCTION';
 if (process.argv.includes('--remote-integration') && !runRemoteIntegration) {
   throw new Error('Remote integration tests require REP_TRACK_REMOTE_TEST_TARGET=NON_PRODUCTION. Production is never an automated-test target.');

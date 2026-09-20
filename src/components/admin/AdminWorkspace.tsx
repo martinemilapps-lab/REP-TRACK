@@ -11,6 +11,7 @@ import { AdminOverview } from './AdminOverview';
 import { AdminReferenceData } from './AdminReferenceData';
 import { AdminSecurity } from './AdminSecurity';
 import { AdminUsers } from './AdminUsers';
+import { AdminCreateUser } from './AdminCreateUser';
 import { AdminVisitRates } from './AdminVisitRates';
 
 type AdminView = 'overview' | 'users' | 'organization' | 'assignments' | 'representatives' | 'visit-rates' | 'areas' | 'products' | 'objectives' | 'reference' | 'security' | 'audit';
@@ -26,6 +27,7 @@ const catalog = {
 export function AdminWorkspace() {
   const { language } = useTranslation();
   const [view, setView] = useState<AdminView>('users');
+  const [usersVersion, setUsersVersion] = useState(0);
   const items = [
     { id: 'overview' as const, en: 'Overview', ar: 'نظرة عامة', icon: LayoutDashboard },
     { id: 'users' as const, en: 'Users', ar: 'المستخدمون', icon: Users },
@@ -50,7 +52,7 @@ export function AdminWorkspace() {
       {items.map(({ id, en, ar, icon: Icon }) => <button key={id} type="button" onClick={() => setView(id)} className={`app-nav-item ${view === id ? 'app-nav-item-active' : ''}`} aria-current={view === id ? 'page' : undefined}><Icon className="size-4"/><span>{language === 'ar' ? ar : en}</span></button>)}
     </nav>
     {view === 'overview' && <AdminOverview />}
-    {view === 'users' && <AdminUsers />}
+    {view === 'users' && <div className="space-y-5"><AdminCreateUser onCreated={async () => setUsersVersion(version => version + 1)}/><AdminUsers key={usersVersion}/></div>}
     {view === 'organization' && <AdminOrganization />}
     {view === 'assignments' && <AdminAssignments />}
     {view === 'representatives' && <AdminCatalog config={catalog.representatives} />}
