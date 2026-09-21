@@ -16,11 +16,12 @@ import { MyReportsView } from '@/components/my-reports/MyReportsView';
 import { WeeklyPlanView } from '@/components/weekly-plan/WeeklyPlanView';
 import { MyWeeklyPlanView } from '@/components/weekly-plan/MyWeeklyPlanView';
 import { useTranslation } from '@/lib/i18nContext';
-import { MapPin, User, CheckCircle2, ClipboardList, CalendarDays, CalendarCheck, PackageSearch } from 'lucide-react';
 import { RepresentativeOverview } from '@/components/overview/RepresentativeOverview';
 import { ExportCenter } from '@/components/exports/ExportCenter';
+import { AverageCoverageView } from '@/components/analytics/AverageCoverageView';
+import { User, CheckCircle2, MapPin, PackageSearch, ClipboardList, CalendarDays, CalendarCheck, TrendingUp } from 'lucide-react';
 
-export type MRViewType = 'overview' | 'submit' | 'mylists' | 'myreports' | 'weeklyplan' | 'myweeklyplan' | 'availability' | 'export';
+export type MRViewType = 'overview' | 'submit' | 'mylists' | 'myreports' | 'weeklyplan' | 'myweeklyplan' | 'availability' | 'average_coverage' | 'export';
 
 interface MedicalRepWorkspaceProps {
   currentUser: {
@@ -139,6 +140,17 @@ export function MedicalRepWorkspace({
           >
             <CalendarCheck className="size-4"/>
             <span>{t('nav.myWeeklyPlan')}</span>
+          </button>
+          <button
+            onClick={() => onViewChange('average_coverage')}
+            className={`px-3.5 py-2 rounded-lg text-xs md:text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              activeView === 'average_coverage'
+                ? 'bg-gradient-to-r from-[var(--gold)] to-[var(--gold-light)] text-white shadow-xs font-extrabold'
+                : 'text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--surface-hover)]'
+            }`}
+          >
+            <TrendingUp className="size-4"/>
+            <span>{t('nav.averageCoverage', 'Average and Coverage Rate')}</span>
           </button>
         </nav>
       </div>}
@@ -282,6 +294,12 @@ export function MedicalRepWorkspace({
             onSuccess={(msg) => onShowToast(msg)}
             onError={(msg) => onShowToast(msg, true)}
           />
+        </div>
+      )}
+
+      {activeView === 'average_coverage' && (
+        <div className="animate-fade-in">
+          <AverageCoverageView currentUser={currentUser} />
         </div>
       )}
 

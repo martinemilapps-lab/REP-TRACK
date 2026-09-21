@@ -11,7 +11,7 @@ import { ChangePasswordModal } from '@/components/auth/ChangePasswordModal';
 import { MedicalRepWorkspace, MRViewType } from '@/components/workspace/MedicalRepWorkspace';
 import { ManagerWorkspace, ManagerNavType } from '@/components/workspace/ManagerWorkspace';
 import { AppShell, ShellNavItem } from '@/components/layout/AppShell';
-import { ClipboardList, FileText, CalendarDays, CalendarCheck, ListChecks, PackageSearch, Download, LayoutDashboard, Activity, Users, ShieldCheck, Target } from 'lucide-react';
+import { ClipboardList, FileText, CalendarDays, CalendarCheck, ListChecks, PackageSearch, Download, LayoutDashboard, Activity, Users, ShieldCheck, Target, TrendingUp } from 'lucide-react';
 import { useTranslation } from '@/lib/i18nContext';
 import type { UserSessionPayload } from '@/lib/auth';
 
@@ -123,6 +123,7 @@ function HomePageContent() {
     { id:'myweeklyplan', label: t('nav.myWeeklyPlan'), icon:<CalendarCheck className="size-4"/> },
     { id:'mylists', label: t('nav.myLists'), icon:<ListChecks className="size-4"/> },
     { id:'availability', label: t('nav.productAvailability'), icon:<PackageSearch className="size-4"/> },
+    { id:'average_coverage', label: t('nav.averageCoverage', 'Average and Coverage Rate'), icon:<TrendingUp className="size-4"/> },
     { id:'export', label:t('nav.export'), icon:<Download className="size-4"/> },
   ];
   const managerItems: ShellNavItem[] = [
@@ -134,6 +135,7 @@ function HomePageContent() {
     { id:'team_plans', label:t('nav.teamPlans'), icon:<ClipboardList className="size-4"/> },
     { id:'team_lists', label:t('nav.teamLists'), icon:<Users className="size-4"/> },
     { id:'availability', label:t('nav.productAvailability'), icon:<PackageSearch className="size-4"/> },
+    { id:'average_coverage', label: t('nav.averageCoverage', 'Average and Coverage Rate'), icon:<TrendingUp className="size-4"/> },
     ...(currentUser?.positionCode === 'BUM' || currentUser?.systemRole === 'ADMIN'
       ? [{ id:'visit_rates', label: t('nav.visitRates', 'Visits Rate'), icon:<Target className="size-4"/> }]
       : []),

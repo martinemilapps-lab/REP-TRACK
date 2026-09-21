@@ -14,11 +14,12 @@ import { ComplianceView } from '@/components/compliance/ComplianceView';
 import { ExportCenter } from '@/components/exports/ExportCenter';
 import { AdminWorkspace } from '@/components/admin/AdminWorkspace';
 import { BumVisitRatesView } from '@/components/manager/BumVisitRatesView';
+import { AverageCoverageView } from '@/components/analytics/AverageCoverageView';
 import {
   Download,
   Target,
   Award,
-  Sparkles, ClipboardList, CalendarDays, FileText, Inbox, Users, PackageSearch, Info,
+  Sparkles, ClipboardList, CalendarDays, FileText, Inbox, Users, PackageSearch, Info, TrendingUp,
 } from 'lucide-react';
 
 export type ManagerNavType =
@@ -30,6 +31,7 @@ export type ManagerNavType =
   | 'team_plans'
   | 'team_lists'
   | 'availability'
+  | 'average_coverage'
   | 'compliance'
   | 'visit_rates'
   | 'export'
@@ -84,6 +86,7 @@ export function ManagerWorkspace({
     { id: 'team_plans', label: language === 'ar' ? 'خطط الفريق' : 'Team Plans', icon: <ClipboardList className="size-4"/> },
     { id: 'team_lists', label: language === 'ar' ? 'قوائم الفريق' : 'Team Lists', icon: <Users className="size-4"/> },
     { id: 'availability', label: language === 'ar' ? 'توافر المنتجات' : 'Product Availability', icon: <PackageSearch className="size-4"/> },
+    { id: 'average_coverage', label: language === 'ar' ? 'معدل التغطية ومتوسط الزيارات' : 'Average and Coverage Rate', icon: <TrendingUp className="size-4"/> },
     ...(currentUser.positionCode === 'BUM' || currentUser.systemRole === 'ADMIN'
       ? [{ id: 'visit_rates', label: language === 'ar' ? 'معدلات الزيارة' : 'Visits Rate', icon: <Target className="size-4"/> }]
       : []),
@@ -246,6 +249,13 @@ export function ManagerWorkspace({
       {/* Product Availability */}
       {activeNav === 'availability' && (
         <ManagerDashboardView key="product-availability" reps={reps} initialTab="availability" onLock={onLogout} onError={showError} onSuccess={showSuccess}/>
+      )}
+
+      {/* Average and Coverage Rate */}
+      {activeNav === 'average_coverage' && (
+        <div className="animate-fade-in">
+          <AverageCoverageView currentUser={currentUser} />
+        </div>
       )}
 
       {activeNav==='compliance'&&<ComplianceView/>}

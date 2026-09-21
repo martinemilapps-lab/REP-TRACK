@@ -37,6 +37,7 @@ export const translations: Record<string, { ar: string; en: string }> = {
   'nav.export': { ar: 'تصدير', en: 'Export' },
   'nav.admin': { ar: 'الإدارة', en: 'Admin' },
   'nav.visitRates': { ar: 'معدلات الزيارة', en: 'Visits Rate' },
+  'nav.averageCoverage': { ar: 'معدل التغطية ومتوسط الزيارات', en: 'Average and Coverage Rate' },
 
   // Unified authentication and administration
   'login.title': { ar: 'بوابة تسجيل الدخول الموحدة', en: 'Unified Access Portal' },
