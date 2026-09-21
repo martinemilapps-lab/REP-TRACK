@@ -36,6 +36,7 @@ export const translations: Record<string, { ar: string; en: string }> = {
   'nav.compliance': { ar: 'متابعة الالتزام', en: 'Submission Compliance' },
   'nav.export': { ar: 'تصدير', en: 'Export' },
   'nav.admin': { ar: 'الإدارة', en: 'Admin' },
+  'nav.visitRates': { ar: 'معدلات الزيارة', en: 'Visits Rate' },
 
   // Unified authentication and administration
   'login.title': { ar: 'بوابة تسجيل الدخول الموحدة', en: 'Unified Access Portal' },

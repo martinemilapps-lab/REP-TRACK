@@ -13,6 +13,7 @@ import { useTranslation } from '@/lib/i18nContext';
 import { ComplianceView } from '@/components/compliance/ComplianceView';
 import { ExportCenter } from '@/components/exports/ExportCenter';
 import { AdminWorkspace } from '@/components/admin/AdminWorkspace';
+import { BumVisitRatesView } from '@/components/manager/BumVisitRatesView';
 import {
   Download,
   Target,
@@ -30,6 +31,7 @@ export type ManagerNavType =
   | 'team_lists'
   | 'availability'
   | 'compliance'
+  | 'visit_rates'
   | 'export'
   | 'admin';
 
@@ -82,6 +84,9 @@ export function ManagerWorkspace({
     { id: 'team_plans', label: language === 'ar' ? 'خطط الفريق' : 'Team Plans', icon: <ClipboardList className="size-4"/> },
     { id: 'team_lists', label: language === 'ar' ? 'قوائم الفريق' : 'Team Lists', icon: <Users className="size-4"/> },
     { id: 'availability', label: language === 'ar' ? 'توافر المنتجات' : 'Product Availability', icon: <PackageSearch className="size-4"/> },
+    ...(currentUser.positionCode === 'BUM' || currentUser.systemRole === 'ADMIN'
+      ? [{ id: 'visit_rates', label: language === 'ar' ? 'معدلات الزيارة' : 'Visits Rate', icon: <Target className="size-4"/> }]
+      : []),
     { id: 'compliance', label: language === 'ar' ? 'متابعة الالتزام' : 'Submission Compliance', icon: <Target className="size-4"/> },
     { id: 'export', label: language === 'ar' ? 'تصدير البيانات' : 'Export', icon: <Download className="size-4"/> },
   ];
@@ -244,6 +249,11 @@ export function ManagerWorkspace({
       )}
 
       {activeNav==='compliance'&&<ComplianceView/>}
+
+      {/* Visits Rate (BUM & Admin) */}
+      {activeNav === 'visit_rates' && (
+        <BumVisitRatesView currentUser={currentUser} onSuccess={showSuccess} onError={showError} />
+      )}
 
       {/* 9. Export */}
       {activeNav === 'export' && (
