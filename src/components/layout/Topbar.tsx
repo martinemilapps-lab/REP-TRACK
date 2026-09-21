@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useTranslation } from '@/lib/i18nContext';
 import { LogOut, User, Briefcase, Award } from 'lucide-react';
+import { ReportingTimer } from '@/components/layout/ReportingTimer';
 
 export type MRViewType = 'submit' | 'mylists' | 'myreports' | 'weeklyplan' | 'availability' | 'analysis';
 
@@ -125,6 +126,8 @@ export function Topbar({
             </div>
           </div>
         )}
+
+        {currentUser && <ReportingTimer />}
 
         {/* Navigation Tabs (if passed directly) */}
         {navItems && navItems.length > 0 && (

@@ -219,9 +219,9 @@ export const SpecialTaskSchema = z.object({
 });
 
 const rateValues = PRESCRIPTION_RATE_OPTIONS.map((option) => option.value) as [string, ...string[]];
-export const DoctorVisitV3Schema = z.object({ doctorId:z.string().min(1), products:z.array(z.object({ productId:z.string().min(1), prescriptionRate:z.enum(rateValues) })).min(1), ...VisitModeFields }).refine(x=>x.visitType!=='Double'||Boolean(x.companion),{path:['companion'],message:'Companion is required for a Double visit'});
-export const PharmacyVisitV3Schema = z.object({ pharmacyId:z.string().min(1), productIds:z.array(z.string().min(1)).min(1), notes:z.string().trim().max(4000).optional().default(''), ...VisitModeFields }).refine(x=>x.visitType!=='Double'||Boolean(x.companion),{path:['companion'],message:'Companion is required for a Double visit'});
-export const BranchVisitV3Schema = z.object({ branchId:z.string().min(1), products:z.array(z.object({productId:z.string().min(1),observation:z.string().trim().max(2000)})).min(1), ...VisitModeFields }).refine(x=>x.visitType!=='Double'||Boolean(x.companion),{path:['companion'],message:'Companion is required for a Double visit'});
+export const DoctorVisitV3Schema = z.object({ visitDate: z.string().date().optional(), doctorId:z.string().min(1), products:z.array(z.object({ productId:z.string().min(1), prescriptionRate:z.enum(rateValues) })).min(1), ...VisitModeFields }).refine(x=>x.visitType!=='Double'||Boolean(x.companion),{path:['companion'],message:'Companion is required for a Double visit'});
+export const PharmacyVisitV3Schema = z.object({ visitDate: z.string().date().optional(), pharmacyId:z.string().min(1), productIds:z.array(z.string().min(1)).min(1), notes:z.string().trim().max(4000).optional().default(''), ...VisitModeFields }).refine(x=>x.visitType!=='Double'||Boolean(x.companion),{path:['companion'],message:'Companion is required for a Double visit'});
+export const BranchVisitV3Schema = z.object({ visitDate: z.string().date().optional(), branchId:z.string().min(1), products:z.array(z.object({productId:z.string().min(1),observation:z.string().trim().max(2000)})).min(1), ...VisitModeFields }).refine(x=>x.visitType!=='Double'||Boolean(x.companion),{path:['companion'],message:'Companion is required for a Double visit'});
 
 export const CalendarDateSchema = z.string().trim().date('تاريخ غير صالح (YYYY-MM-DD)');
 export const WeeklyPlanStatusSchema = z.enum(['Draft', 'Submitted', 'Approved']);

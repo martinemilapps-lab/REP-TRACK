@@ -1,7 +1,7 @@
 'use client';
 import { useId, useState, type InputHTMLAttributes } from 'react';
 import { useTranslation } from '@/lib/i18nContext';
-export function FormField({ label, value, onChange, multiline = false, required = false, type = 'text', placeholder }: {
+export function FormField({ label, value, onChange, multiline = false, required = false, type = 'text', placeholder, min, max }: {
     label: string;
     value: string;
     onChange: (value: string) => void;
@@ -9,13 +9,15 @@ export function FormField({ label, value, onChange, multiline = false, required 
     required?: boolean;
     type?: InputHTMLAttributes<HTMLInputElement>['type'];
     placeholder?: string;
+    min?: string;
+    max?: string;
 }) {
     const id = useId();
     const [invalid, setInvalid] = useState(false);
     const { language } = useTranslation();
     const error = language === 'ar' ? 'يرجى إدخال قيمة صالحة لهذا الحقل.' : 'Please enter a valid value for this field.';
     const props = {
-        id, value, required, placeholder, 'aria-invalid': invalid || undefined, 'aria-describedby': invalid ? `${id}-error` : undefined, onInvalid: () => setInvalid(true), onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { setInvalid(false); onChange(e.target.value); }, onBlur: () => { if (required)
+        id, value, required, placeholder, min, max, 'aria-invalid': invalid || undefined, 'aria-describedby': invalid ? `${id}-error` : undefined, onInvalid: () => setInvalid(true), onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { setInvalid(false); onChange(e.target.value); }, onBlur: () => { if (required)
             setInvalid(!value.trim()); }, className: 'mt-1 min-h-11 w-full rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-[var(--focus)]'
     };
     return <div className="min-w-0">

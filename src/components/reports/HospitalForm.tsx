@@ -7,6 +7,7 @@ import { SectionCard } from '@/components/ui/SectionCard';
 import { HOSPITAL_DEPARTMENTS } from '@/lib/constants';
 import { useTranslation } from '@/lib/i18nContext';
 import { SavedCustomerDetails, VisitMode } from './SavedCustomerDetails';
+import { getReportingWindowStatus, isDateSubmissionOpen } from '@/lib/business/reportingWindow';
 
 type Hospital = {
   id: string;
@@ -53,7 +54,9 @@ export function HospitalForm({
   const { language } = useTranslation();
   const ar = language === 'ar';
   const l = (e: string, a: string) => (ar ? a : e);
-  const [reportDate, setReportDate] = useState(new Date().toISOString().slice(0, 10));
+  const windowStatus = getReportingWindowStatus();
+  const [reportDate, setReportDate] = useState(windowStatus.todayDate);
+  const isClosed = !isDateSubmissionOpen(reportDate);
   const [visits, setVisits] = useState<Visit[]>([makeVisit()]);
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -94,6 +97,16 @@ export function HospitalForm({
 
     if (visits.some((v) => v.hasOthers && !v.othersDescription.trim())) {
       setError(l('Please enter description for Others.', 'يرجى إدخال وصف للنشاط الآخر (أخرى).'));
+      return;
+    }
+
+    if (isClosed) {
+      setError(
+        l(
+          'Submission window closed for this date. Reports must be submitted by maximum 9:00 AM the next day (12:00 AM to 9:00 AM). The system cannot accept reporting after this time.',
+          'انتهت مهلة التقديم لهذا التاريخ (الحد الأقصى 9:00 صباحاً في اليوم التالي من 12:00 ص إلى 9:00 ص). النظام لا يقبل أي تقارير بعد هذا الوقت.'
+        )
+      );
       return;
     }
 
@@ -140,9 +153,19 @@ export function HospitalForm({
           type="date"
           className="input mt-1"
           value={reportDate}
+          min={windowStatus.minAllowedDate}
+          max={windowStatus.maxAllowedDate}
           onChange={(e) => setReportDate(e.target.value)}
         />
       </label>
+      {isClosed && (
+        <InlineAlert tone="error">
+          {l(
+            'Submission window closed for this date. Reports are accepted maximum the next day at 9:00 AM. The system cannot accept reporting after this time.',
+            'انتهت مهلة التقديم لهذا التاريخ (الحد الأقصى 9:00 صباحاً في اليوم التالي). النظام لا يقبل تسجيل تقارير بعد هذا الوقت.'
+          )}
+        </InlineAlert>
+      )}
       {visits.map((visit, vi) => (
         <SectionCard
           key={visit.key}
@@ -361,8 +384,8 @@ export function HospitalForm({
         <Button type="button" variant="secondary" onClick={() => setVisits((rows) => [...rows, makeVisit()])}>
           {l('Add another visit', 'إضافة زيارة أخرى')}
         </Button>
-        <Button type="submit" isLoading={saving} disabled={!hospitals.length}>
-          {l('Submit', 'إرسال')}
+        <Button type="submit" isLoading={saving} disabled={!hospitals.length || isClosed}>
+          {isClosed ? l('Closed (Past 9:00 AM)', 'مغلق (بعد 9:00 ص)') : l('Submit', 'إرسال')}
         </Button>
       </div>
     </form>

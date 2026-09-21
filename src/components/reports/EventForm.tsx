@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { useTranslation } from '@/lib/i18nContext';
 import { Button } from '@/components/ui/Button';
 import { CustomSelect, SelectOption } from '@/components/ui/CustomSelect';
+import { InlineAlert } from '@/components/ui/InlineAlert';
+import { getReportingWindowStatus, isDateSubmissionOpen } from '@/lib/business/reportingWindow';
 
 interface EventFormProps {
   selectedRep: string;
@@ -22,13 +24,16 @@ const EVENT_TYPE_OPTIONS: SelectOption[] = [
 ];
 
 export function EventForm({ selectedRep, onSuccess, onError }: EventFormProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const ar = language === 'ar';
+  const l = (e: string, a: string) => (ar ? a : e);
   const [loading, setLoading] = useState(false);
+  const windowStatus = getReportingWindowStatus();
 
   const [formData, setFormData] = useState({
     title: '',
     eventType: 'مؤتمر طبي (Medical Conference)',
-    eventDate: new Date().toISOString().split('T')[0],
+    eventDate: windowStatus.todayDate,
     location: '',
     attendeesCount: '',
     targetSpecialty: '',
@@ -37,6 +42,8 @@ export function EventForm({ selectedRep, onSuccess, onError }: EventFormProps) {
     feedback: '',
     notes: '',
   });
+
+  const isClosed = !isDateSubmissionOpen(formData.eventDate);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -47,6 +54,15 @@ export function EventForm({ selectedRep, onSuccess, onError }: EventFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isClosed) {
+      onError(
+        l(
+          'Submission window closed for this date. Reports must be submitted by maximum 9:00 AM the next day. The system cannot accept reporting after this time.',
+          'انتهت مهلة التقديم لهذا اليوم (الحد الأقصى 9:00 صباحاً في اليوم التالي). لا يقبل النظام تقارير بعد هذا الوقت.'
+        )
+      );
+      return;
+    }
     if (!selectedRep) {
       onError(t('msg.requiredRep'));
       return;
@@ -155,10 +171,22 @@ export function EventForm({ selectedRep, onSuccess, onError }: EventFormProps) {
               type="date"
               id="eventDate"
               value={formData.eventDate}
+              min={windowStatus.minAllowedDate}
+              max={windowStatus.maxAllowedDate}
               onChange={handleChange}
               className="w-full px-3.5 py-2.5 rounded-[var(--radius-sm)] border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--gold)] transition-colors"
               required
             />
+            {isClosed && (
+              <div className="mt-1">
+                <InlineAlert tone="error">
+                  {l(
+                    'Submission window closed for this date. Reports are accepted maximum the next day at 9:00 AM. System cannot accept reporting after this time.',
+                    'انتهت مهلة التقديم لهذا التاريخ (الحد الأقصى 9:00 صباحاً في اليوم التالي). لا يقبل النظام تقارير بعد هذا الوقت.'
+                  )}
+                </InlineAlert>
+              </div>
+            )}
           </div>
 
           <div>
@@ -270,8 +298,12 @@ export function EventForm({ selectedRep, onSuccess, onError }: EventFormProps) {
       </div>
 
       <div className="mt-6 pt-4 border-t border-[var(--line)] flex justify-end">
-        <Button type="submit" variant="primary" isLoading={loading}>
-          {loading ? t('event.submitting') : t('event.submit')}
+        <Button type="submit" variant="primary" isLoading={loading} disabled={isClosed}>
+          {isClosed
+            ? l('Closed (Past 9:00 AM)', 'مغلق (بعد 9:00 ص)')
+            : loading
+            ? t('event.submitting')
+            : t('event.submit')}
         </Button>
       </div>
     </form>
