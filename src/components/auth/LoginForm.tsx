@@ -61,27 +61,27 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   };
 
   return (
-    <div className="min-h-[75vh] flex items-center justify-center px-4 py-8">
-      <div className="bg-[var(--surface)] border border-[var(--line)] rounded-3xl max-w-md w-full p-6 md:p-8 shadow-card animate-fade-in">
+    <div className="min-h-[calc(100vh-140px)] flex items-center justify-center px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
+      <div className="bg-[var(--surface)] border border-[var(--line)] rounded-3xl w-full max-w-md sm:max-w-lg lg:max-w-xl p-6 sm:p-8 md:p-10 lg:p-12 shadow-xl animate-fade-in">
         {/* Brand Header */}
-        <div className="flex flex-col items-center text-center mb-6">
-          <div className="relative w-56 h-28 md:w-64 md:h-32 mb-2 flex items-center justify-center">
+        <div className="flex flex-col items-center text-center mb-6 sm:mb-8">
+          <div className="relative w-64 h-32 sm:w-72 sm:h-36 lg:w-80 lg:h-40 mb-3 flex items-center justify-center">
             <Image
               src="/logo.png"
               alt="REP TRACK - Sunny Medical Group"
-              width={280}
-              height={140}
+              width={340}
+              height={170}
               priority
               className="w-full h-full object-contain drop-shadow-sm"
             />
           </div>
-          <p className="text-xs sm:text-sm font-black text-[var(--gold-dark)] tracking-wider uppercase mb-1">
+          <p className="text-xs sm:text-sm lg:text-base font-black text-[var(--gold-dark)] tracking-wider uppercase mb-1">
             Sunny Medical Group
           </p>
-          <h1 className="text-xl md:text-2xl font-black text-[var(--ink)]">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[var(--ink)] tracking-tight">
             {language === 'ar' ? 'بوابة تسجيل الدخول الموحدة' : 'Unified Access Portal'}
           </h1>
-          <p className="text-xs text-[var(--ink-soft)] mt-1.5 max-w-xs leading-relaxed">
+          <p className="text-xs sm:text-sm md:text-base text-[var(--ink-soft)] mt-2 max-w-sm sm:max-w-md leading-relaxed">
             {language === 'ar'
               ? 'أدخل بيانات حسابك للوصول إلى مساحة العمل الخاصة بموقعك الوظيفي'
               : 'Sign in to access your position-aware workspace'}
@@ -89,22 +89,22 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         </div>
 
         {lockoutMsg && (
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 mb-4 text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 shrink-0" />
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3.5 sm:p-4 mb-5 text-xs sm:text-sm font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2.5">
+            <ShieldAlert className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
             <span>{lockoutMsg}</span>
           </div>
         )}
 
         {errorMsg && (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 mb-4 text-xs font-bold text-red-500 flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 shrink-0" />
+          <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-3.5 sm:p-4 mb-5 text-xs sm:text-sm font-bold text-red-500 flex items-center gap-2.5">
+            <ShieldAlert className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
             <span>{errorMsg}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-5">
           <div>
-            <label className="block text-xs font-bold text-[var(--ink)] mb-1.5">
+            <label className="block text-xs sm:text-sm font-bold text-[var(--ink)] mb-2">
               {language === 'ar' ? 'اسم المستخدم' : 'Username'}
             </label>
             <div className="relative">
@@ -112,18 +112,17 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder={language === 'ar' ? 'مثال: MR1 أو DM1 أو SMD1' : 'e.g. MR1, DM1, SMD1'}
+                placeholder={language === 'ar' ? 'اسم المستخدم' : 'Username'}
                 disabled={loading}
-                className="w-full px-4 py-2.5 text-sm bg-white dark:bg-zinc-900 border border-[var(--line)] rounded-xl font-mono text-[var(--ink)] placeholder-[var(--ink-muted)] shadow-2xs transition-all focus:outline-none focus:border-[var(--gold)]"
+                className="w-full px-4 sm:px-5 py-3 sm:py-3.5 text-base bg-white dark:bg-zinc-900 border border-[var(--line)] rounded-2xl text-[var(--ink)] placeholder:text-[var(--ink-muted)] shadow-xs transition-all focus:outline-none focus:border-[var(--gold)] focus:ring-4 focus:ring-[var(--gold)]/15"
                 autoFocus
                 autoComplete="username"
               />
-              <User className="w-4 h-4 absolute left-3 top-3 text-[var(--ink-muted)] pointer-events-none" />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-[var(--ink)] mb-1.5">
+            <label className="block text-xs sm:text-sm font-bold text-[var(--ink)] mb-2">
               {language === 'ar' ? 'كلمة المرور' : 'Password'}
             </label>
             <div className="relative">
@@ -132,22 +131,28 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••••••"
+                placeholder={language === 'ar' ? 'كلمة المرور' : 'Password'}
                 disabled={loading}
-                className="w-full px-4 py-2.5 text-sm bg-white dark:bg-zinc-900 border border-[var(--line)] rounded-xl font-mono text-[var(--ink)] placeholder-[var(--ink-muted)] shadow-2xs transition-all focus:outline-none focus:border-[var(--gold)]"
+                className="w-full px-4 sm:px-5 py-3 sm:py-3.5 pe-12 sm:pe-14 text-base bg-white dark:bg-zinc-900 border border-[var(--line)] rounded-2xl text-[var(--ink)] placeholder:text-[var(--ink-muted)] shadow-xs transition-all focus:outline-none focus:border-[var(--gold)] focus:ring-4 focus:ring-[var(--gold)]/15"
                 autoComplete="current-password"
               />
-              <KeyRound className="w-4 h-4 absolute left-3 top-3 text-[var(--ink-muted)] pointer-events-none" />
-              <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute end-3 top-2.5 rounded p-0.5 text-[var(--ink-soft)]" aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff className="size-4"/> : <Eye className="size-4"/>}</button>
+              <button
+                type="button"
+                onClick={() => setShowPassword((value) => !value)}
+                className="absolute end-3.5 sm:end-4 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--surface-hover)] transition-colors cursor-pointer"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+              </button>
             </div>
           </div>
 
           <Button
             type="submit"
             variant="primary"
-            size="md"
+            size="lg"
             isLoading={loading}
-            className="w-full mt-2"
+            className="w-full mt-2 py-3.5 sm:py-4 text-base sm:text-lg font-black rounded-2xl shadow-gold hover:shadow-lg transition-all"
           >
             {language === 'ar' ? 'تسجيل الدخول' : 'Sign In'}
           </Button>

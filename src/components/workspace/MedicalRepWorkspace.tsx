@@ -150,7 +150,7 @@ export function MedicalRepWorkspace({
             }`}
           >
             <TrendingUp className="size-4"/>
-            <span>{t('nav.averageCoverage', 'Average and Coverage Rate')}</span>
+            <span className="whitespace-nowrap">{t('nav.averageCoverage', 'Average and Coverage Rate')}</span>
           </button>
         </nav>
       </div>}

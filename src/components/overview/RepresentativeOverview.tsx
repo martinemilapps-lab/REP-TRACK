@@ -40,27 +40,110 @@ export function RepresentativeOverview({ user, onNavigate }: {
         setState(s => ({
             ...s, loading: false, error: true
         })); }); return () => controller.abort(); }, []);
-    return <div>
-    <PageHeader title={`${ar ? 'مرحباً،' : 'Welcome,'} ${user.name}`} description={`${user.positionCode || 'MR'} · ${user.primarySalesAssignment?.territoryName || (ar ? 'المنطقة المخصصة' : 'Assigned territory')}`}/>{state.error && <InlineAlert tone="error">{ar ? 'تعذر تحميل أحدث بيانات النظرة العامة.' : 'Unable to load the latest overview data.'}</InlineAlert>}<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{state.loading ? [1, 2, 3].map(i => <Skeleton key={i} className="h-28"/>) : <>
-        <SectionCard title={ar ? 'التقارير المسجلة' : 'Recent submissions'}>
-        <p className="text-3xl font-bold tabular-nums">{state.reports}</p>
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title={`${ar ? 'مرحباً،' : 'Welcome,'} ${user.name}`}
+          description={`${user.positionCode || 'MR'} · ${user.primarySalesAssignment?.territoryName || (ar ? 'المنطقة المخصصة' : 'Assigned territory')}`}
+        />
+        {state.error && (
+          <InlineAlert tone="error">
+            {ar ? 'تعذر تحميل أحدث بيانات النظرة العامة.' : 'Unable to load the latest overview data.'}
+          </InlineAlert>
+        )}
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {state.loading ? (
+            [1, 2, 3].map((i) => <Skeleton key={i} className="h-36 rounded-2xl" />)
+          ) : (
+            <>
+              <SectionCard title={ar ? 'التقارير المسجلة' : 'Recent submissions'} className="flex flex-col justify-between">
+                <div className="mt-2">
+                  <p className="text-4xl sm:text-5xl lg:text-6xl font-black text-[var(--gold-dark)] tracking-tight tabular-nums">
+                    {state.reports}
+                  </p>
+                  <p className="text-xs sm:text-sm text-[var(--ink-soft)] font-medium mt-1">
+                    {ar ? 'إجمالي التقارير المسجلة في النظام' : 'Total submitted visits & activities'}
+                  </p>
+                </div>
+              </SectionCard>
+
+              <SectionCard
+                title={ar ? 'الخطة الأسبوعية الحالية' : 'Current weekly plan'}
+                actions={
+                  <Button size="sm" variant="secondary" onClick={() => onNavigate('myweeklyplan')} className="font-bold text-xs sm:text-sm px-3 py-1.5 rounded-lg">
+                    {ar ? 'عرض' : 'View'}
+                  </Button>
+                }
+                className="flex flex-col justify-between"
+              >
+                <div className="mt-2">
+                  <p className="text-xl sm:text-2xl font-black text-[var(--ink)]">
+                    {state.planStatus === 'No plan' ? (ar ? 'لا توجد خطة' : 'No plan') : reportLabel(state.planStatus, ar)}
+                  </p>
+                  <p className="text-xs sm:text-sm text-[var(--ink-soft)] font-medium mt-1">
+                    {ar ? 'حالة الاعتماد للأسبوع الجاري' : 'Approval status for current week'}
+                  </p>
+                </div>
+              </SectionCard>
+
+              <SectionCard title={ar ? 'المنطقة المخصصة' : 'Territory'} className="flex flex-col justify-between">
+                <div className="mt-2">
+                  <p className="flex items-center gap-2 text-lg sm:text-xl font-bold text-[var(--ink)]">
+                    <MapPin className="size-5 text-[var(--gold-dark)] shrink-0" />
+                    <span className="truncate">{user.primarySalesAssignment?.territoryName || (ar ? 'المنطقة المخصصة' : 'Assigned territory')}</span>
+                  </p>
+                  <p className="text-xs sm:text-sm text-[var(--ink-soft)] font-medium mt-1">
+                    {ar ? 'النطاق الجغرافي المعتمد' : 'Authorized operating coverage'}
+                  </p>
+                </div>
+              </SectionCard>
+            </>
+          )}
+        </div>
+
+        <SectionCard title={ar ? 'إجراءات سريعة' : 'Quick actions'} className="mt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap gap-3">
+            <Button
+              onClick={() => onNavigate('submit')}
+              leftIcon={<PlusCircle className="size-5" />}
+              className="py-3 px-4 sm:px-5 text-sm sm:text-base font-extrabold rounded-xl shadow-xs"
+            >
+              {ar ? 'تسجيل تقرير' : 'Submit report'}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => onNavigate('weeklyplan')}
+              leftIcon={<CalendarDays className="size-5" />}
+              className="py-3 px-4 sm:px-5 text-sm sm:text-base font-bold rounded-xl"
+            >
+              {ar ? 'تسجيل خطة' : 'New plan'}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => onNavigate('myweeklyplan')}
+              leftIcon={<CalendarDays className="size-5" />}
+              className="py-3 px-4 sm:px-5 text-sm sm:text-base font-bold rounded-xl"
+            >
+              {ar ? 'خطتي الأسبوعية' : 'My weekly plan'}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => onNavigate('myreports')}
+              leftIcon={<FileText className="size-5" />}
+              className="py-3 px-4 sm:px-5 text-sm sm:text-base font-bold rounded-xl"
+            >
+              {ar ? 'تقاريري' : 'My reports'}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => onNavigate('mylists')}
+              leftIcon={<ListChecks className="size-5" />}
+              className="py-3 px-4 sm:px-5 text-sm sm:text-base font-bold rounded-xl"
+            >
+              {ar ? 'قوائمي' : 'My lists'}
+            </Button>
+          </div>
         </SectionCard>
-        <SectionCard title={ar ? 'الخطة الأسبوعية الحالية' : 'Current weekly plan'} actions={<Button size="sm" variant="secondary" onClick={() => onNavigate('myweeklyplan')}>{ar ? 'عرض' : 'View'}</Button>}>
-        <p className="text-lg font-semibold">{state.planStatus === 'No plan' ? (ar ? 'لا توجد خطة' : 'No plan') : reportLabel(state.planStatus, ar)}</p>
-        </SectionCard>
-        <SectionCard title={ar ? 'المنطقة' : 'Territory'}>
-        <p className="flex items-center gap-2 text-sm">
-        <MapPin className="size-4 text-[var(--gold-dark)]"/>{user.primarySalesAssignment?.territoryName || (ar ? 'المنطقة المخصصة' : 'Assigned territory')}</p>
-        </SectionCard>
-        </>}</div>
-    <SectionCard title={ar ? 'إجراءات سريعة' : 'Quick actions'} className="mt-4">
-    <div className="flex flex-wrap gap-2">
-    <Button onClick={() => onNavigate('submit')} leftIcon={<PlusCircle className="size-4"/>}>{ar ? 'تسجيل تقرير' : 'Submit report'}</Button>
-    <Button variant="secondary" onClick={() => onNavigate('weeklyplan')} leftIcon={<CalendarDays className="size-4"/>}>{ar ? 'تسجيل خطة' : 'New plan'}</Button>
-    <Button variant="secondary" onClick={() => onNavigate('myweeklyplan')} leftIcon={<CalendarDays className="size-4"/>}>{ar ? 'خطتي الأسبوعية' : 'My weekly plan'}</Button>
-    <Button variant="secondary" onClick={() => onNavigate('myreports')} leftIcon={<FileText className="size-4"/>}>{ar ? 'تقاريري' : 'My reports'}</Button>
-    <Button variant="secondary" onClick={() => onNavigate('mylists')} leftIcon={<ListChecks className="size-4"/>}>{ar ? 'قوائمي' : 'My lists'}</Button>
-    </div>
-    </SectionCard>
-    </div>;
+      </div>
+    );
 }

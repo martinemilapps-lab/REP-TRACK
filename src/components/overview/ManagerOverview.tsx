@@ -26,29 +26,49 @@ export function ManagerOverview({ name, position }: {
         setS(x => ({
             ...x, loading: false, error: true
         })); }); return () => c.abort(); }, []);
-    return <div>
-    <PageHeader title={`${ar ? 'مرحباً،' : 'Welcome,'} ${name}`} description={`${position || (ar ? 'مدير' : 'Manager')} · ${ar ? 'نظرة عامة ضمن نطاق الإشراف' : 'Authorized hierarchy overview'}`}/>{s.error && <InlineAlert tone="error">{ar ? 'تعذر تحميل نظرة عامة للفريق.' : 'Unable to load the hierarchy overview.'}</InlineAlert>}<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{s.loading ? [1, 2, 3, 4].map(i => <Skeleton key={i} className="h-28"/>) : <>
-        <SectionCard title={ar ? 'أعضاء الفريق' : 'Team members'}>
-        <Metric icon={<Users />} value={s.reps}/>
-        </SectionCard>
-        <SectionCard title={ar ? 'تقارير المندوبين' : 'MR reports'}>
-        <Metric icon={<FileText />} value={s.reports}/>
-        </SectionCard>
-        <SectionCard title={ar ? 'أنشطة المديرين' : 'Manager activities'}>
-        <Metric icon={<Activity />} value={s.activities}/>
-        </SectionCard>
-        <SectionCard title={ar ? 'خطط الفريق' : 'Team plans'}>
-        <Metric icon={<CalendarDays />} value={s.plans}/>
-        </SectionCard>
-        </>}</div>
-    </div>;
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title={`${ar ? 'مرحباً،' : 'Welcome,'} ${name}`}
+          description={`${position || (ar ? 'مدير' : 'Manager')} · ${ar ? 'نظرة عامة ضمن نطاق الإشراف' : 'Authorized hierarchy overview'}`}
+        />
+        {s.error && <InlineAlert tone="error">{ar ? 'تعذر تحميل نظرة عامة للفريق.' : 'Unable to load the hierarchy overview.'}</InlineAlert>}
+        <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 xl:grid-cols-4">
+          {s.loading ? (
+            [1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32 sm:h-36 rounded-2xl" />)
+          ) : (
+            <>
+              <SectionCard title={ar ? 'أعضاء الفريق' : 'Team members'} className="p-5 sm:p-6">
+                <Metric icon={<Users />} value={s.reps} />
+              </SectionCard>
+              <SectionCard title={ar ? 'تقارير المندوبين' : 'MR reports'} className="p-5 sm:p-6">
+                <Metric icon={<FileText />} value={s.reports} />
+              </SectionCard>
+              <SectionCard title={ar ? 'أنشطة المديرين' : 'Manager activities'} className="p-5 sm:p-6">
+                <Metric icon={<Activity />} value={s.activities} />
+              </SectionCard>
+              <SectionCard title={ar ? 'خطط الفريق' : 'Team plans'} className="p-5 sm:p-6">
+                <Metric icon={<CalendarDays />} value={s.plans} />
+              </SectionCard>
+            </>
+          )}
+        </div>
+      </div>
+    );
 }
+
 function Metric({ icon, value }: {
     icon: React.ReactNode;
     value: number;
 }) {
-    return <div className="mt-3 flex items-center justify-between text-[var(--gold-dark)]">
-    <span className="[&>svg]:size-5">{icon}</span>
-    <strong className="text-3xl tabular-nums text-[var(--ink)]">{value}</strong>
-    </div>;
+    return (
+      <div className="mt-4 flex items-center justify-between">
+        <span className="[&>svg]:size-7 sm:[&>svg]:size-8 text-[var(--gold)] p-2.5 rounded-xl bg-[var(--gold-tint)] border border-[var(--gold-border)]">
+          {icon}
+        </span>
+        <strong className="text-3xl sm:text-4xl lg:text-5xl tabular-nums font-black text-[var(--ink)]">
+          {value}
+        </strong>
+      </div>
+    );
 }
