@@ -1,5 +1,7 @@
 # REP TRACK 🏢
 
+> Maintainer takeover: read [`AGENTS.md`](./AGENTS.md), [`docs/ANTIGRAVITY_HANDOFF.md`](./docs/ANTIGRAVITY_HANDOFF.md), and [`ANTIGRAVITY_PROMPT.md`](./ANTIGRAVITY_PROMPT.md) before changing code or deployment state.
+
 **REP TRACK** is a high-performance, enterprise-grade Medical Representative Activity & Performance Tracking System built with **Next.js 16 (Turbopack)**, **Drizzle ORM**, and **Cloudflare D1**.
 
 ---

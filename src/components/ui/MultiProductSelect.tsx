@@ -348,7 +348,7 @@ export function MultiProductSelect({
                 <span className="text-xl">📦</span>
                 <div>
                   <h3 className="text-base font-extrabold text-[var(--ink)]">
-                    قائمة منتجات مجموعة صني الطبية (78 منتج)
+                    قائمة منتجات مجموعة صني الطبية ({SUNNY_PRODUCTS_LIST.length} منتج)
                   </h3>
                   <p className="text-xs text-[var(--ink-muted)]">
                     حدد المنتجات التي تم مناقشتها والترويج لها خلال الزيارة
