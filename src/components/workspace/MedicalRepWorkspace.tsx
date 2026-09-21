@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Representative, ActivityType, VisitEntityType } from '@/types';
+import { Representative, ActivityType, VisitEntityType, WeeklyPlanRecord } from '@/types';
 import { TypePicker } from '@/components/reports/TypePicker';
 import { HospitalForm } from '@/components/reports/HospitalForm';
 import { PharmacyForm } from '@/components/reports/PharmacyForm';
@@ -14,12 +14,13 @@ import { SpecialTaskForm } from '@/components/reports/SpecialTaskForm';
 import { MyListsView } from '@/components/my-lists/MyListsView';
 import { MyReportsView } from '@/components/my-reports/MyReportsView';
 import { WeeklyPlanView } from '@/components/weekly-plan/WeeklyPlanView';
+import { MyWeeklyPlanView } from '@/components/weekly-plan/MyWeeklyPlanView';
 import { useTranslation } from '@/lib/i18nContext';
-import { MapPin, User, CheckCircle2, ClipboardList, CalendarDays, PackageSearch } from 'lucide-react';
+import { MapPin, User, CheckCircle2, ClipboardList, CalendarDays, CalendarCheck, PackageSearch } from 'lucide-react';
 import { RepresentativeOverview } from '@/components/overview/RepresentativeOverview';
 import { ExportCenter } from '@/components/exports/ExportCenter';
 
-export type MRViewType = 'overview' | 'submit' | 'mylists' | 'myreports' | 'weeklyplan' | 'availability' | 'export';
+export type MRViewType = 'overview' | 'submit' | 'mylists' | 'myreports' | 'weeklyplan' | 'myweeklyplan' | 'availability' | 'export';
 
 interface MedicalRepWorkspaceProps {
   currentUser: {
@@ -50,6 +51,7 @@ export function MedicalRepWorkspace({
   const { t, language } = useTranslation();
   const [selectedType, setSelectedType] = useState<ActivityType>('hospital');
   const [visitSubtype, setVisitSubtype] = useState<VisitEntityType>('hospital');
+  const [selectedPlanToEdit, setSelectedPlanToEdit] = useState<WeeklyPlanRecord | null>(null);
 
   const repName = currentUser.name;
   const territory = currentUser.primarySalesAssignment?.territoryName || (language === 'ar' ? 'المنطقة المخصصة' : 'Assigned Territory');
@@ -126,6 +128,17 @@ export function MedicalRepWorkspace({
           >
             <CalendarDays className="size-4"/>
             <span>{t('nav.weeklyPlan')}</span>
+          </button>
+          <button
+            onClick={() => onViewChange('myweeklyplan')}
+            className={`px-3.5 py-2 rounded-lg text-xs md:text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              activeView === 'myweeklyplan'
+                ? 'bg-gradient-to-r from-[var(--gold)] to-[var(--gold-light)] text-white shadow-xs font-extrabold'
+                : 'text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--surface-hover)]'
+            }`}
+          >
+            <CalendarCheck className="size-4"/>
+            <span>{t('nav.myWeeklyPlan')}</span>
           </button>
         </nav>
       </div>}
@@ -232,12 +245,40 @@ export function MedicalRepWorkspace({
         </div>
       )}
 
-      {/* ============ VIEW 4: WEEKLY PLAN ============ */}
+      {/* ============ VIEW 4: WEEKLY PLAN (ENTRY FORM) ============ */}
       {activeView === 'weeklyplan' && (
         <div className="animate-fade-in">
           <WeeklyPlanView
+            key={selectedPlanToEdit?.id || 'new-plan'}
+            initialPlan={selectedPlanToEdit}
             reps={reps}
             selectedRep={repName}
+            onSuccess={(msg) => {
+              onShowToast(msg);
+              setSelectedPlanToEdit(null);
+              onViewChange('myweeklyplan');
+            }}
+            onError={(msg) => onShowToast(msg, true)}
+            onPlanSaved={() => {
+              setSelectedPlanToEdit(null);
+              onViewChange('myweeklyplan');
+            }}
+          />
+        </div>
+      )}
+
+      {/* ============ VIEW 5: MY WEEKLY PLAN (SAVED PLANS LIST) ============ */}
+      {activeView === 'myweeklyplan' && (
+        <div className="animate-fade-in">
+          <MyWeeklyPlanView
+            onOpenPlan={(plan) => {
+              setSelectedPlanToEdit(plan);
+              onViewChange('weeklyplan');
+            }}
+            onCreateNew={() => {
+              setSelectedPlanToEdit(null);
+              onViewChange('weeklyplan');
+            }}
             onSuccess={(msg) => onShowToast(msg)}
             onError={(msg) => onShowToast(msg, true)}
           />

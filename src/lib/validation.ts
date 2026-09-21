@@ -31,6 +31,8 @@ export const HospitalVisitSchema = z.object({
   companion: z.string().optional().default(''),
   ourProducts: z.string().optional().default(''),
   competitor: z.string().optional().default(''),
+  hasOthers: z.boolean().optional().default(false),
+  othersDescription: z.string().trim().max(2000).optional().default(''),
   notes: z.string().optional().default(''),
   rep: z.string().optional(), // optional legacy field, overridden on server
 });
@@ -40,9 +42,11 @@ export const HospitalDailyReportSchema = z.object({
   visits: z.array(z.object({
     hospitalId: z.string().min(1), productIds: z.array(z.string().min(1)).default([]),
     departments: z.array(z.object({ department: z.enum(HOSPITAL_DEPARTMENTS), doctors: z.array(z.string().trim().min(1).max(120)).min(1) })).default([]),
+    hasOthers: z.boolean().optional().default(false),
+    othersDescription: z.string().trim().max(2000).optional().default(''),
     ...VisitModeFields,
   })).min(1),
-}).superRefine((data,ctx)=>data.visits.forEach((visit,index)=>{if(new Set(visit.productIds).size!==visit.productIds.length)ctx.addIssue({code:'custom',path:['visits',index,'productIds'],message:'Duplicate products are not allowed'});if(new Set(visit.departments.map(x=>x.department)).size!==visit.departments.length)ctx.addIssue({code:'custom',path:['visits',index,'departments'],message:'Duplicate departments are not allowed'});if(visit.visitType==='Double'&&!visit.companion)ctx.addIssue({code:'custom',path:['visits',index,'companion'],message:'Companion is required for a Double visit'})}));
+}).superRefine((data,ctx)=>data.visits.forEach((visit,index)=>{if(new Set(visit.productIds).size!==visit.productIds.length)ctx.addIssue({code:'custom',path:['visits',index,'productIds'],message:'Duplicate products are not allowed'});if(new Set(visit.departments.map(x=>x.department)).size!==visit.departments.length)ctx.addIssue({code:'custom',path:['visits',index,'departments'],message:'Duplicate departments are not allowed'});if(visit.visitType==='Double'&&!visit.companion)ctx.addIssue({code:'custom',path:['visits',index,'companion'],message:'Companion is required for a Double visit'});if(visit.hasOthers&&!visit.othersDescription.trim())ctx.addIssue({code:'custom',path:['visits',index,'othersDescription'],message:'Others description is required when Others is selected'})}));
 
 export const PharmacyVisitSchema = z.object({
   name: z.string().min(1, 'اسم الصيدلية مطلوب').trim(),

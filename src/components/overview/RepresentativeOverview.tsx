@@ -45,7 +45,7 @@ export function RepresentativeOverview({ user, onNavigate }: {
         <SectionCard title={ar ? 'التقارير المسجلة' : 'Recent submissions'}>
         <p className="text-3xl font-bold tabular-nums">{state.reports}</p>
         </SectionCard>
-        <SectionCard title={ar ? 'الخطة الأسبوعية الحالية' : 'Current weekly plan'}>
+        <SectionCard title={ar ? 'الخطة الأسبوعية الحالية' : 'Current weekly plan'} actions={<Button size="sm" variant="secondary" onClick={() => onNavigate('myweeklyplan')}>{ar ? 'عرض' : 'View'}</Button>}>
         <p className="text-lg font-semibold">{state.planStatus === 'No plan' ? (ar ? 'لا توجد خطة' : 'No plan') : reportLabel(state.planStatus, ar)}</p>
         </SectionCard>
         <SectionCard title={ar ? 'المنطقة' : 'Territory'}>
@@ -56,7 +56,8 @@ export function RepresentativeOverview({ user, onNavigate }: {
     <SectionCard title={ar ? 'إجراءات سريعة' : 'Quick actions'} className="mt-4">
     <div className="flex flex-wrap gap-2">
     <Button onClick={() => onNavigate('submit')} leftIcon={<PlusCircle className="size-4"/>}>{ar ? 'تسجيل تقرير' : 'Submit report'}</Button>
-    <Button variant="secondary" onClick={() => onNavigate('weeklyplan')} leftIcon={<CalendarDays className="size-4"/>}>{ar ? 'الخطة الأسبوعية' : 'Weekly plan'}</Button>
+    <Button variant="secondary" onClick={() => onNavigate('weeklyplan')} leftIcon={<CalendarDays className="size-4"/>}>{ar ? 'تسجيل خطة' : 'New plan'}</Button>
+    <Button variant="secondary" onClick={() => onNavigate('myweeklyplan')} leftIcon={<CalendarDays className="size-4"/>}>{ar ? 'خطتي الأسبوعية' : 'My weekly plan'}</Button>
     <Button variant="secondary" onClick={() => onNavigate('myreports')} leftIcon={<FileText className="size-4"/>}>{ar ? 'تقاريري' : 'My reports'}</Button>
     <Button variant="secondary" onClick={() => onNavigate('mylists')} leftIcon={<ListChecks className="size-4"/>}>{ar ? 'قوائمي' : 'My lists'}</Button>
     </div>
