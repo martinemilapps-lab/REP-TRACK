@@ -440,52 +440,52 @@ export async function getWeeklyPlanById(id: string, session: UserSessionPayload 
     } as WeeklyPlanRecord;
   }
 
-  // Missing MR IDs may refer to personal manager plans.
-  assertManagerSession(session);
-  // Check managerWeeklyPlans
-  const mgrPlan = await db
-    .select({
-      id: managerWeeklyPlans.id,
-      userId: managerWeeklyPlans.userId,
-      userName: users.name,
-      startDate: managerWeeklyPlans.startDate,
-      endDate: managerWeeklyPlans.endDate,
-      weekLabel: managerWeeklyPlans.weekLabel,
-      saturdayAm: managerWeeklyPlans.saturdayAm,
-      saturdayPm: managerWeeklyPlans.saturdayPm,
-      sundayAm: managerWeeklyPlans.sundayAm,
-      sundayPm: managerWeeklyPlans.sundayPm,
-      mondayAm: managerWeeklyPlans.mondayAm,
-      mondayPm: managerWeeklyPlans.mondayPm,
-      tuesdayAm: managerWeeklyPlans.tuesdayAm,
-      tuesdayPm: managerWeeklyPlans.tuesdayPm,
-      wednesdayAm: managerWeeklyPlans.wednesdayAm,
-      wednesdayPm: managerWeeklyPlans.wednesdayPm,
-      thursdayAm: managerWeeklyPlans.thursdayAm,
-      thursdayPm: managerWeeklyPlans.thursdayPm,
-      fridayAm: managerWeeklyPlans.fridayAm,
-      fridayPm: managerWeeklyPlans.fridayPm,
-      status: managerWeeklyPlans.status,
-      managerNotes: managerWeeklyPlans.managerNotes,
-      selectedRepId: managerWeeklyPlans.selectedRepId,
-      structuredPlan: managerWeeklyPlans.structuredPlan,
-      submittedAt: managerWeeklyPlans.submittedAt,
-      updatedAt: managerWeeklyPlans.updatedAt,
-    })
-    .from(managerWeeklyPlans)
-    .leftJoin(users, eq(managerWeeklyPlans.userId, users.id))
-    .where(eq(managerWeeklyPlans.id, id))
-    .get();
+  // Missing MR IDs may refer to personal manager plans if session is a manager or admin.
+  if (session.role === 'MANAGER' || session.systemRole === 'ADMIN') {
+    const mgrPlan = await db
+      .select({
+        id: managerWeeklyPlans.id,
+        userId: managerWeeklyPlans.userId,
+        userName: users.name,
+        startDate: managerWeeklyPlans.startDate,
+        endDate: managerWeeklyPlans.endDate,
+        weekLabel: managerWeeklyPlans.weekLabel,
+        saturdayAm: managerWeeklyPlans.saturdayAm,
+        saturdayPm: managerWeeklyPlans.saturdayPm,
+        sundayAm: managerWeeklyPlans.sundayAm,
+        sundayPm: managerWeeklyPlans.sundayPm,
+        mondayAm: managerWeeklyPlans.mondayAm,
+        mondayPm: managerWeeklyPlans.mondayPm,
+        tuesdayAm: managerWeeklyPlans.tuesdayAm,
+        tuesdayPm: managerWeeklyPlans.tuesdayPm,
+        wednesdayAm: managerWeeklyPlans.wednesdayAm,
+        wednesdayPm: managerWeeklyPlans.wednesdayPm,
+        thursdayAm: managerWeeklyPlans.thursdayAm,
+        thursdayPm: managerWeeklyPlans.thursdayPm,
+        fridayAm: managerWeeklyPlans.fridayAm,
+        fridayPm: managerWeeklyPlans.fridayPm,
+        status: managerWeeklyPlans.status,
+        managerNotes: managerWeeklyPlans.managerNotes,
+        selectedRepId: managerWeeklyPlans.selectedRepId,
+        structuredPlan: managerWeeklyPlans.structuredPlan,
+        submittedAt: managerWeeklyPlans.submittedAt,
+        updatedAt: managerWeeklyPlans.updatedAt,
+      })
+      .from(managerWeeklyPlans)
+      .leftJoin(users, eq(managerWeeklyPlans.userId, users.id))
+      .where(eq(managerWeeklyPlans.id, id))
+      .get();
 
-  if (mgrPlan) {
-    await hierarchyService.assertUserVisible(session, mgrPlan.userId);
-    return {
-      ...mgrPlan,
-      rep: mgrPlan.userName || 'Manager',
-      isManagerPlan: true,
-      submittedAt: mgrPlan.submittedAt ? new Date(mgrPlan.submittedAt).toISOString() : undefined,
-      updatedAt: mgrPlan.updatedAt ? new Date(mgrPlan.updatedAt).toISOString() : undefined,
-    } as WeeklyPlanRecord;
+    if (mgrPlan) {
+      await hierarchyService.assertUserVisible(session, mgrPlan.userId);
+      return {
+        ...mgrPlan,
+        rep: mgrPlan.userName || 'Manager',
+        isManagerPlan: true,
+        submittedAt: mgrPlan.submittedAt ? new Date(mgrPlan.submittedAt).toISOString() : undefined,
+        updatedAt: mgrPlan.updatedAt ? new Date(mgrPlan.updatedAt).toISOString() : undefined,
+      } as WeeklyPlanRecord;
+    }
   }
 
   return null;

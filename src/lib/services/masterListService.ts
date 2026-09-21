@@ -1,4 +1,4 @@
-import { db, hospitals, pharmacies, doctors, distributionBranches, representatives, doctorNearbyPharmacies } from '@/lib/db';
+import { db, hospitals, pharmacies, doctors, distributionBranches, representatives, doctorNearbyPharmacies, hospitalVisits, pharmacyVisits, doctorVisits, branchVisits } from '@/lib/db';
 import { eq, or, isNull, desc } from 'drizzle-orm';
 import {
   MasterHospital,
@@ -185,6 +185,12 @@ function parseStringArray(value: string | null | undefined, fallback: string[] =
   catch { return fallback; }
 }
 
+function serializeField(val: unknown): string | null {
+  if (val === undefined || val === null || val === '') return null;
+  if (typeof val === 'string') return val;
+  return JSON.stringify(val);
+}
+
 /**
  * Retrieves master customer lists for a manager within their authorized hierarchy scope.
  * Rejects with 403 if target rep is outside manager scope.
@@ -262,7 +268,7 @@ export async function saveMasterHospital(
         hospitalTypes: JSON.stringify(data.hospitalTypes?.length ? data.hospitalTypes : [data.type || 'Private']),
         address: data.address || null,
         defaultCycle: data.defaultCycle ?? 7,
-        targetProducts: data.targetProducts || null,
+        targetProducts: serializeField(data.targetProducts),
         repId: repId || null,
         updatedAt: new Date(),
       })
@@ -280,7 +286,7 @@ export async function saveMasterHospital(
       hospitalTypes: JSON.stringify(data.hospitalTypes?.length ? data.hospitalTypes : [data.type || 'Private']),
       address: data.address || null,
       defaultCycle: data.defaultCycle ?? 7,
-      targetProducts: data.targetProducts || null,
+      targetProducts: serializeField(data.targetProducts),
       repId: repId || null,
     })
     .returning();
@@ -320,6 +326,7 @@ export async function saveMasterPharmacy(
         distributors: JSON.stringify(data.distributors || []),
         distributorOther: data.distributors?.includes('OTHERS') ? data.distributorOther || null : null,
         defaultCycle: data.defaultCycle ?? 7,
+        targetProducts: serializeField(data.targetProducts),
         repId: repId || null,
         updatedAt: new Date(),
       })
@@ -337,6 +344,7 @@ export async function saveMasterPharmacy(
       distributors: JSON.stringify(data.distributors || []),
       distributorOther: data.distributors?.includes('OTHERS') ? data.distributorOther || null : null,
       defaultCycle: data.defaultCycle ?? 7,
+      targetProducts: serializeField(data.targetProducts),
       repId: repId || null,
     })
     .returning();
@@ -377,7 +385,7 @@ export async function saveMasterDoctor(
         address: data.address || null,
         classification: data.classification || 'A',
         defaultCycle: data.defaultCycle ?? 7,
-        targetProducts: data.targetProducts || null,
+        targetProducts: serializeField(data.targetProducts),
         repId: repId || null,
         updatedAt: new Date(),
       })
@@ -397,7 +405,7 @@ export async function saveMasterDoctor(
       address: data.address || null,
       classification: data.classification || 'A',
       defaultCycle: data.defaultCycle ?? 7,
-      targetProducts: data.targetProducts || null,
+      targetProducts: serializeField(data.targetProducts),
       repId: repId || null,
     })
     .returning();
@@ -451,7 +459,7 @@ export async function saveMasterBranch(
         address: data.address || null,
         contact: data.contact || null,
         phone: data.phone || null,
-        distributedProducts: data.distributedProducts || null,
+        distributedProducts: serializeField(data.distributedProducts || (data as any).targetProducts),
         defaultCycle: data.defaultCycle ?? 7,
         repId: repId || null,
         updatedAt: new Date(),
@@ -469,7 +477,7 @@ export async function saveMasterBranch(
       address: data.address || null,
       contact: data.contact || null,
       phone: data.phone || null,
-      distributedProducts: data.distributedProducts || null,
+      distributedProducts: serializeField(data.distributedProducts || (data as any).targetProducts),
       defaultCycle: data.defaultCycle ?? 7,
       repId: repId || null,
     })
@@ -491,6 +499,7 @@ export async function deleteMasterItem(
     if (enforcedRepId && existing.repId && existing.repId !== enforcedRepId) {
       throw new AppError('غير مصرح لك بحذف هذا العميل التابع لمندوب آخر', 403);
     }
+    await db.delete(hospitalVisits).where(eq(hospitalVisits.hospitalId, id));
     await db.delete(hospitals).where(eq(hospitals.id, id));
   } else if (category === 'pharmacies') {
     const existing = await db.select().from(pharmacies).where(eq(pharmacies.id, id)).get();
@@ -498,6 +507,8 @@ export async function deleteMasterItem(
     if (enforcedRepId && existing.repId && existing.repId !== enforcedRepId) {
       throw new AppError('غير مصرح لك بحذف هذه الصيدلية التابعة لمندوب آخر', 403);
     }
+    await db.delete(doctorNearbyPharmacies).where(eq(doctorNearbyPharmacies.pharmacyId, id));
+    await db.delete(pharmacyVisits).where(eq(pharmacyVisits.pharmacyId, id));
     await db.delete(pharmacies).where(eq(pharmacies.id, id));
   } else if (category === 'doctors') {
     const existing = await db.select().from(doctors).where(eq(doctors.id, id)).get();
@@ -505,6 +516,8 @@ export async function deleteMasterItem(
     if (enforcedRepId && existing.repId && existing.repId !== enforcedRepId) {
       throw new AppError('غير مصرح لك بحذف هذا الطبيب التابع لمندوب آخر', 403);
     }
+    await db.delete(doctorNearbyPharmacies).where(eq(doctorNearbyPharmacies.doctorId, id));
+    await db.delete(doctorVisits).where(eq(doctorVisits.doctorId, id));
     await db.delete(doctors).where(eq(doctors.id, id));
   } else if (category === 'branches') {
     const existing = await db.select().from(distributionBranches).where(eq(distributionBranches.id, id)).get();
@@ -512,6 +525,7 @@ export async function deleteMasterItem(
     if (enforcedRepId && existing.repId && existing.repId !== enforcedRepId) {
       throw new AppError('غير مصرح لك بحذف هذا الفرع التابع لمندوب آخر', 403);
     }
+    await db.delete(branchVisits).where(eq(branchVisits.branchId, id));
     await db.delete(distributionBranches).where(eq(distributionBranches.id, id));
   }
   return { success: true };

@@ -11,7 +11,7 @@ const POSITION_LEVEL:Record<string,number>={MR:1,DM:2,AM:3,OM:3,BUM:4,PM:4,MM:5,
 type PageInput={search?:string;page?:number;pageSize?:number};
 const pageValues=(input:PageInput)=>({page:Math.max(1,input.page??1),pageSize:Math.min(100,Math.max(10,input.pageSize??20))});
 
-async function rebuildHierarchyPaths() {
+export async function rebuildHierarchyPaths() {
   const [relationships, userRows, assignments] = await Promise.all([
     db.select().from(organizationRelationships).where(eq(organizationRelationships.isActive,true)).all(),
     db.select({id:users.id,positionCode:users.positionCode}).from(users).all(),
@@ -21,14 +21,17 @@ async function rebuildHierarchyPaths() {
   const assignmentsByUser=new Map<string,Array<{id:string}>>();
   for(const assignment of assignments) assignmentsByUser.set(assignment.userId,[...(assignmentsByUser.get(assignment.userId)??[]),{id:assignment.id}]);
   const paths=computeTransitiveClosure(relationships,positionMap,assignmentsByUser);
-  if(paths.length) await db.batch([db.delete(hierarchyPaths),db.insert(hierarchyPaths).values(paths)]);
-  else await db.delete(hierarchyPaths);
+  await db.delete(hierarchyPaths);
+  if (paths.length) {
+    const chunkSize = 10;
+    for (let i = 0; i < paths.length; i += chunkSize) {
+      await db.insert(hierarchyPaths).values(paths.slice(i, i + chunkSize));
+    }
+  }
   return paths.length;
 }
 
 export function validateRelationshipGraph(edges:Array<{subordinateUserId:string;managerUserId:string}>,candidate:{subordinateUserId:string;managerUserId:string}) {
-  if(candidate.subordinateUserId===candidate.managerUserId) throw new AppError('Self-management is not allowed',400);
-  if(edges.some(edge=>edge.subordinateUserId===candidate.subordinateUserId&&edge.managerUserId===candidate.managerUserId)) throw new AppError('Relationship already exists',409);
   const validation=validateHierarchyAcyclicity([...edges,candidate]);
   if(!validation.isValid) throw new AppError('Relationship would create a hierarchy cycle',409,{cyclePath:validation.cyclePath});
 }
