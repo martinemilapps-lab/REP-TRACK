@@ -16,6 +16,7 @@ import { InlineAlert } from '@/components/ui/InlineAlert';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Building2, Hospital, Pill, Stethoscope } from 'lucide-react';
 import { normalizeMasterListsPayload } from '@/lib/masterListsPayload';
+import { MultiSelectDropdown } from '@/components/ui/MultiSelectDropdown';
 type Customer = MasterHospital | MasterPharmacy | MasterDoctor | MasterBranch;
 type CustomerFields = Partial<MasterHospital & MasterPharmacy & MasterDoctor & MasterBranch>;
 interface MyListsViewProps {
@@ -31,7 +32,7 @@ export function MyListsView({ reps, selectedRep, onSelectRep, onLogVisitForCusto
     const { t, language } = useTranslation();
     const [activeCategory, setActiveCategory] = useState<ListCategory>('hospitals');
     const [search, setSearch] = useState('');
-    const [areaFilter, setAreaFilter] = useState('');
+    const [areaFilters, setAreaFilters] = useState<string[]>([]);
     const [loadError, setLoadError] = useState(false);
     const [pendingDelete, setPendingDelete] = useState<{
         id: string;
@@ -291,7 +292,7 @@ export function MyListsView({ reps, selectedRep, onSelectRep, onLogVisitForCusto
     const keys: Record<ListCategory, string[]> = {
         hospitals: ['name', 'area', 'address'], pharmacies: ['name', 'area', 'address'], doctors: ['name', 'area', 'address', 'specialty', 'clinicAddress', 'classification'], branches: ['name', 'coverageArea', 'address', 'contact', 'phone', 'distributedProducts']
     };
-    const visible = filteredList.filter(item => !areaFilter || (item as unknown as Record<string, string>).area === areaFilter || (item as unknown as Record<string, string>).coverageArea === areaFilter);
+    const visible = filteredList.filter(item => areaFilters.length === 0 || areaFilters.includes((item as unknown as Record<string, string>).area || (item as unknown as Record<string, string>).coverageArea || ''));
     const actions = (item: typeof currentList[number]) => <div className="flex flex-wrap gap-2">
     <Button type="button" size="sm" variant="secondary" onClick={() => setDetail({
         ...item
@@ -310,14 +311,18 @@ export function MyListsView({ reps, selectedRep, onSelectRep, onLogVisitForCusto
         <CustomSelect options={repOptions} value={selectedRep} onChange={value => onSelectRep?.(value)} placeholder={l('Select an authorized representative', 'اختر مندوباً مصرحاً به')} searchable/>
         </div>}</SectionCard>
  {readOnly && !selectedRep ? <EmptyState title={l('Select a representative to browse their lists', 'اختر مندوباً لاستعراض قوائمه')}/> : <>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="group" aria-label={l('Customer categories', 'فئات العملاء')}>{categories.map(({ key, en, ar: arabic, Icon }) => <Button type="button" key={key} aria-pressed={activeCategory === key} variant={activeCategory === key ? 'primary' : 'secondary'} leftIcon={<Icon className="size-4"/>} onClick={() => { setActiveCategory(key); setAreaFilter(''); }}>{l(en, arabic)} ({listsData[key].length})</Button>)}</div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="group" aria-label={l('Customer categories', 'فئات العملاء')}>{categories.map(({ key, en, ar: arabic, Icon }) => <Button type="button" key={key} aria-pressed={activeCategory === key} variant={activeCategory === key ? 'primary' : 'secondary'} leftIcon={<Icon className="size-4"/>} onClick={() => { setActiveCategory(key); setAreaFilters([]); }}>{l(en, arabic)} ({listsData[key].length})</Button>)}</div>
         <FilterBar>
         <label className="min-w-0 flex-1 text-sm">{l('Search', 'بحث')}<input value={search} type="search" onChange={e => setSearch(e.target.value)} className="mt-1 min-h-11 w-full rounded-lg border border-[var(--line)] px-3"/>
         </label>
-        <label className="min-w-0 flex-1 text-sm">{l('Area', 'المنطقة')}<select value={areaFilter} onChange={e => setAreaFilter(e.target.value)} className="mt-1 min-h-11 w-full rounded-lg border border-[var(--line)] px-3">
-        <option value="">{l('All areas', 'كل المناطق')}</option>{[...new Set(currentList.map(item => { const r = item as unknown as Record<string, string>; return r.area || r.coverageArea; }).filter(Boolean))].map(area => <option key={area}>{area}</option>)}</select>
-        </label>
-        <Button type="button" variant="secondary" onClick={() => { setSearch(''); setAreaFilter(''); }}>{l('Reset', 'إعادة تعيين')}</Button>{!readOnly && <Button type="button" disabled={saving || syncStatus === 'saving'} onClick={handleOpenCreateModal}>{l('Add customer', 'إضافة عميل')}</Button>}</FilterBar>
+        <MultiSelectDropdown
+            label={l('Area', 'المنطقة')}
+            options={[...new Set(currentList.map(item => { const r = item as unknown as Record<string, string>; return r.area || r.coverageArea; }).filter(Boolean))].map(area => ({ value: area, label: area }))}
+            selectedValues={areaFilters}
+            onChange={setAreaFilters}
+            placeholder={l('All areas', 'كل المناطق')}
+        />
+        <Button type="button" variant="secondary" onClick={() => { setSearch(''); setAreaFilters([]); }}>{l('Reset', 'إعادة تعيين')}</Button>{!readOnly && <Button type="button" disabled={saving || syncStatus === 'saving'} onClick={handleOpenCreateModal}>{l('Add customer', 'إضافة عميل')}</Button>}</FilterBar>
  {loadError ? <InlineAlert tone="error">{l('Unable to load lists', 'تعذر تحميل القوائم')} <Button type="button" onClick={() => void loadLists(selectedRep)}>{l('Retry', 'إعادة المحاولة')}</Button>
             </InlineAlert> : loading ? <Skeleton className="h-48"/> : <>
             <p role="status" className="text-sm">{visible.length} {l('customers', 'عميل')}</p>{!visible.length ? <EmptyState title={l('No matching customers', 'لا يوجد عملاء مطابقون')}/> : <>

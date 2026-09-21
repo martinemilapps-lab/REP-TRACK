@@ -239,18 +239,40 @@ export function generateExcelWorkbook(data: ExportDataPayload): Uint8Array {
 /**
  * Generates an Excel workbook for a single Weekly Plan matching the exact template layout.
  */
+function cleanPlanCellText(raw: string | undefined | null): string {
+  if (!raw) return '';
+  const val = raw.trim();
+  if (val.startsWith('{') || val.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(val);
+      if (typeof parsed === 'object' && parsed !== null) {
+        const parts: string[] = [];
+        if (Array.isArray(parsed.hospitalIds) && parsed.hospitalIds.length) parts.push(`Hospitals: ${parsed.hospitalIds.length}`);
+        if (Array.isArray(parsed.doctorIds) && parsed.doctorIds.length) parts.push(`Doctors: ${parsed.doctorIds.length}`);
+        if (Array.isArray(parsed.pharmacyIds) && parsed.pharmacyIds.length) parts.push(`Pharmacies: ${parsed.pharmacyIds.length}`);
+        if (Array.isArray(parsed.branchIds) && parsed.branchIds.length) parts.push(`Branches: ${parsed.branchIds.length}`);
+        if (Array.isArray(parsed.activities) && parsed.activities.length) parts.push(`Activities: ${parsed.activities.join(', ')}`);
+        if (parsed.salesReviewDescription) parts.push(`Review: ${parsed.salesReviewDescription}`);
+        if (parsed.othersDescription) parts.push(`Others: ${parsed.othersDescription}`);
+        if (parts.length > 0) return parts.join(' · ');
+      }
+    } catch {}
+  }
+  return raw;
+}
+
 export function generateWeeklyPlanWorkbook(plan: WeeklyPlanRecord): Uint8Array {
   const wsData = [
     ['', 'WEEKLY PLAN', ''],
     [`NAME :-  ${plan.rep || ''}`, '', `DATE:- ${plan.startDate || ''} to ${plan.endDate || ''}`],
     ['DAY', 'AM', 'PM'],
-    ['SATURDAY', plan.saturdayAm || '', plan.saturdayPm || ''],
-    ['SUNDAY', plan.sundayAm || '', plan.sundayPm || ''],
-    ['MONDAY', plan.mondayAm || '', plan.mondayPm || ''],
-    ['TUESDAY', plan.tuesdayAm || '', plan.tuesdayPm || ''],
-    ['WEDNESDAY', plan.wednesdayAm || '', plan.wednesdayPm || ''],
-    ['THURSDAY', plan.thursdayAm || '', plan.thursdayPm || ''],
-    ['FRIDAY', plan.fridayAm || '', plan.fridayPm || ''],
+    ['SATURDAY', cleanPlanCellText(plan.saturdayAm), cleanPlanCellText(plan.saturdayPm)],
+    ['SUNDAY', cleanPlanCellText(plan.sundayAm), cleanPlanCellText(plan.sundayPm)],
+    ['MONDAY', cleanPlanCellText(plan.mondayAm), cleanPlanCellText(plan.mondayPm)],
+    ['TUESDAY', cleanPlanCellText(plan.tuesdayAm), cleanPlanCellText(plan.tuesdayPm)],
+    ['WEDNESDAY', cleanPlanCellText(plan.wednesdayAm), cleanPlanCellText(plan.wednesdayPm)],
+    ['THURSDAY', cleanPlanCellText(plan.thursdayAm), cleanPlanCellText(plan.thursdayPm)],
+    ['FRIDAY', cleanPlanCellText(plan.fridayAm), cleanPlanCellText(plan.fridayPm)],
   ];
 
   const ws = XLSX.utils.aoa_to_sheet(wsData);

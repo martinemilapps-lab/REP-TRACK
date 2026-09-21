@@ -22,14 +22,30 @@ export function normalizeReports(data: Record<string, unknown>): ReportRow[] {
 }
 export function filterReports(rows: ReportRow[], filters: {
     search: string;
-    type: string;
-    entity: string;
-    owner: string;
-    position: string;
+    type: string | string[];
+    entity: string | string[];
+    owner: string | string[];
+    position: string | string[];
     start: string;
     end: string;
     sort: string;
 }) {
-    return rows.filter(r => (!filters.type || r.type === filters.type) && (!filters.entity || r.name === filters.entity) && (!filters.owner || r.owner === filters.owner) && (!filters.position || r.position === filters.position) && (!filters.start || r.date >= filters.start) && (!filters.end || r.date <= filters.end) && (!filters.search || [r.name, r.owner, ...Object.values(r.record).filter(v => typeof v === 'string')].join(' ').toLocaleLowerCase().includes(filters.search.toLocaleLowerCase())))
-        .sort((a, b) => filters.sort === 'name' ? a.name.localeCompare(b.name) : filters.sort === 'oldest' ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date));
+    const matchesFilter = (actual: string, filterVal: string | string[] | undefined) => {
+        if (!filterVal) return true;
+        if (Array.isArray(filterVal)) {
+            if (filterVal.length === 0) return true;
+            return filterVal.includes(actual);
+        }
+        return actual === filterVal;
+    };
+
+    return rows.filter(r => 
+        matchesFilter(r.type, filters.type) && 
+        matchesFilter(r.name, filters.entity) && 
+        matchesFilter(r.owner, filters.owner) && 
+        matchesFilter(r.position, filters.position) && 
+        (!filters.start || r.date >= filters.start) && 
+        (!filters.end || r.date <= filters.end) && 
+        (!filters.search || [r.name, r.owner, ...Object.values(r.record).filter(v => typeof v === 'string')].join(' ').toLocaleLowerCase().includes(filters.search.toLocaleLowerCase()))
+    ).sort((a, b) => filters.sort === 'name' ? a.name.localeCompare(b.name) : filters.sort === 'oldest' ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date));
 }

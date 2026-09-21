@@ -12,7 +12,22 @@ const LABELS: Record<string, [string, string]> = {
   distributors: ['Distributor dealt with', 'الموزع المتعامل معه'], distributorOther: ['Other distributor', 'موزع آخر'], contact: ['Contact', 'جهة الاتصال'], phone: ['Phone', 'الهاتف'], distributedProducts: ['Distributed products', 'المنتجات الموزعة'],
 };
 const FIELDS = { hospital: ['hospitalTypes', 'area', 'address'], doctor: ['specialty', 'clinicAddress', 'area', 'address', 'classification'], pharmacy: ['area', 'address', 'distributors', 'distributorOther'], branch: ['coverageArea', 'address', 'contact', 'phone', 'distributedProducts'] } as const;
-const show = (value: unknown) => Array.isArray(value) ? value.join(', ') : value === null || value === undefined || value === '' ? '—' : String(value);
+const show = (value: unknown) => {
+  if (value === null || value === undefined || value === '') return '—';
+  if (Array.isArray(value)) return value.join(', ');
+  if (typeof value === 'string' && (value.trim().startsWith('[') || value.trim().startsWith('{'))) {
+    try {
+      const parsed = JSON.parse(value.trim());
+      if (Array.isArray(parsed)) {
+        return parsed.map((item) => (typeof item === 'object' && item !== null ? (item.name || item.title || JSON.stringify(item)) : String(item))).join(', ');
+      }
+      if (typeof parsed === 'object' && parsed !== null) {
+        return Object.entries(parsed).map(([k, v]) => `${k}: ${v}`).join(', ');
+      }
+    } catch {}
+  }
+  return String(value);
+};
 
 export function SavedCustomerDetails({ category, customer, visitMode, companion, onVisitModeChange, onCompanionChange }: { category: keyof typeof FIELDS; customer?: SavedCustomer; visitMode: VisitMode; companion: string; onVisitModeChange: (value: VisitMode) => void; onCompanionChange: (value: string) => void }) {
   const { language } = useTranslation(); const ar = language === 'ar'; const l = (en: string, arabic: string) => ar ? arabic : en;

@@ -11,6 +11,33 @@ export function WeeklyPlanView({reps=[],selectedRep,isManagerPersonal,initialPla
  const repName=useMemo(()=>reps.find(r=>r.id===repId)?.name,[reps,repId]);
  useEffect(()=>{const q=isManagerPersonal&&repName?`?rep=${encodeURIComponent(repName)}`:'';fetch('/api/lists'+q).then(r=>r.json()).then(x=>setLists(x.data||{hospitals:[],branches:[],doctors:[],pharmacies:[]})).catch(()=>setError('Unable to load My Lists'));},[isManagerPersonal,repName]);
  const change=(day:string,period:'am'|'pm',patch:Partial<Cell>)=>setPlan(p=>({...p,[day]:{...p[day],[period]:{...p[day][period],...patch}}}));const select=(values:HTMLOptionsCollection)=>Array.from(values).filter(x=>x.selected).map(x=>x.value);
- async function save(){setSaving(true);setError('');try{const legacy=Object.fromEntries(DAYS.flatMap(d=>[[`${d}Am`,JSON.stringify(plan[d].am)],[`${d}Pm`,JSON.stringify(plan[d].pm)]]));const body={rep:repName||selectedRep,repId:repId||undefined,isManagerPersonal:Boolean(isManagerPersonal),selectedRepId:repId||undefined,startDate,endDate,structuredPlan:plan,status:'Submitted',...legacy};const r=await fetch('/api/weekly-plans',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}),x=await r.json();if(!r.ok)throw new Error(x.message);onSuccess?.('Weekly AM/PM plan saved');onPlanSaved?.(x.plan);}catch(e){const m=e instanceof Error?e.message:'Unable to save plan';setError(m);onError?.(m)}finally{setSaving(false)}}
+function formatCellToReadable(c: Cell, l: Lists): string {
+  const parts: string[] = [];
+  if (c.hospitalIds?.length) {
+    const names = c.hospitalIds.map(id => l.hospitals.find(h => h.id === id)?.name || id);
+    parts.push(`Hospitals: ${names.join(', ')}`);
+  }
+  if (c.branchIds?.length) {
+    const names = c.branchIds.map(id => l.branches.find(b => b.id === id)?.name || id);
+    parts.push(`Branches: ${names.join(', ')}`);
+  }
+  if (c.doctorIds?.length) {
+    const names = c.doctorIds.map(id => l.doctors.find(d => d.id === id)?.name || id);
+    parts.push(`Doctors: ${names.join(', ')}`);
+  }
+  if (c.pharmacyIds?.length) {
+    const names = c.pharmacyIds.map(id => l.pharmacies.find(p => p.id === id)?.name || id);
+    parts.push(`Pharmacies: ${names.join(', ')}`);
+  }
+  if (c.activities?.length) {
+    const acts = c.activities.map(a => a === 'SALES_REVIEW_ADMIN' ? 'Sales Review / Admin Work' : a === 'OTHERS' ? 'Others' : a);
+    parts.push(`Activities: ${acts.join(', ')}`);
+  }
+  if (c.salesReviewDescription) parts.push(`Review Note: ${c.salesReviewDescription}`);
+  if (c.othersDescription) parts.push(`Others Note: ${c.othersDescription}`);
+  return parts.join(' · ') || '—';
+}
+
+  async function save(){setSaving(true);setError('');try{const legacy=Object.fromEntries(DAYS.flatMap(d=>[[`${d}Am`,formatCellToReadable(plan[d].am,lists)],[`${d}Pm`,formatCellToReadable(plan[d].pm,lists)]]));const body={rep:repName||selectedRep,repId:repId||undefined,isManagerPersonal:Boolean(isManagerPersonal),selectedRepId:repId||undefined,startDate,endDate,structuredPlan:plan,status:'Submitted',...legacy};const r=await fetch('/api/weekly-plans',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}),x=await r.json();if(!r.ok)throw new Error(x.message);onSuccess?.('Weekly AM/PM plan saved');onPlanSaved?.(x.plan);}catch(e){const m=e instanceof Error?e.message:'Unable to save plan';setError(m);onError?.(m)}finally{setSaving(false)}}
  return <div className="space-y-4"><h2 className="text-xl font-black">Weekly Plan — structured AM / PM</h2>{error&&<InlineAlert tone="error">{error}</InlineAlert>}<FormSection title="Plan context">{isManagerPersonal&&<label className="sm:col-span-2">Supervised Medical Representative<select required className="input mt-1 w-full" value={repId} onChange={e=>{setRepId(e.target.value);setPlan(fresh())}}><option value="">Select authorized MR</option>{reps.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}</select></label>}<FormField label="Week start" type="date" value={startDate} onChange={v=>{setStartDate(v);const d=new Date(v+'T12:00:00');d.setDate(d.getDate()+6);setEndDate(d.toISOString().slice(0,10))}} required/><FormField label="Week end" type="date" value={endDate} onChange={setEndDate} required/></FormSection>{DAYS.map(day=><FormSection key={day} title={day[0].toUpperCase()+day.slice(1)}>{(['am','pm'] as const).map(period=>{const c=plan[day][period];return <div key={period} className="space-y-2 rounded-xl border border-[var(--line)] p-3"><b>{period.toUpperCase()}</b>{period==='am'?<><label>Hospitals<select multiple className="input mt-1 min-h-24 w-full" value={c.hospitalIds} onChange={e=>change(day,period,{hospitalIds:select(e.currentTarget.options)})}>{lists.hospitals.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label><label>Distribution Branches<select multiple className="input mt-1 min-h-24 w-full" value={c.branchIds} onChange={e=>change(day,period,{branchIds:select(e.currentTarget.options)})}>{lists.branches.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label></>:<><label>Doctors<select multiple className="input mt-1 min-h-24 w-full" value={c.doctorIds} onChange={e=>change(day,period,{doctorIds:select(e.currentTarget.options)})}>{lists.doctors.map(x=><option key={x.id} value={x.id}>{x.name} · {x.specialty}</option>)}</select></label><label>Pharmacies<select multiple className="input mt-1 min-h-24 w-full" value={c.pharmacyIds} onChange={e=>change(day,period,{pharmacyIds:select(e.currentTarget.options)})}>{lists.pharmacies.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label></>}<fieldset><legend>Activities</legend>{ACTS.map(a=><label className="mr-3 inline-block" key={a}><input type="checkbox" checked={c.activities.includes(a)} onChange={e=>change(day,period,{activities:e.target.checked?[...c.activities,a]:c.activities.filter(x=>x!==a)})}/> {a==='SALES_REVIEW_ADMIN'?'Sales Review / Admin Work':a}</label>)}</fieldset>{c.activities.includes('SALES_REVIEW_ADMIN')&&<FormField label="Sales Review / Admin Work description" value={c.salesReviewDescription} onChange={v=>change(day,period,{salesReviewDescription:v})} required/>}{c.activities.includes('OTHERS')&&<FormField label="Others description" value={c.othersDescription} onChange={v=>change(day,period,{othersDescription:v})} required/>}</div>})}</FormSection>)}<div className="flex justify-end"><Button onClick={()=>void save()} disabled={Boolean(isManagerPersonal&&!repId)} isLoading={saving}>Save / Submit plan</Button></div></div>;
 }
