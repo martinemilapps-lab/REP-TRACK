@@ -27,6 +27,11 @@ export default function Error({
           <p className="text-sm text-[var(--ink-soft)] mt-2">
             An unexpected error occurred while loading this page.
           </p>
+          {error?.message && (
+            <p className="text-xs font-mono text-rose-600 dark:text-rose-400 bg-rose-500/10 rounded-lg p-2 mt-3 select-all">
+              {error.message}
+            </p>
+          )}
         </div>
         <div className="pt-2 flex justify-center gap-3">
           <button

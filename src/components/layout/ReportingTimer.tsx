@@ -1,20 +1,52 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Clock, AlertTriangle, CheckCircle, Info, X, ShieldAlert } from 'lucide-react';
 import { useTranslation } from '@/lib/i18nContext';
 import { getReportingWindowStatus, type ReportingWindowStatus } from '@/lib/business/reportingWindow';
+
+function getStyleConfig(urgency: 'normal' | 'warning' | 'urgent') {
+  if (urgency === 'urgent') {
+    return {
+      container: 'bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300 hover:bg-rose-500/15',
+      dot: 'bg-rose-500 animate-ping',
+      dotSolid: 'bg-rose-600',
+      badge: 'bg-rose-500 text-white',
+      text: 'text-rose-700 dark:text-rose-300',
+      isUrgent: true,
+    };
+  }
+  if (urgency === 'warning') {
+    return {
+      container: 'bg-amber-500/10 border-amber-500/30 text-amber-800 dark:text-amber-200 hover:bg-amber-500/15',
+      dot: 'bg-amber-500 animate-pulse',
+      dotSolid: 'bg-amber-600',
+      badge: 'bg-amber-500 text-white',
+      text: 'text-amber-800 dark:text-amber-200',
+      isUrgent: false,
+    };
+  }
+  return {
+    container: 'bg-emerald-500/10 border-emerald-500/25 text-emerald-800 dark:text-emerald-200 hover:bg-emerald-500/15',
+    dot: 'bg-emerald-500',
+    dotSolid: 'bg-emerald-600',
+    badge: 'bg-emerald-500 text-white',
+    text: 'text-emerald-800 dark:text-emerald-200',
+    isUrgent: false,
+  };
+}
 
 export function ReportingTimer() {
   const { language } = useTranslation();
   const ar = language === 'ar';
 
-  const [status, setStatus] = useState<ReportingWindowStatus | null>(null);
+  // Guaranteed non-null initial state - no hook order violation
+  const [status, setStatus] = useState<ReportingWindowStatus>(() => getReportingWindowStatus());
   const [showModal, setShowModal] = useState(false);
 
   // Live 1-second interval ticker
   useEffect(() => {
-    // Initial calculate
+    // Initial calculate to synchronize with client clock immediately
     setStatus(getReportingWindowStatus());
 
     const interval = setInterval(() => {
@@ -24,48 +56,8 @@ export function ReportingTimer() {
     return () => clearInterval(interval);
   }, []);
 
-  if (!status) {
-    return (
-      <div className="h-9 px-3 rounded-xl bg-[var(--surface)] border border-[var(--line)] flex items-center gap-2 animate-pulse text-xs text-[var(--ink-soft)]">
-        <Clock className="w-3.5 h-3.5" />
-        <span>...</span>
-      </div>
-    );
-  }
-
   const { urgency, formattedCountdown, isMorningGracePeriod, cairo, activeDeadlineLabel } = status;
-
-  // Tone color styling based on deadline urgency
-  const styleConfig = useMemo(() => {
-    if (urgency === 'urgent') {
-      return {
-        container: 'bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300 hover:bg-rose-500/15',
-        dot: 'bg-rose-500 animate-ping',
-        dotSolid: 'bg-rose-600',
-        badge: 'bg-rose-500 text-white',
-        text: 'text-rose-700 dark:text-rose-300',
-        icon: <AlertTriangle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 animate-bounce" />,
-      };
-    }
-    if (urgency === 'warning') {
-      return {
-        container: 'bg-amber-500/10 border-amber-500/30 text-amber-800 dark:text-amber-200 hover:bg-amber-500/15',
-        dot: 'bg-amber-500 animate-pulse',
-        dotSolid: 'bg-amber-600',
-        badge: 'bg-amber-500 text-white',
-        text: 'text-amber-800 dark:text-amber-200',
-        icon: <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />,
-      };
-    }
-    return {
-      container: 'bg-emerald-500/10 border-emerald-500/25 text-emerald-800 dark:text-emerald-200 hover:bg-emerald-500/15',
-      dot: 'bg-emerald-500',
-      dotSolid: 'bg-emerald-600',
-      badge: 'bg-emerald-500 text-white',
-      text: 'text-emerald-800 dark:text-emerald-200',
-      icon: <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />,
-    };
-  }, [urgency]);
+  const styleConfig = getStyleConfig(urgency);
 
   return (
     <>
@@ -82,7 +74,11 @@ export function ReportingTimer() {
           <span className={`relative inline-flex rounded-full h-2 w-2 ${styleConfig.dotSolid}`} />
         </span>
 
-        {styleConfig.icon}
+        {styleConfig.isUrgent ? (
+          <AlertTriangle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 animate-bounce" />
+        ) : (
+          <Clock className="w-3.5 h-3.5" />
+        )}
 
         {/* Dynamic Context Label */}
         <span className="hidden sm:inline-block font-semibold">
