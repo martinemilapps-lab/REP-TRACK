@@ -44,23 +44,23 @@ export function AppShell({ user, items, activeItem, onNavigate, onLogout, childr
     <div className="app-shell">
       {/* Desktop Persistent Sidebar */}
       <aside className="app-sidebar hidden lg:flex">
-        {/* Brand Header */}
-        <div className="flex flex-col items-start pb-5 border-b border-[var(--line)] mb-4">
-          <div className="relative w-full h-20 lg:h-24 flex items-center justify-start">
+        {/* Brand Header: Exactly Centered & Scaled */}
+        <div className="flex flex-col items-center justify-center text-center pb-6 border-b border-[var(--line)] mb-5 w-full">
+          <div className="relative w-full h-36 lg:h-44 flex items-center justify-center">
             <Image
               src="/logo.png"
               alt="REP TRACK - Sunny Medical Group"
-              width={260}
-              height={95}
+              width={360}
+              height={180}
               priority
-              className="h-full w-auto object-contain drop-shadow-xs"
+              className="h-full w-auto max-w-full object-contain drop-shadow-sm transition-transform duration-200 hover:scale-105"
             />
           </div>
-          <div className="mt-2.5 ps-0.5">
-            <p className="text-[11px] font-black uppercase tracking-wider text-[var(--gold-dark)] leading-tight">
+          <div className="mt-3 text-center flex flex-col items-center justify-center w-full">
+            <p className="text-base lg:text-lg font-black uppercase tracking-wider text-[var(--gold-dark)] leading-tight">
               Sunny Medical Group
             </p>
-            <p className="text-xs text-[var(--ink-soft)] font-bold mt-0.5">
+            <p className="text-xs lg:text-sm text-[var(--ink-soft)] font-extrabold mt-1 tracking-wider">
               REP TRACK System
             </p>
           </div>
@@ -94,19 +94,27 @@ export function AppShell({ user, items, activeItem, onNavigate, onLogout, childr
         onClose={() => setOpen(false)}
       >
         <div className="flex flex-col h-full">
-          <div className="flex items-center gap-3 pb-4 border-b border-[var(--line)] mb-4">
-            <div className="relative h-14 w-auto flex items-center">
+          {/* Centered Mobile Brand Header */}
+          <div className="flex flex-col items-center justify-center text-center pb-5 border-b border-[var(--line)] mb-4 w-full">
+            <div className="relative w-full h-28 flex items-center justify-center">
               <Image
                 src="/logo.png"
                 alt="REP TRACK"
-                width={180}
-                height={60}
-                className="h-full w-auto object-contain"
+                width={280}
+                height={120}
+                className="h-full w-auto object-contain drop-shadow-sm"
               />
             </div>
-            <div>
-              <p className="text-xs font-black uppercase text-[var(--gold-dark)]">Sunny Medical Group</p>
-              <p className="text-xs font-bold text-[var(--ink-soft)]">{user.name} ({user.positionCode})</p>
+            <div className="mt-2 text-center">
+              <p className="text-sm font-black uppercase tracking-wider text-[var(--gold-dark)]">
+                Sunny Medical Group
+              </p>
+              <p className="text-xs font-extrabold text-[var(--ink-soft)] mt-0.5">
+                REP TRACK System
+              </p>
+              <p className="text-xs font-mono font-semibold text-[var(--ink-muted)] mt-1">
+                {user.name} ({user.positionCode})
+              </p>
             </div>
           </div>
           <div className="flex-1 overflow-y-auto">
