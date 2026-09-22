@@ -65,12 +65,12 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       <div className="bg-[var(--surface)] border border-[var(--line)] rounded-3xl w-full max-w-md sm:max-w-lg lg:max-w-xl p-6 sm:p-8 md:p-10 lg:p-12 shadow-xl animate-fade-in">
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center mb-6 sm:mb-8">
-          <div className="relative w-64 h-32 sm:w-72 sm:h-36 lg:w-80 lg:h-40 mb-3 flex items-center justify-center">
+          <div className="relative w-32 h-32 sm:w-36 sm:h-36 lg:w-44 lg:h-44 mb-3 flex items-center justify-center">
             <Image
               src="/logo.png"
               alt="REP TRACK - Sunny Medical Group"
-              width={340}
-              height={170}
+              width={200}
+              height={200}
               priority
               className="w-full h-full object-contain drop-shadow-sm"
             />
