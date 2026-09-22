@@ -6,6 +6,7 @@ import { runPasswordLifecycleTests } from './passwordLifecycle.test';
 import { runUnifiedWorkspaceTests } from './unifiedWorkspace.test';
 import { runWeeklyPlanEnhancementTests } from './weeklyPlanEnhancement.test';
 import { runManagerActivityWorkflowTests } from './managerActivityWorkflow.test';
+import { runAvailabilityReportsTests } from './availabilityReports.test';
 
 // Only suites reviewed as local/pure. Never load dotenv or allow a network fallback.
 globalThis.fetch = async () => { throw new Error('Network forbidden in local regression suite'); };
@@ -16,6 +17,7 @@ async function main() {
     await runOrganizationFoundationTests(), await runPasswordLifecycleTests(),
     runUnifiedWorkspaceTests(), runWeeklyPlanEnhancementTests(),
     runManagerActivityWorkflowTests(),
+    runAvailabilityReportsTests(),
   ];
   const passed = results.reduce((sum, result) => sum + result.passed, 0);
   const failed = results.reduce((sum, result) => sum + result.failed, 0);

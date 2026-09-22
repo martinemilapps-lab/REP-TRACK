@@ -9,6 +9,7 @@ import { InlineAlert } from '@/components/ui/InlineAlert';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { MultiSelectDropdown } from '@/components/ui/MultiSelectDropdown';
 import { Button } from '@/components/ui/Button';
+import { AvailabilityReportsContainer } from '@/components/availability/AvailabilityReportsContainer';
 
 type Row = {
   id: string;
@@ -221,6 +222,19 @@ export function ManagerAvailabilityView() {
           ))}
         </DataTable>
       )}
+
+      {/* 2 Full Reports for Managers across live hierarchy */}
+      {!loading && !error && (
+        <AvailabilityReportsContainer
+          records={filtered as any}
+          title={l('Manager Team Product Availability Reports', 'تقارير توافر المنتجات لفريق العمل')}
+          subtitle={l(
+            'Hierarchical aggregated full reports for your scoped representatives and territories.',
+            'التقارير الشاملة التراكمية للمندوبين والمناطق التابعة لنطاقك الإداري والتنظيمي.'
+          )}
+        />
+      )}
     </div>
   );
 }
+

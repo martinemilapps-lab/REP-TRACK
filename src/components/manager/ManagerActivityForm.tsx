@@ -353,7 +353,7 @@ export function ManagerActivityForm({
         )}
       </FormSection>
 
-      {(['AM', 'PM'] as const).map(period => (
+      {(['AM','PM'] as const).map(period => (
         <FormSection key={period} title={`${period} visits`}>
           <div className="sm:col-span-2 space-y-3">
             {visits.map(

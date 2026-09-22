@@ -5,9 +5,10 @@ import { findOrCreateHospital, findOrCreateProduct } from './masterEntityService
 import { z } from 'zod';
 import { ProductAvailabilitySchema, ProductAvailabilityBatchSchema } from '@/lib/validation';
 import { FilterOptions } from './hospitalService';
-import { assertAuthenticatedSession } from '@/lib/authPolicy';
+import { assertAuthenticatedSession, assertManagerSession } from '@/lib/authPolicy';
 import { resolveWritableRepId } from '@/lib/repAccessPolicy';
 import { AppError } from '@/lib/errors';
+import { hierarchyService, HierarchyScopeMode } from './hierarchyService';
 
 export type ProductAvailabilityInput = z.input<typeof ProductAvailabilitySchema>;
 export type ProductAvailabilityBatchInput = z.input<typeof ProductAvailabilityBatchSchema>;
@@ -165,37 +166,8 @@ export async function getProductAvailabilityReports(
 
   let results;
   if (targetRepId) {
-    results = await db
-      .select({
-        id: productAvailabilities.id,
-        repId: productAvailabilities.repId,
-        rep: representatives.name,
-        hospital: hospitals.name,
-        hospitalId: hospitals.id,
-        area: hospitals.area,
-        hospitalType: hospitals.type,
-        product: products.name,
-        productId: products.id,
-        productCode: products.code,
-        username: users.username,
-        positionCode: users.positionCode,
-        objective: productAvailabilities.objective,
-        month: productAvailabilities.month,
-        annualTarget: productAvailabilities.annualTarget,
-        avgMonthlyTarget: productAvailabilities.avgMonthlyTarget,
-        sales: productAvailabilities.salesUnits,
-        potentiality: productAvailabilities.potentiality,
-        isAvailable: productAvailabilities.isAvailable,
-        notes: productAvailabilities.notes,
-        submittedAt: productAvailabilities.submittedAt,
-      })
-      .from(productAvailabilities)
-      .innerJoin(hospitals, eq(productAvailabilities.hospitalId, hospitals.id))
-      .innerJoin(products, eq(productAvailabilities.productId, products.id))
-      .innerJoin(representatives, eq(productAvailabilities.repId, representatives.id))
-      .leftJoin(users, eq(users.repId, representatives.id))
+    results = await query
       .where(eq(productAvailabilities.repId, targetRepId))
-      .orderBy(desc(productAvailabilities.submittedAt))
       .limit(options.limit || 1000)
       .offset(options.offset || 0)
       .all();
@@ -226,4 +198,53 @@ export async function getProductAvailabilityReports(
       submittedAt: a.submittedAt ? new Date(a.submittedAt).toISOString() : undefined,
     };
   });
+}
+
+/**
+ * Retrieves availability reports scoped strictly to current user / hierarchy.
+ * - MR: returns own availability records.
+ * - Manager: returns scoped availability records for all descendants or direct reports.
+ */
+export async function getScopedAvailabilityReports(
+  session: UserSessionPayload | null,
+  options: {
+    repId?: string | null;
+    scopeMode?: HierarchyScopeMode;
+    month?: string;
+  } = {}
+) {
+  assertAuthenticatedSession(session);
+
+  if (session.role === 'REPRESENTATIVE') {
+    if (!session.repId) throw new AppError('لا يوجد مندوب مرتبط بهذا الحساب', 403);
+    const reports = await getProductAvailabilityReports(session, { repId: session.repId });
+    return {
+      availabilities: reports,
+      reps: [{ id: session.repId, name: session.name || 'MR' }],
+    };
+  }
+
+  assertManagerSession(session);
+  const reps = await hierarchyService.getScopedRepresentatives(session, options.scopeMode || 'ALL_DESCENDANTS');
+  const allowedRepIds = new Set(reps.map((r) => r.id));
+
+  let targetReps = reps;
+  if (options.repId) {
+    if (!allowedRepIds.has(options.repId)) {
+      throw new AppError('غير مصرح بالوصول إلى بيانات هذا المندوب', 403);
+    }
+    targetReps = reps.filter((r) => r.id === options.repId);
+  }
+
+  const reportsList = await Promise.all(
+    targetReps.map((r) => getProductAvailabilityReports(session, { repId: r.id }))
+  );
+
+  const dedupe = <T extends { id: string }>(rows: T[]) => [...new Map(rows.map((row) => [row.id, row])).values()];
+  const allAvailabilities = dedupe(reportsList.flat());
+
+  return {
+    availabilities: allAvailabilities,
+    reps,
+  };
 }

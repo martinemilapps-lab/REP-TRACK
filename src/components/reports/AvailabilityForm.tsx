@@ -6,6 +6,7 @@ import { useTranslation } from '@/lib/i18nContext';
 import { Button } from '@/components/ui/Button';
 import { InlineAlert } from '@/components/ui/InlineAlert';
 import { SectionCard } from '@/components/ui/SectionCard';
+import { AvailabilityReportsContainer } from '@/components/availability/AvailabilityReportsContainer';
 
 type Hospital = { id: string; name: string; area: string };
 type Product = { id: string; name: string; code?: string | null };
@@ -33,6 +34,7 @@ export function AvailabilityForm({
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [refreshSignal, setRefreshSignal] = useState(0);
 
   useEffect(() => {
     Promise.all([
@@ -119,6 +121,7 @@ export function AvailabilityForm({
       );
       setStatuses({});
       setNotes('');
+      setRefreshSignal((k) => k + 1);
     } catch (e) {
       const message =
         e instanceof Error && e.message
@@ -140,7 +143,8 @@ export function AvailabilityForm({
   }
 
   return (
-    <form onSubmit={submit} className="space-y-4" dir={ar ? 'rtl' : 'ltr'}>
+    <div className="space-y-8" dir={ar ? 'rtl' : 'ltr'}>
+      <form onSubmit={submit} className="space-y-4">
       <header>
         <h2 className="text-2xl font-black">
           {l('Product Availability', 'توافر المنتجات')}
@@ -333,5 +337,10 @@ export function AvailabilityForm({
         </div>
       </SectionCard>
     </form>
+
+    {/* 2 Full Reports for All MRs at the bottom */}
+    <AvailabilityReportsContainer refreshSignal={refreshSignal} />
+  </div>
   );
 }
+
