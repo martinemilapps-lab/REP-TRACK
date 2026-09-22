@@ -1,5 +1,5 @@
 import { db, hospitals, productAvailabilities, products, representatives, users } from '@/lib/db';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, inArray } from 'drizzle-orm';
 import { UserSessionPayload, resolveAuthorizedRepId } from '@/lib/auth';
 import { findOrCreateHospital, findOrCreateProduct } from './masterEntityService';
 import { z } from 'zod';
@@ -171,6 +171,12 @@ export async function getProductAvailabilityReports(
       .limit(options.limit || 1000)
       .offset(options.offset || 0)
       .all();
+  } else if (options.repIds && options.repIds.length > 0) {
+    results = await query
+      .where(inArray(productAvailabilities.repId, options.repIds))
+      .limit(options.limit || 5000)
+      .offset(options.offset || 0)
+      .all();
   } else {
     results = await query
       .limit(options.limit || 1000)
@@ -236,15 +242,18 @@ export async function getScopedAvailabilityReports(
     targetReps = reps.filter((r) => r.id === options.repId);
   }
 
-  const reportsList = await Promise.all(
-    targetReps.map((r) => getProductAvailabilityReports(session, { repId: r.id }))
-  );
+  const repIdsToFetch = targetReps.map((r) => r.id);
+  if (repIdsToFetch.length === 0) {
+    return { availabilities: [], reps };
+  }
 
-  const dedupe = <T extends { id: string }>(rows: T[]) => [...new Map(rows.map((row) => [row.id, row])).values()];
-  const allAvailabilities = dedupe(reportsList.flat());
+  const reports = await getProductAvailabilityReports(session, {
+    repIds: repIdsToFetch,
+    limit: 5000,
+  });
 
   return {
-    availabilities: allAvailabilities,
+    availabilities: reports,
     reps,
   };
 }
