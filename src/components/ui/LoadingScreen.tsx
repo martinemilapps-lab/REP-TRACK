@@ -25,7 +25,7 @@ export function LoadingScreen({ message }: LoadingScreenProps) {
             width={320}
             height={160}
             priority
-            className="object-contain drop-shadow-xs"
+            className="object-contain"
           />
         </div>
 

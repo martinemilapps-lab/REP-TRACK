@@ -72,7 +72,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
               width={200}
               height={200}
               priority
-              className="w-full h-full object-contain drop-shadow-sm"
+              className="w-full h-full object-contain"
             />
           </div>
           <p className="text-xs sm:text-sm lg:text-base font-black text-[var(--gold-dark)] tracking-wider uppercase mb-1">

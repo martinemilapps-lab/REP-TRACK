@@ -53,7 +53,7 @@ export function AppShell({ user, items, activeItem, onNavigate, onLogout, childr
               width={360}
               height={180}
               priority
-              className="h-full w-auto max-w-full object-contain drop-shadow-sm transition-transform duration-200 hover:scale-105"
+              className="h-full w-auto max-w-full object-contain transition-transform duration-200 hover:scale-105"
             />
           </div>
           <div className="mt-3 text-center flex flex-col items-center justify-center w-full">
@@ -102,7 +102,7 @@ export function AppShell({ user, items, activeItem, onNavigate, onLogout, childr
                 alt="REP TRACK"
                 width={280}
                 height={120}
-                className="h-full w-auto object-contain drop-shadow-sm"
+                className="h-full w-auto object-contain"
               />
             </div>
             <div className="mt-2 text-center">

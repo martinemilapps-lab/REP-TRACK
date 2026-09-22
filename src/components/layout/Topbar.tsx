@@ -81,7 +81,7 @@ export function Topbar({
                 width={300}
                 height={90}
                 priority
-                className="h-full w-auto object-contain drop-shadow-xs"
+                className="h-full w-auto object-contain"
               />
             </div>
           </Link>
