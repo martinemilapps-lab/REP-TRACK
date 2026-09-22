@@ -17,6 +17,10 @@ import {
   HelpCircle,
   BarChart3,
   Layers,
+  RotateCcw,
+  Send,
+  Check,
+  Filter,
 } from 'lucide-react';
 import { SectionCard } from '@/components/ui/SectionCard';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -26,6 +30,8 @@ import type {
   AverageCoverageReport,
   CoverageColor,
   AverageColor,
+  FrequencyColor,
+  EntityFrequencyItem,
 } from '@/lib/services/averageCoverageService';
 
 interface ScopedRep {
@@ -43,6 +49,10 @@ interface TeamSummaryItem {
   actualVisits: number;
   bumRate: number;
   averageColorVsBum: string;
+  frequencyTotal?: number;
+  frequencySame?: number;
+  frequencyOver?: number;
+  frequencyLess?: number;
 }
 
 interface AverageCoverageViewProps {
@@ -72,6 +82,17 @@ export function AverageCoverageView({ initialRepId, currentUser }: AverageCovera
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchFilter, setSearchFilter] = useState('');
+
+  // Visits Frequency state & filters
+  const [freqCategoryFilter, setFreqCategoryFilter] = useState<
+    'ALL' | 'HOSPITAL' | 'DOCTOR' | 'PHARMACY' | 'DISTRIBUTION_BRANCH'
+  >('ALL');
+  const [freqStatusFilter, setFreqStatusFilter] = useState<
+    'ALL' | 'GREEN' | 'RED' | 'YELLOW'
+  >('ALL');
+  const [freqSearch, setFreqSearch] = useState('');
+  const [submittingReport, setSubmittingReport] = useState(false);
+  const [submissionSuccess, setSubmissionSuccess] = useState<string | null>(null);
 
   const loadData = useCallback(async (showBusy = true) => {
     try {
@@ -111,6 +132,36 @@ export function AverageCoverageView({ initialRepId, currentUser }: AverageCovera
   useEffect(() => {
     void loadData(true);
   }, [loadData]);
+
+  // Handle explicit report submission up hierarchy
+  const handleSendReport = async () => {
+    try {
+      setSubmittingReport(true);
+      setSubmissionSuccess(null);
+      setError(null);
+
+      const res = await fetch('/api/average-coverage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: selectedDate, period }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Failed to send visits frequency report');
+      }
+
+      const timeStr = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+      setSubmissionSuccess(
+        ar
+          ? `تم إرسال تقرير تكرار الزيارات بنجاح الساعة ${timeStr} إلى جميع المديرين المشرفين في الهيكل الإداري حتى مدير القطاع (SMD).`
+          : `Visits Frequency Report successfully sent at ${timeStr} to all assigned managers in hierarchy up to SMD.`,
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send report');
+    } finally {
+      setSubmittingReport(false);
+    }
+  };
 
   // Color styling helpers
   const getCoverageBadge = (color: CoverageColor, pct: number) => {
@@ -178,6 +229,86 @@ export function AverageCoverageView({ initialRepId, currentUser }: AverageCovera
         );
     }
   };
+
+  /**
+   * Visits Frequency Badge rule:
+   * Green: number visited with same frequency (actual === expected)
+   * Red: overvisited (actual > expected)
+   * Yellow: less visited (actual < expected)
+   */
+  const getFrequencyBadge = (color: FrequencyColor, actual: number, expected: number) => {
+    switch (color) {
+      case 'GREEN':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 shadow-2xs">
+            <CheckCircle2 className="size-3.5" />
+            <span>{ar ? 'نفس التكرار (مطابق)' : 'Same Frequency'}</span>
+            <span className="font-mono text-[10px] bg-emerald-500/20 px-1.5 py-0.5 rounded-md font-bold">
+              {actual} / {expected}
+            </span>
+          </span>
+        );
+      case 'RED':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 shadow-2xs">
+            <TrendingUp className="size-3.5" />
+            <span>{ar ? 'زيارات زائدة (Overvisited)' : 'Overvisited'}</span>
+            <span className="font-mono text-[10px] bg-rose-500/20 px-1.5 py-0.5 rounded-md font-bold">
+              {actual} / {expected}
+            </span>
+          </span>
+        );
+      case 'YELLOW':
+      default:
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 shadow-2xs">
+            <AlertTriangle className="size-3.5" />
+            <span>{ar ? 'زيارات أقل (Less Visited)' : 'Less Visited'}</span>
+            <span className="font-mono text-[10px] bg-amber-500/20 px-1.5 py-0.5 rounded-md font-bold">
+              {actual} / {expected}
+            </span>
+          </span>
+        );
+    }
+  };
+
+  // Filtered frequency items for Section 3
+  const filteredFrequencyItems = useMemo(() => {
+    if (!report?.visitsFrequency) return [];
+    const hosp = report.visitsFrequency.hospital.items;
+    const doc = report.visitsFrequency.doctor.items;
+    const pharm = report.visitsFrequency.pharmacy.items;
+    const branch = report.visitsFrequency.branch.items;
+
+    let list: EntityFrequencyItem[] = [];
+    if (freqCategoryFilter === 'ALL') {
+      list = [...hosp, ...doc, ...pharm, ...branch];
+    } else if (freqCategoryFilter === 'HOSPITAL') {
+      list = hosp;
+    } else if (freqCategoryFilter === 'DOCTOR') {
+      list = doc;
+    } else if (freqCategoryFilter === 'PHARMACY') {
+      list = pharm;
+    } else {
+      list = branch;
+    }
+
+    if (freqStatusFilter !== 'ALL') {
+      list = list.filter((item) => item.color === freqStatusFilter);
+    }
+
+    if (freqSearch.trim()) {
+      const q = freqSearch.toLowerCase();
+      list = list.filter(
+        (item) =>
+          item.name.toLowerCase().includes(q) ||
+          item.area.toLowerCase().includes(q) ||
+          (item.extraInfo && item.extraInfo.toLowerCase().includes(q)),
+      );
+    }
+
+    return list;
+  }, [report, freqCategoryFilter, freqStatusFilter, freqSearch]);
 
   const filteredTeamSummary = useMemo(() => {
     if (!teamSummary) return [];
@@ -588,14 +719,365 @@ export function AverageCoverageView({ initialRepId, currentUser }: AverageCovera
         </div>
       )}
 
-      {/* SECTION 3: For Managers up to SMD — Team Overview Matrix */}
+      {/* SECTION 3: Visits Frequency (تكرار الزيارات) */}
+      {report?.visitsFrequency && (
+        <div className="space-y-4 pt-4 border-t border-[var(--line)]">
+          {/* Header & Submission Action */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="p-2 rounded-xl bg-[var(--gold-tint)] text-[var(--gold-dark)] border border-[var(--gold-border)]">
+                  <RotateCcw className="size-5" />
+                </span>
+                <div>
+                  <h2 className="text-base sm:text-lg font-black text-[var(--ink)] flex items-center gap-2">
+                    <span>{ar ? '3. تكرار الزيارات (Visits Frequency)' : '3. Visits Frequency'}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-[var(--surface-hover)] border border-[var(--line)] text-[var(--ink-soft)]">
+                      {ar ? 'حساب تلقائي من My Lists' : 'Auto-calculated from My Lists'}
+                    </span>
+                  </h2>
+                  <p className="text-xs text-[var(--ink-soft)] font-medium">
+                    {ar
+                      ? 'متابعة دورات وتكرار الزيارات للعملاء المسجلين في قوائمك (مستشفيات، أطباء، صيدليات، فروع ومخازن التوزيع)'
+                      : 'Automatic visit frequency audit per customer against their registered cycle in My Lists'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* MR Send / Submit Report Action */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void handleSendReport()}
+                disabled={submittingReport}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black bg-[var(--gold)] text-white hover:bg-[var(--gold-dark)] shadow-sm hover:shadow-md transition-all cursor-pointer disabled:opacity-50"
+              >
+                {submittingReport ? (
+                  <RefreshCw className="size-3.5 animate-spin" />
+                ) : (
+                  <Send className="size-3.5" />
+                )}
+                <span>
+                  {ar
+                    ? 'إرسال تقرير تكرار الزيارات للمديرين المشرفين حتى SMD'
+                    : 'Submit Frequency Report to Assigned Managers till SMD'}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Submission Feedback Alert */}
+          {submissionSuccess && (
+            <InlineAlert tone="success">{submissionSuccess}</InlineAlert>
+          )}
+
+          {/* Color Rule Guide Banner */}
+          <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl bg-[var(--surface)] border border-[var(--line)] text-xs">
+            <span className="font-bold text-[var(--ink)]">
+              {ar ? 'قواعد ألوان تكرار الزيارات:' : 'Frequency Color Rules:'}
+            </span>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-bold text-xs bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                <CheckCircle2 className="size-3" />
+                <span>{ar ? '🟢 الأخضر: نفس التكرار (مطابق لدورة الزيارة)' : '🟢 Green: Same Frequency'}</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-bold text-xs bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30">
+                <TrendingUp className="size-3" />
+                <span>{ar ? '🔴 الأحمر: زيارات زائدة عن الدورة (Overvisited)' : '🔴 Red: Overvisited'}</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-bold text-xs bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                <AlertTriangle className="size-3" />
+                <span>{ar ? '🟡 الأصفر: زيارات أقل من الدورة (Less Visited)' : '🟡 Yellow: Less Visited'}</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Frequency KPI Summary Cards */}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {/* Same Frequency Card (Green) */}
+            <div className="bg-[var(--surface)] border-2 border-emerald-500/40 rounded-2xl p-4 shadow-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5">
+                  <CheckCircle2 className="size-4 text-emerald-500" />
+                  <span>{ar ? 'نفس التكرار (مطابق)' : 'Same Frequency'}</span>
+                </span>
+                <span className="text-xs font-mono font-black text-emerald-600 dark:text-emerald-400">
+                  {report.visitsFrequency.overall.samePct}%
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between pt-1">
+                <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                  {report.visitsFrequency.overall.sameCount}
+                </div>
+                <span className="text-xs font-bold text-[var(--ink-soft)]">
+                  {ar ? 'عميل حقق التكرار' : 'entities on target'}
+                </span>
+              </div>
+              <div className="w-full bg-[var(--line)] h-2 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-emerald-500 transition-all duration-500"
+                  style={{ width: `${report.visitsFrequency.overall.samePct}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Overvisited Card (Red) */}
+            <div className="bg-[var(--surface)] border-2 border-rose-500/40 rounded-2xl p-4 shadow-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-rose-700 dark:text-rose-300 flex items-center gap-1.5">
+                  <TrendingUp className="size-4 text-rose-500" />
+                  <span>{ar ? 'زيارات زائدة' : 'Overvisited'}</span>
+                </span>
+                <span className="text-xs font-mono font-black text-rose-600 dark:text-rose-400">
+                  {report.visitsFrequency.overall.overPct}%
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between pt-1">
+                <div className="text-3xl font-black text-rose-600 dark:text-rose-400 font-mono">
+                  {report.visitsFrequency.overall.overCount}
+                </div>
+                <span className="text-xs font-bold text-[var(--ink-soft)]">
+                  {ar ? 'عميل فوق المستهدف' : 'entities overvisited'}
+                </span>
+              </div>
+              <div className="w-full bg-[var(--line)] h-2 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-rose-500 transition-all duration-500"
+                  style={{ width: `${report.visitsFrequency.overall.overPct}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Less Visited Card (Yellow) */}
+            <div className="bg-[var(--surface)] border-2 border-amber-500/40 rounded-2xl p-4 shadow-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
+                  <AlertTriangle className="size-4 text-amber-500" />
+                  <span>{ar ? 'زيارات أقل' : 'Less Visited'}</span>
+                </span>
+                <span className="text-xs font-mono font-black text-amber-600 dark:text-amber-400">
+                  {report.visitsFrequency.overall.lessPct}%
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between pt-1">
+                <div className="text-3xl font-black text-amber-600 dark:text-amber-400 font-mono">
+                  {report.visitsFrequency.overall.lessCount}
+                </div>
+                <span className="text-xs font-bold text-[var(--ink-soft)]">
+                  {ar ? 'عميل دون المستهدف' : 'entities under target'}
+                </span>
+              </div>
+              <div className="w-full bg-[var(--line)] h-2 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-amber-500 transition-all duration-500"
+                  style={{ width: `${report.visitsFrequency.overall.lessPct}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Total Entities in Lists */}
+            <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-4 shadow-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[var(--ink)] flex items-center gap-1.5">
+                  <Award className="size-4 text-[var(--gold-dark)]" />
+                  <span>{ar ? 'إجمالي العملاء بالقوائم' : 'Total Customers'}</span>
+                </span>
+                <span className="text-xs font-bold text-[var(--ink-soft)] font-mono">
+                  {report.period.toUpperCase()}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between pt-1">
+                <div className="text-3xl font-black text-[var(--ink)] font-mono">
+                  {report.visitsFrequency.overall.totalEntities}
+                </div>
+                <span className="text-xs font-bold text-[var(--ink-soft)]">
+                  {ar ? 'عميل مسجل' : 'registered in lists'}
+                </span>
+              </div>
+              <div className="text-[10px] text-[var(--ink-soft)] font-semibold truncate pt-1 border-t border-[var(--line)]">
+                {ar
+                  ? `مستشفيات: ${report.visitsFrequency.hospital.totalEntities} · أطباء: ${report.visitsFrequency.doctor.totalEntities} · صيدليات: ${report.visitsFrequency.pharmacy.totalEntities} · فروع: ${report.visitsFrequency.branch.totalEntities}`
+                  : `Hosp: ${report.visitsFrequency.hospital.totalEntities} · Doc: ${report.visitsFrequency.doctor.totalEntities} · Pharm: ${report.visitsFrequency.pharmacy.totalEntities} · Dist: ${report.visitsFrequency.branch.totalEntities}`}
+              </div>
+            </div>
+          </div>
+
+          {/* Interactive Filtering Bar */}
+          <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-4 shadow-xs space-y-3">
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+              {/* Category Filter Tabs */}
+              <div className="flex flex-wrap items-center gap-1.5 p-1 bg-[var(--surface-hover)] rounded-xl border border-[var(--line)]">
+                {[
+                  { key: 'ALL', label: ar ? 'الكل' : 'All', count: report.visitsFrequency.overall.totalEntities },
+                  { key: 'HOSPITAL', label: ar ? 'المستشفيات' : 'Hospitals', count: report.visitsFrequency.hospital.totalEntities },
+                  { key: 'DOCTOR', label: ar ? 'الأطباء' : 'Doctors', count: report.visitsFrequency.doctor.totalEntities },
+                  { key: 'PHARMACY', label: ar ? 'الصيدليات' : 'Pharmacies', count: report.visitsFrequency.pharmacy.totalEntities },
+                  { key: 'DISTRIBUTION_BRANCH', label: ar ? 'فروع التوزيع' : 'Branches', count: report.visitsFrequency.branch.totalEntities },
+                ].map((cat) => (
+                  <button
+                    key={cat.key}
+                    type="button"
+                    onClick={() => setFreqCategoryFilter(cat.key as any)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      freqCategoryFilter === cat.key
+                        ? 'bg-[var(--gold)] text-white shadow-xs'
+                        : 'text-[var(--ink-soft)] hover:text-[var(--ink)]'
+                    }`}
+                  >
+                    <span>{cat.label}</span>
+                    <span className="text-[10px] opacity-80 font-mono">({cat.count})</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Status Filter Buttons */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                {[
+                  { key: 'ALL', label: ar ? 'كل الحالات' : 'All Status' },
+                  { key: 'GREEN', label: ar ? '🟢 نفس التكرار' : '🟢 Same' },
+                  { key: 'RED', label: ar ? '🔴 زائدة' : '🔴 Over' },
+                  { key: 'YELLOW', label: ar ? '🟡 أقل' : '🟡 Less' },
+                ].map((st) => (
+                  <button
+                    key={st.key}
+                    type="button"
+                    onClick={() => setFreqStatusFilter(st.key as any)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                      freqStatusFilter === st.key
+                        ? 'bg-[var(--ink)] text-[var(--surface)] border-[var(--ink)]'
+                        : 'bg-[var(--surface)] text-[var(--ink-soft)] border-[var(--line)] hover:border-[var(--ink)]'
+                    }`}
+                  >
+                    {st.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Search Box & Results Counter */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 border-t border-[var(--line)]">
+              <input
+                type="search"
+                placeholder={ar ? 'بحث باسم العميل، المنطقة، التخصص...' : 'Search customer by name, area, specialty…'}
+                value={freqSearch}
+                onChange={(e) => setFreqSearch(e.target.value)}
+                className="input text-xs w-full sm:w-80"
+              />
+              <span className="text-xs font-bold text-[var(--ink-soft)] self-end sm:self-auto">
+                {ar
+                  ? `عرض ${filteredFrequencyItems.length} عميل`
+                  : `Showing ${filteredFrequencyItems.length} customers`}
+              </span>
+            </div>
+          </div>
+
+          {/* Frequency Items Detailed Table */}
+          <div className="overflow-x-auto rounded-2xl border border-[var(--line)] bg-[var(--surface)] shadow-xs">
+            <table className="w-full text-start text-xs border-collapse">
+              <thead>
+                <tr className="bg-[var(--surface-hover)] border-b border-[var(--line)] text-[var(--ink-soft)] font-bold uppercase tracking-wider">
+                  <th className="p-3 text-start">{ar ? 'العميل والفئة' : 'Customer & Category'}</th>
+                  <th className="p-3 text-start">{ar ? 'المنطقة / العنوان' : 'Area / Location'}</th>
+                  <th className="p-3 text-start">{ar ? 'دورة الزيارة (My Lists)' : 'My Lists Cycle'}</th>
+                  <th className="p-3 text-start">{ar ? 'المطلوب في الفترة' : 'Target Expected'}</th>
+                  <th className="p-3 text-start">{ar ? 'المنفذ الفعلي' : 'Actual Visits'}</th>
+                  <th className="p-3 text-start">{ar ? 'حالة التكرار' : 'Frequency Status'}</th>
+                  <th className="p-3 text-end">{ar ? 'آخر زيارة' : 'Last Visit'}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--line)]">
+                {filteredFrequencyItems.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-sm text-[var(--ink-soft)]">
+                      {ar ? 'لا يوجد عملاء يطابقون خيارات البحث والتصفية' : 'No customers match the current filter criteria'}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredFrequencyItems.map((item) => (
+                    <tr
+                      key={`${item.category}-${item.id}`}
+                      className="hover:bg-[var(--surface-hover)] transition-colors"
+                    >
+                      {/* Name & Category */}
+                      <td className="p-3">
+                        <div className="font-bold text-[var(--ink)]">{item.name}</div>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-[10px] px-1.5 py-0.2 rounded-md font-semibold bg-[var(--surface-hover)] text-[var(--ink-soft)] border border-[var(--line)]">
+                            {item.category === 'HOSPITAL' && (ar ? 'مستشفى' : 'Hospital')}
+                            {item.category === 'DOCTOR' && (ar ? 'طبيب' : 'Doctor')}
+                            {item.category === 'PHARMACY' && (ar ? 'صيدلية' : 'Pharmacy')}
+                            {item.category === 'DISTRIBUTION_BRANCH' && (ar ? 'فرع توزيع' : 'Branch')}
+                          </span>
+                          {item.extraInfo && (
+                            <span className="text-[10px] text-[var(--ink-soft)] font-medium">
+                              {item.extraInfo}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Area */}
+                      <td className="p-3 text-[var(--ink-soft)] font-medium">
+                        {item.area || '—'}
+                      </td>
+
+                      {/* Cycle Days */}
+                      <td className="p-3">
+                        <span className="inline-flex items-center gap-1 font-mono font-bold text-xs bg-[var(--surface-hover)] px-2 py-0.5 rounded-lg border border-[var(--line)] text-[var(--ink)]">
+                          <span>{item.cycleDays}</span>
+                          <span className="text-[10px] text-[var(--ink-soft)] font-normal">
+                            {ar ? 'يوم' : 'days'}
+                          </span>
+                        </span>
+                      </td>
+
+                      {/* Target Expected */}
+                      <td className="p-3 font-mono font-bold text-[var(--ink)] text-sm">
+                        {item.expectedVisits}
+                      </td>
+
+                      {/* Actual Conducted */}
+                      <td className="p-3 font-mono font-black text-sm">
+                        <span
+                          className={
+                            item.color === 'GREEN'
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : item.color === 'RED'
+                              ? 'text-rose-600 dark:text-rose-400'
+                              : 'text-amber-600 dark:text-amber-400'
+                          }
+                        >
+                          {item.actualVisits}
+                        </span>
+                      </td>
+
+                      {/* Frequency Badge */}
+                      <td className="p-3">
+                        {getFrequencyBadge(item.color, item.actualVisits, item.expectedVisits)}
+                      </td>
+
+                      {/* Last Visit Date */}
+                      <td className="p-3 text-end font-mono text-[11px] text-[var(--ink-soft)]">
+                        {item.lastVisitDate || (ar ? 'لم يُزَر بعد' : 'Not visited yet')}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* SECTION 4: For Managers up to SMD — Team Overview Matrix */}
       {isManager && teamSummary && teamSummary.length > 0 && (
         <SectionCard
-          title={ar ? 'مصفوفة التغطية ومتوسط الزيارات للفريق' : 'Team Coverage & Average Visits Matrix'}
+          title={ar ? 'مصفوفة التغطية ومتوسط الزيارات وتكرارها للفريق' : 'Team Coverage, Average & Frequency Matrix'}
           description={
             ar
-              ? 'متابعة شاملة لجميع المناديب التابعين لإشرافك مع تصنيف الألوان الفوري'
-              : 'Full supervisory team matrix with instant Green/Yellow/Red status indicators'
+              ? 'متابعة شاملة لجميع المناديب التابعين لإشرافك مع تصنيف الألوان الفوري للتغطية ومتوسط الزيارات وتكرارها'
+              : 'Full supervisory team matrix with instant Green/Yellow/Red status for coverage, rates, and visits frequency'
           }
         >
           <div className="mt-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
@@ -620,7 +1102,7 @@ export function AverageCoverageView({ initialRepId, currentUser }: AverageCovera
                   <th className="p-3 text-start">{ar ? 'حالة التغطية' : 'Coverage Status'}</th>
                   <th className="p-3 text-start">{ar ? 'الزيارات المنفذة' : 'Actual Visits'}</th>
                   <th className="p-3 text-start">{ar ? 'معدل BUM' : 'BUM Rate'}</th>
-                  <th className="p-3 text-start">{ar ? 'المقارنة بالمعدل' : 'Rate Comparison'}</th>
+                  <th className="p-3 text-start">{ar ? 'تكرار الزيارات (My Lists)' : 'Visits Frequency'}</th>
                   <th className="p-3 text-end">{ar ? 'الإجراء' : 'Action'}</th>
                 </tr>
               </thead>
@@ -663,15 +1145,31 @@ export function AverageCoverageView({ initialRepId, currentUser }: AverageCovera
                           {item.bumRate}
                         </td>
 
+                        {/* Visits Frequency summary chips */}
                         <td className="p-3">
-                          {getAverageBadge(
-                            item.averageColorVsBum as AverageColor,
-                            item.actualVisits === item.bumRate
-                              ? 'SAME'
-                              : item.actualVisits > item.bumRate
-                              ? 'ABOVE'
-                              : 'BELOW',
-                          )}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
+                              title={ar ? 'نفس التكرار' : 'Same Frequency'}
+                            >
+                              <span>🟢</span>
+                              <span className="font-mono">{item.frequencySame ?? 0}</span>
+                            </span>
+                            <span
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30"
+                              title={ar ? 'زيارات زائدة' : 'Overvisited'}
+                            >
+                              <span>🔴</span>
+                              <span className="font-mono">{item.frequencyOver ?? 0}</span>
+                            </span>
+                            <span
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30"
+                              title={ar ? 'زيارات أقل' : 'Less Visited'}
+                            >
+                              <span>🟡</span>
+                              <span className="font-mono">{item.frequencyLess ?? 0}</span>
+                            </span>
+                          </div>
                         </td>
 
                         <td className="p-3 text-end">

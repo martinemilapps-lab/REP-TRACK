@@ -5,6 +5,10 @@ import { findOrCreateHospital, findOrCreateProduct } from './masterEntityService
 import { z } from 'zod';
 import { ProductAvailabilitySchema, ProductAvailabilityBatchSchema } from '@/lib/validation';
 import { FilterOptions } from './hospitalService';
+
+export interface AvailabilityFilterOptions extends FilterOptions {
+  repIds?: string[];
+}
 import { assertAuthenticatedSession, assertManagerSession } from '@/lib/authPolicy';
 import { resolveWritableRepId } from '@/lib/repAccessPolicy';
 import { AppError } from '@/lib/errors';
@@ -129,7 +133,7 @@ export async function upsertProductAvailability(
  */
 export async function getProductAvailabilityReports(
   session: UserSessionPayload | null,
-  options: FilterOptions = {}
+  options: AvailabilityFilterOptions = {}
 ) {
   const targetRepId = resolveAuthorizedRepId(session, options.repId);
 

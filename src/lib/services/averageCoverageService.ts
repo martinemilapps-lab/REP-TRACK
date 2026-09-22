@@ -17,6 +17,7 @@ export type CustomerCategory = 'HOSPITAL' | 'DOCTOR' | 'PHARMACY' | 'DISTRIBUTIO
 
 export type CoverageColor = 'GREEN' | 'YELLOW' | 'RED';
 export type AverageColor = 'GREEN' | 'YELLOW' | 'RED';
+export type FrequencyColor = 'GREEN' | 'RED' | 'YELLOW';
 
 export interface CategoryCoverageMetrics {
   category: CustomerCategory;
@@ -37,6 +38,46 @@ export interface CategoryAverageMetrics {
   colorVsBum: AverageColor;
   comparisonVsList: 'SAME' | 'ABOVE' | 'BELOW';
   colorVsList: AverageColor;
+}
+
+export interface EntityFrequencyItem {
+  id: string;
+  name: string;
+  area: string;
+  category: CustomerCategory;
+  cycleDays: number;
+  expectedVisits: number;
+  actualVisits: number;
+  color: FrequencyColor;
+  status: 'SAME' | 'OVER' | 'LESS';
+  lastVisitDate?: string | null;
+  extraInfo?: string | null;
+}
+
+export interface CategoryFrequencySummary {
+  category: CustomerCategory;
+  categoryLabel: { ar: string; en: string };
+  totalEntities: number;
+  sameCount: number; // GREEN: actual === expected
+  overCount: number; // RED: actual > expected
+  lessCount: number; // YELLOW: actual < expected
+  items: EntityFrequencyItem[];
+}
+
+export interface VisitsFrequencyReport {
+  hospital: CategoryFrequencySummary;
+  doctor: CategoryFrequencySummary;
+  pharmacy: CategoryFrequencySummary;
+  branch: CategoryFrequencySummary;
+  overall: {
+    totalEntities: number;
+    sameCount: number;
+    overCount: number;
+    lessCount: number;
+    samePct: number;
+    overPct: number;
+    lessPct: number;
+  };
 }
 
 export interface AverageCoverageReport {
@@ -74,6 +115,7 @@ export interface AverageCoverageReport {
       colorVsList: AverageColor;
     };
   };
+  visitsFrequency: VisitsFrequencyReport;
 }
 
 /**
@@ -111,6 +153,46 @@ export function getAverageComparison(
   } else {
     return { comparison: 'BELOW', color: 'RED' };
   }
+}
+
+/**
+ * Visits Frequency Color rule:
+ * Green: number visited with same frequency (actual === expected)
+ * Red: overvisited (actual > expected)
+ * Yellow: less visited (actual < expected)
+ */
+export function getFrequencyComparison(
+  actual: number,
+  expected: number,
+): { color: FrequencyColor; status: 'SAME' | 'OVER' | 'LESS' } {
+  if (actual === expected) {
+    return { color: 'GREEN', status: 'SAME' };
+  } else if (actual > expected) {
+    return { color: 'RED', status: 'OVER' };
+  } else {
+    return { color: 'YELLOW', status: 'LESS' };
+  }
+}
+
+/**
+ * Calculates expected visits in the period based on cycle days from "My Lists".
+ * In daily: 1 visit target
+ * In weekly (7 days): round(7 / cycle) >= 1
+ * In monthly (periodDays ~28-31): round(periodDays / cycle) >= 1
+ */
+export function calculateExpectedVisits(
+  cycleDays: number | null | undefined,
+  periodDays: number,
+  period: 'daily' | 'weekly' | 'monthly' = 'monthly',
+): number {
+  const cycle = Math.max(1, cycleDays && cycleDays > 0 ? cycleDays : 7);
+  if (period === 'daily' || periodDays <= 1) {
+    return 1;
+  }
+  if (period === 'weekly') {
+    return Math.max(1, Math.round(7 / cycle));
+  }
+  return Math.max(1, Math.round(periodDays / cycle));
 }
 
 /**
@@ -178,22 +260,46 @@ export async function calculateAverageAndCoverage(
   // 2. Fetch Active Master Lists for this MR
   const [hospList, docList, pharmList, branchList] = await Promise.all([
     db
-      .select({ id: hospitals.id, defaultCycle: hospitals.defaultCycle })
+      .select({
+        id: hospitals.id,
+        name: hospitals.name,
+        area: hospitals.area,
+        type: hospitals.type,
+        defaultCycle: hospitals.defaultCycle,
+      })
       .from(hospitals)
       .where(and(or(eq(hospitals.repId, repId), isNull(hospitals.repId)), eq(hospitals.isActive, true)))
       .all(),
     db
-      .select({ id: doctors.id, defaultCycle: doctors.defaultCycle })
+      .select({
+        id: doctors.id,
+        name: doctors.name,
+        area: doctors.area,
+        specialty: doctors.specialty,
+        classification: doctors.classification,
+        defaultCycle: doctors.defaultCycle,
+      })
       .from(doctors)
       .where(and(or(eq(doctors.repId, repId), isNull(doctors.repId)), eq(doctors.isActive, true)))
       .all(),
     db
-      .select({ id: pharmacies.id, defaultCycle: pharmacies.defaultCycle })
+      .select({
+        id: pharmacies.id,
+        name: pharmacies.name,
+        area: pharmacies.area,
+        classification: pharmacies.classification,
+        defaultCycle: pharmacies.defaultCycle,
+      })
       .from(pharmacies)
       .where(and(or(eq(pharmacies.repId, repId), isNull(pharmacies.repId)), eq(pharmacies.isActive, true)))
       .all(),
     db
-      .select({ id: distributionBranches.id, defaultCycle: distributionBranches.defaultCycle })
+      .select({
+        id: distributionBranches.id,
+        name: distributionBranches.name,
+        coverageArea: distributionBranches.coverageArea,
+        defaultCycle: distributionBranches.defaultCycle,
+      })
       .from(distributionBranches)
       .where(and(or(eq(distributionBranches.repId, repId), isNull(distributionBranches.repId)), eq(distributionBranches.isActive, true)))
       .all(),
@@ -340,6 +446,108 @@ export async function calculateAverageAndCoverage(
   const overallBumComp = getAverageComparison(totalActual, Math.round(totalBum));
   const overallListComp = getAverageComparison(totalActual, Math.round(totalList));
 
+  // --- Calculate Visits Frequency for Each Customer in My Lists ---
+  // Maps of visits count and latest visit date per entity ID
+  const mapVisits = (
+    visits: Array<{ id: string; hospitalId?: string | null; doctorId?: string | null; pharmacyId?: string | null; branchId?: string | null; date?: string | null }>,
+    getId: (v: any) => string | null | undefined,
+  ) => {
+    const map = new Map<string, { count: number; lastDate: string | null }>();
+    for (const v of visits) {
+      const eid = getId(v);
+      if (!eid) continue;
+      const curr = map.get(eid) || { count: 0, lastDate: null };
+      curr.count++;
+      if (!curr.lastDate || (v.date && v.date > curr.lastDate)) {
+        curr.lastDate = v.date || null;
+      }
+      map.set(eid, curr);
+    }
+    return map;
+  };
+
+  const hospVisitMap = mapVisits(hospVisits, (v) => v.hospitalId);
+  const docVisitMap = mapVisits(docVisits, (v) => v.doctorId);
+  const pharmVisitMap = mapVisits(pharmVisits, (v) => v.pharmacyId);
+  const branchVisitMap = mapVisits(bVisits, (v) => v.branchId);
+
+  // Period length in days
+  const startMs = new Date(startDate).getTime();
+  const endMs = new Date(endDate).getTime();
+  const periodDays = Math.max(1, Math.round((endMs - startMs) / (1000 * 60 * 60 * 24)) + 1);
+
+  const buildFrequencySummary = (
+    category: CustomerCategory,
+    labels: { ar: string; en: string },
+    entities: Array<{
+      id: string;
+      name: string;
+      area?: string | null;
+      coverageArea?: string | null;
+      defaultCycle: number | null;
+      type?: string | null;
+      specialty?: string | null;
+      classification?: string | null;
+    }>,
+    visitMap: Map<string, { count: number; lastDate: string | null }>,
+  ): CategoryFrequencySummary => {
+    let sameCount = 0;
+    let overCount = 0;
+    let lessCount = 0;
+
+    const items: EntityFrequencyItem[] = entities.map((ent) => {
+      const cycleDays = ent.defaultCycle && ent.defaultCycle > 0 ? ent.defaultCycle : 7;
+      const expected = calculateExpectedVisits(cycleDays, periodDays, period);
+      const visitInfo = visitMap.get(ent.id) || { count: 0, lastDate: null };
+      const actual = visitInfo.count;
+      const { color, status } = getFrequencyComparison(actual, expected);
+
+      if (color === 'GREEN') sameCount++;
+      else if (color === 'RED') overCount++;
+      else lessCount++;
+
+      const extraInfo = ent.specialty || ent.type || (ent.classification ? `Class ${ent.classification}` : null);
+
+      return {
+        id: ent.id,
+        name: ent.name,
+        area: ent.area || ent.coverageArea || '',
+        category,
+        cycleDays,
+        expectedVisits: expected,
+        actualVisits: actual,
+        color,
+        status,
+        lastVisitDate: visitInfo.lastDate || null,
+        extraInfo,
+      };
+    });
+
+    return {
+      category,
+      categoryLabel: labels,
+      totalEntities: entities.length,
+      sameCount,
+      overCount,
+      lessCount,
+      items,
+    };
+  };
+
+  const freqHosp = buildFrequencySummary('HOSPITAL', { ar: 'مستشفيات', en: 'Hospitals' }, hospList, hospVisitMap);
+  const freqDoc = buildFrequencySummary('DOCTOR', { ar: 'أطباء', en: 'Doctors' }, docList, docVisitMap);
+  const freqPharm = buildFrequencySummary('PHARMACY', { ar: 'صيدليات', en: 'Pharmacies' }, pharmList, pharmVisitMap);
+  const freqBranch = buildFrequencySummary('DISTRIBUTION_BRANCH', { ar: 'فروع ومخازن التوزيع', en: 'Distribution Branches' }, branchList, branchVisitMap);
+
+  const freqTotalEntities = freqHosp.totalEntities + freqDoc.totalEntities + freqPharm.totalEntities + freqBranch.totalEntities;
+  const freqTotalSame = freqHosp.sameCount + freqDoc.sameCount + freqPharm.sameCount + freqBranch.sameCount;
+  const freqTotalOver = freqHosp.overCount + freqDoc.overCount + freqPharm.overCount + freqBranch.overCount;
+  const freqTotalLess = freqHosp.lessCount + freqDoc.lessCount + freqPharm.lessCount + freqBranch.lessCount;
+
+  const samePct = freqTotalEntities > 0 ? Math.round((freqTotalSame / freqTotalEntities) * 1000) / 10 : 0;
+  const overPct = freqTotalEntities > 0 ? Math.round((freqTotalOver / freqTotalEntities) * 1000) / 10 : 0;
+  const lessPct = freqTotalEntities > 0 ? Math.round((freqTotalLess / freqTotalEntities) * 1000) / 10 : 0;
+
   return {
     repId,
     repName,
@@ -373,6 +581,21 @@ export async function calculateAverageAndCoverage(
         colorVsBum: overallBumComp.color,
         comparisonVsList: overallListComp.comparison,
         colorVsList: overallListComp.color,
+      },
+    },
+    visitsFrequency: {
+      hospital: freqHosp,
+      doctor: freqDoc,
+      pharmacy: freqPharm,
+      branch: freqBranch,
+      overall: {
+        totalEntities: freqTotalEntities,
+        sameCount: freqTotalSame,
+        overCount: freqTotalOver,
+        lessCount: freqTotalLess,
+        samePct,
+        overPct,
+        lessPct,
       },
     },
   };

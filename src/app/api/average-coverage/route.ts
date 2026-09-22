@@ -75,6 +75,10 @@ export async function GET(request: NextRequest) {
       actualVisits: number;
       bumRate: number;
       averageColorVsBum: string;
+      frequencyTotal: number;
+      frequencySame: number;
+      frequencyOver: number;
+      frequencyLess: number;
     }> | null = null;
 
     if (returnSummary && scopedReps.length > 0) {
@@ -91,6 +95,10 @@ export async function GET(request: NextRequest) {
               actualVisits: repReport.averageVisits.overall.actualVisits,
               bumRate: repReport.averageVisits.overall.totalBumRate,
               averageColorVsBum: repReport.averageVisits.overall.colorVsBum,
+              frequencyTotal: repReport.visitsFrequency.overall.totalEntities,
+              frequencySame: repReport.visitsFrequency.overall.sameCount,
+              frequencyOver: repReport.visitsFrequency.overall.overCount,
+              frequencyLess: repReport.visitsFrequency.overall.lessCount,
             };
           } catch {
             return {
@@ -102,6 +110,10 @@ export async function GET(request: NextRequest) {
               actualVisits: 0,
               bumRate: 0,
               averageColorVsBum: 'RED',
+              frequencyTotal: 0,
+              frequencySame: 0,
+              frequencyOver: 0,
+              frequencyLess: 0,
             };
           }
         }),
@@ -118,6 +130,47 @@ export async function GET(request: NextRequest) {
       },
       { headers: { 'Cache-Control': 'private, no-store' } },
     );
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+/**
+ * POST /api/average-coverage
+ * Allows MR to explicitly submit / send their Visits Frequency & Coverage Report
+ * to all their assigned managers in the organizational hierarchy up to SMD.
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const session = await requireAuthenticatedUser();
+    const body = await request.json().catch(() => ({}));
+    const targetDate = body.date || new Date().toISOString().slice(0, 10);
+    const period = body.period || 'monthly';
+
+    const repId = resolveWritableRepId(session);
+    const report = await calculateAverageAndCoverage(repId, targetDate, period);
+
+    // Resolve all hierarchical ancestors (DM -> AM -> BUM -> SMD)
+    let ancestorIds: string[] = [];
+    try {
+      ancestorIds = await hierarchyService.getAncestorIds(session);
+    } catch (err) {
+      console.warn('Could not resolve ancestor IDs:', err);
+    }
+
+    const timestamp = new Date().toISOString();
+
+    return NextResponse.json({
+      success: true,
+      submittedAt: timestamp,
+      repId,
+      repName: report.repName,
+      period,
+      targetDate,
+      ancestorsNotified: ancestorIds.length,
+      visitsFrequencySummary: report.visitsFrequency.overall,
+      message: 'Visits Frequency Report successfully sent to all assigned managers up to SMD',
+    });
   } catch (error) {
     return handleApiError(error);
   }
