@@ -1,7 +1,63 @@
 import {db,managerActivities,managerActivityEntries,managerActivityExtendedEntries,managerActivityEntryDoctors,managerActivityProducts,users,representatives,hospitals,doctors,pharmacies,distributionBranches,products} from '@/lib/db';
-import {eq,and,desc,gte,lte,inArray} from 'drizzle-orm';import type {UserSessionPayload} from '@/lib/auth';import {assertManagerSession,assertManagerOwner} from '@/lib/authPolicy';import {ManagerActivitySchema,ManagerActivityFiltersSchema} from '@/lib/validation';import type {ManagerActivityRecord} from '@/types';import {hierarchyService,type HierarchyScopeMode} from './hierarchyService';import {AppError} from '@/lib/errors';import {assertReportSubmissionOpen} from '@/lib/business/reportDeadline';
-type Opt={id:string;repId?:string;name:string;specialty?:string|null};
-async function scopedOptions(session:UserSessionPayload,selectedRepId?:string){const repIds=await hierarchyService.getScopedRepIds(session);if(selectedRepId&&!repIds.includes(selectedRepId))throw new AppError('Representative is outside your authorized hierarchy',403);const ids=selectedRepId?[selectedRepId]:repIds;const[reps,hs,ds,ps,bs,prods]=await Promise.all([repIds.length?db.select({id:representatives.id,name:representatives.name}).from(representatives).where(inArray(representatives.id,repIds)).all():[],ids.length?db.select({id:hospitals.id,repId:hospitals.repId,name:hospitals.name}).from(hospitals).where(and(inArray(hospitals.repId,ids),eq(hospitals.isActive,true))).all():[],ids.length?db.select({id:doctors.id,repId:doctors.repId,name:doctors.name,specialty:doctors.specialty}).from(doctors).where(and(inArray(doctors.repId,ids),eq(doctors.isActive,true))).all():[],ids.length?db.select({id:pharmacies.id,repId:pharmacies.repId,name:pharmacies.name}).from(pharmacies).where(and(inArray(pharmacies.repId,ids),eq(pharmacies.isActive,true))).all():[],ids.length?db.select({id:distributionBranches.id,repId:distributionBranches.repId,name:distributionBranches.name}).from(distributionBranches).where(and(inArray(distributionBranches.repId,ids),eq(distributionBranches.isActive,true))).all():[],db.select({id:products.id,name:products.name}).from(products).where(eq(products.isActive,true)).all()]);return{reps,hospitals:hs,doctors:ds,pharmacies:ps,branches:bs,products:prods};}
+import {eq,and,or,isNull,desc,gte,lte,inArray} from 'drizzle-orm';import type {UserSessionPayload} from '@/lib/auth';import {assertManagerSession,assertManagerOwner} from '@/lib/authPolicy';import {ManagerActivitySchema,ManagerActivityFiltersSchema} from '@/lib/validation';import type {ManagerActivityRecord} from '@/types';import {hierarchyService,type HierarchyScopeMode} from './hierarchyService';import {getMasterListsForRep} from './masterListService';import {AppError} from '@/lib/errors';import {assertReportSubmissionOpen} from '@/lib/business/reportDeadline';
+type Opt = { id: string; repId?: string | null; name: string; specialty?: string | null };
+async function scopedOptions(session: UserSessionPayload, selectedRepId?: string) {
+  const repIds = await hierarchyService.getScopedRepIds(session);
+  if (selectedRepId && !repIds.includes(selectedRepId))
+    throw new AppError('Representative is outside your authorized hierarchy', 403);
+  const ids = selectedRepId ? [selectedRepId] : repIds;
+  let hs: Opt[] = [];
+  let ds: Opt[] = [];
+  let ps: Opt[] = [];
+  let bs: Opt[] = [];
+  if (selectedRepId) {
+    const lists = await getMasterListsForRep(selectedRepId);
+    hs = lists.hospitals.map(h => ({ id: h.id, repId: h.repId || null, name: h.name }));
+    ds = lists.doctors.map(d => ({ id: d.id, repId: d.repId || null, name: d.name, specialty: d.specialty || null }));
+    ps = lists.pharmacies.map(p => ({ id: p.id, repId: p.repId || null, name: p.name }));
+    bs = lists.branches.map(b => ({ id: b.id, repId: b.repId || null, name: b.name }));
+  } else {
+    const [hRows, dRows, pRows, bRows] = await Promise.all([
+      ids.length
+        ? db
+            .select({ id: hospitals.id, repId: hospitals.repId, name: hospitals.name })
+            .from(hospitals)
+            .where(or(inArray(hospitals.repId, ids), isNull(hospitals.repId)))
+            .all()
+        : [],
+      ids.length
+        ? db
+            .select({ id: doctors.id, repId: doctors.repId, name: doctors.name, specialty: doctors.specialty })
+            .from(doctors)
+            .where(or(inArray(doctors.repId, ids), isNull(doctors.repId)))
+            .all()
+        : [],
+      ids.length
+        ? db
+            .select({ id: pharmacies.id, repId: pharmacies.repId, name: pharmacies.name })
+            .from(pharmacies)
+            .where(or(inArray(pharmacies.repId, ids), isNull(pharmacies.repId)))
+            .all()
+        : [],
+      ids.length
+        ? db
+            .select({ id: distributionBranches.id, repId: distributionBranches.repId, name: distributionBranches.name })
+            .from(distributionBranches)
+            .where(or(inArray(distributionBranches.repId, ids), isNull(distributionBranches.repId)))
+            .all()
+        : [],
+    ]);
+    hs = hRows;
+    ds = dRows;
+    ps = pRows;
+    bs = bRows;
+  }
+  const[reps,prods]=await Promise.all([
+    repIds.length?db.select({id:representatives.id,name:representatives.name}).from(representatives).where(inArray(representatives.id,repIds)).all():[],
+    db.select({id:products.id,name:products.name}).from(products).where(eq(products.isActive,true)).all()
+  ]);
+  return{reps,hospitals:hs,doctors:ds,pharmacies:ps,branches:bs,products:prods};
+}
 export async function getManagerActivityOptions(session:UserSessionPayload|null,repId?:string){assertManagerSession(session);return scopedOptions(session,repId)}
 export async function saveManagerActivity(session:UserSessionPayload|null,raw:unknown):Promise<ManagerActivityRecord>{assertManagerSession(session);const x=ManagerActivitySchema.parse(raw);assertReportSubmissionOpen(x.activityDate);const o=await scopedOptions(session,x.reportContextType==='EMPLOYEE'?x.selectedRepId||undefined:undefined),maps={HOSPITAL:new Map(o.hospitals.map(v=>[v.id,v])),DIRECT_DOCTOR:new Map(o.doctors.map(v=>[v.id,v])),PHARMACY:new Map(o.pharmacies.map(v=>[v.id,v])),DISTRIBUTION_BRANCH:new Map(o.branches.map(v=>[v.id,v]))},productMap=new Map(o.products.map(v=>[v.id,v]));for(const v of x.visits){if(x.reportContextType==='EMPLOYEE'){const key=v.hospitalId||v.doctorId||v.pharmacyId||v.branchId;if(!key||!maps[v.entryType].has(key))throw new AppError('Visit entity is outside selected MR My Lists',403);for(const d of v.doctors)if(d.doctorId&&!maps.DIRECT_DOCTOR.has(d.doctorId))throw new AppError('Doctor is outside selected MR My Lists',403)}for(const p of v.manualData?.products||[])if(!productMap.has(p.productId))throw new AppError('Invalid product',400)}if(x.productIds.some(id=>!productMap.has(id)))throw new AppError('Invalid product',400);const id=x.id||crypto.randomUUID(),now=new Date(),parent={userId:session.id,selectedRepId:x.reportContextType==='EMPLOYEE'?x.selectedRepId:null,reportContextType:x.reportContextType,activitySelections:JSON.stringify({activities:x.activities,salesReviewDescription:x.salesReviewDescription,othersDescription:x.othersDescription}),activityType:x.activityType,activityDate:x.activityDate,visitType:x.visitType,accompaniedPerson:x.visitType==='Double'?x.accompaniedPerson:null,generalComment:x.generalComment||null,eventName:x.eventName||null,eventType:x.eventType||null,location:x.location||null,attendees:x.attendees||null,budget:x.budget||null,eventFeedback:x.eventFeedback||null,trainingType:x.trainingType||null,trainingTopic:x.trainingTopic||null,trainingLocation:x.trainingLocation||null,participants:x.participants||null,workSummary:x.workSummary||null,description:x.description||null,notes:x.notes||null,updatedAt:now};if(x.id){const old=await db.select().from(managerActivities).where(eq(managerActivities.id,id)).get();if(!old)throw new AppError('Activity not found',404);assertManagerOwner(session,old.userId);await db.batch([db.delete(managerActivityProducts).where(eq(managerActivityProducts.activityId,id)),db.delete(managerActivityEntryDoctors).where(inArray(managerActivityEntryDoctors.entryId,(await db.select({id:managerActivityEntries.id}).from(managerActivityEntries).where(eq(managerActivityEntries.activityId,id))).map(v=>v.id))),db.delete(managerActivityEntries).where(eq(managerActivityEntries.activityId,id)),db.delete(managerActivityExtendedEntries).where(eq(managerActivityExtendedEntries.activityId,id)),db.update(managerActivities).set(parent).where(eq(managerActivities.id,id))] as never)}else await db.insert(managerActivities).values({id,...parent,submittedAt:now});
  const ops:unknown[]=[];x.visits.forEach((v,i)=>{const key=v.hospitalId||v.doctorId||v.pharmacyId||v.branchId||'',entity=maps[v.entryType].get(key) as Opt|undefined,manual=v.manualData;if(v.entryType==='PHARMACY'||v.entryType==='DISTRIBUTION_BRANCH')ops.push(db.insert(managerActivityExtendedEntries).values({id:crypto.randomUUID(),activityId:id,period:v.period,entryType:v.entryType,pharmacyId:v.pharmacyId||null,branchId:v.branchId||null,nameSnapshot:entity?.name||manual!.name,manualData:manual?JSON.stringify(manual):null,generalComment:v.generalComment||null,displayOrder:i}));else{const entryId=crypto.randomUUID();ops.push(db.insert(managerActivityEntries).values({id:entryId,activityId:id,period:v.period,entryType:v.entryType,hospitalId:v.hospitalId||null,doctorId:v.doctorId||null,nameSnapshot:entity?.name||manual!.name,specialtySnapshot:entity?.specialty||manual?.specialty||null,manualData:manual?JSON.stringify(manual):null,generalComment:v.generalComment||null,displayOrder:i}));v.doctors.forEach((d,n)=>{const saved=d.doctorId?maps.DIRECT_DOCTOR.get(d.doctorId) as Opt:undefined;ops.push(db.insert(managerActivityEntryDoctors).values({id:crypto.randomUUID(),entryId,doctorId:saved?.id||null,nameSnapshot:saved?.name||d.doctorName!,specialtySnapshot:saved?.specialty||d.department||null,generalComment:d.generalComment||null,displayOrder:n}))})}});x.productIds.forEach(pid=>ops.push(db.insert(managerActivityProducts).values({activityId:id,productId:pid,productNameSnapshot:productMap.get(pid)!.name})));if(ops.length)await db.batch(ops as never);return(await getManagerActivityById(session,id))!}
