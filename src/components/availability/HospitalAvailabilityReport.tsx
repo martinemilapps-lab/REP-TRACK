@@ -295,7 +295,7 @@ export function HospitalAvailabilityReport({
       </div>
 
       {/* Hospital Breakdown Cards */}
-      {loading ? (
+      {loading && records.length === 0 ? (
         <div className="p-8 text-center text-sm text-[var(--ink-soft)]">
           <p>{l('Loading hospital availability report…', 'جارٍ تحميل تقرير توافر المستشفيات…')}</p>
         </div>

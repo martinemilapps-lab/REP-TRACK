@@ -423,7 +423,7 @@ export function MonthlyAvailabilityComparisonReport({
       </div>
 
       {/* 12-Month Matrix Table */}
-      {loading ? (
+      {loading && records.length === 0 ? (
         <div className="p-8 text-center text-sm text-[var(--ink-soft)]">
           <p>{l('Loading 12-month comparison report…', 'جارٍ تحميل تقرير مقارنة الـ 12 شهراً…')}</p>
         </div>
