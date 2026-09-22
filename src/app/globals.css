@@ -263,6 +263,19 @@ button, a, input, select, textarea { outline-offset: 2px; }
   }
 }
 
+@keyframes loadingBarSlide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(250%);
+  }
+}
+
+.animate-loading-bar {
+  animation: loadingBarSlide 1.4s ease-in-out infinite;
+}
+
 /* ========================================================= */
 /* HARMONIC MEDICAL CAPSULES FLOATING (CLEAR & NON-DISTRACTING) */
 /* ========================================================= */
