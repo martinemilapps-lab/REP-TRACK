@@ -283,6 +283,23 @@ export interface ProductAvailabilityRecord {
 }
 
 
+export interface StructuredPlanCell {
+  hospitalIds?: string[];
+  branchIds?: string[];
+  doctorIds?: string[];
+  pharmacyIds?: string[];
+  visitType?: 'Single' | 'Double';
+  companion?: string;
+  activities?: string[];
+  salesReviewDescription?: string;
+  othersDescription?: string;
+  meetingDescription?: string;
+  trainingDescription?: string;
+  eventDescription?: string;
+}
+
+export type StructuredWeeklyPlan = Record<string, { am: StructuredPlanCell; pm: StructuredPlanCell }>;
+
 export interface WeeklyPlanRecord {
   id: string;
   repId?: string;

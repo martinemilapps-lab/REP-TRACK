@@ -239,7 +239,7 @@ export function generateExcelWorkbook(data: ExportDataPayload): Uint8Array {
 /**
  * Generates an Excel workbook for a single Weekly Plan matching the exact template layout.
  */
-function cleanPlanCellText(raw: string | undefined | null): string {
+export function cleanPlanCellText(raw: string | undefined | null): string {
   if (!raw) return '';
   const val = raw.trim();
   if (val.startsWith('{') || val.startsWith('[')) {
@@ -247,11 +247,17 @@ function cleanPlanCellText(raw: string | undefined | null): string {
       const parsed = JSON.parse(val);
       if (typeof parsed === 'object' && parsed !== null) {
         const parts: string[] = [];
+        if (parsed.visitType) {
+          parts.push(`Visit: ${parsed.visitType === 'Double' ? `Double (With: ${parsed.companion || '—'})` : 'Single'}`);
+        }
         if (Array.isArray(parsed.hospitalIds) && parsed.hospitalIds.length) parts.push(`Hospitals: ${parsed.hospitalIds.length}`);
         if (Array.isArray(parsed.doctorIds) && parsed.doctorIds.length) parts.push(`Doctors: ${parsed.doctorIds.length}`);
         if (Array.isArray(parsed.pharmacyIds) && parsed.pharmacyIds.length) parts.push(`Pharmacies: ${parsed.pharmacyIds.length}`);
         if (Array.isArray(parsed.branchIds) && parsed.branchIds.length) parts.push(`Branches: ${parsed.branchIds.length}`);
         if (Array.isArray(parsed.activities) && parsed.activities.length) parts.push(`Activities: ${parsed.activities.join(', ')}`);
+        if (parsed.meetingDescription) parts.push(`Meeting: ${parsed.meetingDescription}`);
+        if (parsed.trainingDescription) parts.push(`Training: ${parsed.trainingDescription}`);
+        if (parsed.eventDescription) parts.push(`Event: ${parsed.eventDescription}`);
         if (parsed.salesReviewDescription) parts.push(`Review: ${parsed.salesReviewDescription}`);
         if (parsed.othersDescription) parts.push(`Others: ${parsed.othersDescription}`);
         if (parts.length > 0) return parts.join(' · ');

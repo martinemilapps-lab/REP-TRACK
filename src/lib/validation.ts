@@ -237,12 +237,21 @@ export const StructuredPlanCellSchema = z.object({
   branchIds: z.array(z.string().min(1)).max(200).default([]),
   doctorIds: z.array(z.string().min(1)).max(200).default([]),
   pharmacyIds: z.array(z.string().min(1)).max(200).default([]),
+  visitType: z.enum(['Single', 'Double']).default('Single'),
+  companion: z.string().trim().max(200).optional().default(''),
   activities: z.array(PlanActivityCodeSchema).max(5).default([]),
   salesReviewDescription: z.string().trim().max(2000).optional().default(''),
   othersDescription: z.string().trim().max(2000).optional().default(''),
+  meetingDescription: z.string().trim().max(2000).optional().default(''),
+  trainingDescription: z.string().trim().max(2000).optional().default(''),
+  eventDescription: z.string().trim().max(2000).optional().default(''),
 }).superRefine((cell, ctx) => {
-  if (cell.activities.includes('OTHERS') && !cell.othersDescription) ctx.addIssue({ code: 'custom', path: ['othersDescription'], message: 'Others description is required' });
-  if (cell.activities.includes('SALES_REVIEW_ADMIN') && !cell.salesReviewDescription) ctx.addIssue({ code: 'custom', path: ['salesReviewDescription'], message: 'Sales Review / Admin Work description is required' });
+  if (cell.visitType === 'Double' && !cell.companion?.trim()) ctx.addIssue({ code: 'custom', path: ['companion'], message: 'Companion name is required for a Double visit' });
+  if (cell.activities.includes('OTHERS') && !cell.othersDescription?.trim()) ctx.addIssue({ code: 'custom', path: ['othersDescription'], message: 'Others description is required' });
+  if (cell.activities.includes('SALES_REVIEW_ADMIN') && !cell.salesReviewDescription?.trim()) ctx.addIssue({ code: 'custom', path: ['salesReviewDescription'], message: 'Sales Review / Admin Work description is required' });
+  if (cell.activities.includes('MEETING') && !cell.meetingDescription?.trim()) ctx.addIssue({ code: 'custom', path: ['meetingDescription'], message: 'Meeting description is required' });
+  if (cell.activities.includes('TRAINING') && !cell.trainingDescription?.trim()) ctx.addIssue({ code: 'custom', path: ['trainingDescription'], message: 'Training description is required' });
+  if (cell.activities.includes('EVENT') && !cell.eventDescription?.trim()) ctx.addIssue({ code: 'custom', path: ['eventDescription'], message: 'Event description is required' });
 });
 export const StructuredWeeklyPlanSchema = z.record(z.string(), z.object({ am: StructuredPlanCellSchema, pm: StructuredPlanCellSchema }));
 

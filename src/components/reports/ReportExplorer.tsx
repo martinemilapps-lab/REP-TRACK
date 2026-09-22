@@ -134,12 +134,28 @@ export function renderStructuredPlanCell(cell: Record<string, unknown>, ar: bool
     const doctors = Array.isArray(cell.doctors) ? cell.doctors : Array.isArray(cell.doctorIds) ? cell.doctorIds : [];
     const pharmacies = Array.isArray(cell.pharmacies) ? cell.pharmacies : Array.isArray(cell.pharmacyIds) ? cell.pharmacyIds : [];
     const branches = Array.isArray(cell.branches) ? cell.branches : Array.isArray(cell.branchIds) ? cell.branchIds : [];
+    const visitType = cell.visitType ? String(cell.visitType) : '';
+    const companion = cell.companion ? String(cell.companion) : '';
 
-    const hasContent = acts.length > 0 || hospitals.length > 0 || doctors.length > 0 || pharmacies.length > 0 || branches.length > 0 || Boolean(cell.salesReviewDescription) || Boolean(cell.othersDescription);
+    const hasContent = acts.length > 0 || hospitals.length > 0 || doctors.length > 0 || pharmacies.length > 0 || branches.length > 0 || Boolean(cell.visitType) || Boolean(cell.salesReviewDescription) || Boolean(cell.othersDescription) || Boolean(cell.meetingDescription) || Boolean(cell.trainingDescription) || Boolean(cell.eventDescription);
     if (!hasContent) return <span className="text-[var(--ink-soft)]">—</span>;
 
     return (
         <div className="space-y-1.5 text-xs">
+            {visitType && (
+                <div className="flex flex-wrap items-center gap-1.5 pb-0.5">
+                    <span className="font-semibold text-[var(--ink-soft)]">{l('Visit Type:', 'نوع الزيارة:')}</span>
+                    <span className={`rounded px-1.5 py-0.5 font-bold ${
+                        visitType === 'Double'
+                            ? 'bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300'
+                            : 'bg-teal-500/10 border border-teal-500/20 text-teal-700 dark:text-teal-300'
+                    }`}>
+                        {visitType === 'Double'
+                            ? `${l('Double visit', 'زيارة مشتركة')}${companion ? ` · ${l('With:', 'مع:')} ${companion}` : ''}`
+                            : l('Single visit', 'زيارة فردية')}
+                    </span>
+                </div>
+            )}
             {hospitals.length > 0 && (
                 <div className="flex flex-wrap items-center gap-1">
                     <span className="font-semibold text-[var(--ink-soft)]">{l('Hospitals:', 'المستشفيات:')}</span>
@@ -187,11 +203,36 @@ export function renderStructuredPlanCell(cell: Record<string, unknown>, ar: bool
                         const actStr = String(act);
                         return (
                             <span key={i} className="rounded bg-purple-500/10 border border-purple-500/20 px-1.5 py-0.5 text-purple-700 dark:text-purple-300 font-bold">
-                                {actStr === 'SALES_REVIEW_ADMIN' ? l('Sales Review / Admin Work', 'مراجعة المبيعات / عمل إداري') : actStr === 'OTHERS' ? l('Others', 'أخرى') : actStr}
+                                {actStr === 'SALES_REVIEW_ADMIN'
+                                    ? l('Sales Review / Admin Work', 'مراجعة المبيعات / عمل إداري')
+                                    : actStr === 'MEETING'
+                                    ? l('Meeting', 'اجتماع')
+                                    : actStr === 'TRAINING'
+                                    ? l('Training', 'تدريب')
+                                    : actStr === 'EVENT'
+                                    ? l('Event', 'فعالية')
+                                    : actStr === 'OTHERS'
+                                    ? l('Others', 'أخرى')
+                                    : actStr}
                             </span>
                         );
                     })}
                 </div>
+            )}
+            {Boolean(cell.meetingDescription) && (
+                <p className="text-[var(--ink)]">
+                    <b>{l('Meeting Note:', 'ملاحظة الاجتماع:')}</b> {String(cell.meetingDescription)}
+                </p>
+            )}
+            {Boolean(cell.trainingDescription) && (
+                <p className="text-[var(--ink)]">
+                    <b>{l('Training Note:', 'ملاحظة التدريب:')}</b> {String(cell.trainingDescription)}
+                </p>
+            )}
+            {Boolean(cell.eventDescription) && (
+                <p className="text-[var(--ink)]">
+                    <b>{l('Event Note:', 'ملاحظة الفعالية:')}</b> {String(cell.eventDescription)}
+                </p>
             )}
             {Boolean(cell.salesReviewDescription) && (
                 <p className="text-[var(--ink)]">
