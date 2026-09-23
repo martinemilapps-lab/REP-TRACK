@@ -103,7 +103,7 @@ export async function getServerSession(): Promise<UserSessionPayload | null> {
     const sessionRecord = await db
       .select({
         sessionId: sessions.id,
-        userId: users.id,
+        userId: sessions.userId,
         username: users.username,
         name: users.name,
         role: users.role,

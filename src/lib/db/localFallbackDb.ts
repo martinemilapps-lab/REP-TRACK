@@ -70,12 +70,12 @@ export async function executeLocalFallback(
         return { rows: undefined };
       }
       const firstRow = res.rows[0];
-      const rowArr = res.columns.map((col) => (firstRow as any)[col]);
+      const rowArr = res.columns.map((col, idx) => (firstRow as any)[idx] !== undefined ? (firstRow as any)[idx] : (firstRow as any)[col]);
       return { rows: rowArr };
     }
 
     // method === 'all' | 'values'
-    const rows = res.rows.map((row) => res.columns.map((col) => (row as any)[col]));
+    const rows = res.rows.map((row) => res.columns.map((col, idx) => (row as any)[idx] !== undefined ? (row as any)[idx] : (row as any)[col]));
     return { rows };
   } catch (err) {
     console.error('[LocalFallbackDb] Query error:', err);
