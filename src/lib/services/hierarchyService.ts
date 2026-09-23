@@ -64,16 +64,29 @@ async function loadLegacyScopedRepIds(managerUserId: string) {
 
 export const hierarchyService = {
   async getScopedUserIds(session: UserSessionPayload | null, mode: HierarchyScopeMode = 'ALL_DESCENDANTS') {
+    if (session?.systemRole === 'ADMIN') {
+      const allActive = await db.select({ id: users.id }).from(users).where(eq(users.isActive, true)).all();
+      return allActive.map((u) => u.id);
+    }
     assertManagerSession(session);
     try {
       if (mode === 'ALL_DESCENDANTS') {
         const rows = await db.select({ id: hierarchyPaths.sourceUserId }).from(hierarchyPaths)
           .innerJoin(users, eq(users.id, hierarchyPaths.sourceUserId))
           .where(and(eq(hierarchyPaths.ancestorUserId, session.id), eq(users.isActive, true))).all();
-        return [...new Set(rows.map((row) => row.id))];
+        if (rows.length > 0) {
+          return [...new Set(rows.map((row) => row.id))];
+        }
       }
       const graph = await loadGraph();
-      return resolveHierarchyUserIds(session.id, graph.edges, graph.activeUserIds, mode);
+      const resolved = resolveHierarchyUserIds(session.id, graph.edges, graph.activeUserIds, mode);
+      if (resolved.length > 0) return resolved;
+
+      const repIds = await loadLegacyScopedRepIds(session.id);
+      if (!repIds.length) return [];
+      const rows = await db.select({ id: users.id }).from(users)
+        .where(and(inArray(users.repId, repIds), eq(users.isActive, true))).all();
+      return [...new Set(rows.map((row) => row.id))];
     } catch {
       const repIds = await loadLegacyScopedRepIds(session.id);
       if (!repIds.length) return [];
@@ -103,14 +116,36 @@ export const hierarchyService = {
     }
   },
   async getScopedRepIds(session: UserSessionPayload | null, mode: HierarchyScopeMode = 'ALL_DESCENDANTS') {
+    if (session?.systemRole === 'ADMIN') {
+      const allReps = await db.select({ id: representatives.id }).from(representatives).where(eq(representatives.isActive, true)).all();
+      return allReps.map((r) => r.id);
+    }
+    assertManagerSession(session);
+
+    // 1. Direct O(1) lookup from pre-computed manager_rep_scopes
+    if (mode === 'ALL_DESCENDANTS') {
+      try {
+        const directScopes = await loadLegacyScopedRepIds(session.id);
+        if (directScopes.length > 0) {
+          return directScopes;
+        }
+      } catch (err) {
+        console.warn('Direct manager_rep_scopes lookup failed, checking hierarchy graph:', err);
+      }
+    }
+
+    // 2. Transitive / graph lookup via userIds
     const userIds = await this.getScopedUserIds(session, mode);
-    if (!userIds.length) return [];
+    if (!userIds.length) {
+      return loadLegacyScopedRepIds(session.id);
+    }
     const [userRows, assignmentRows] = await Promise.all([
       db.select({ repId: users.repId }).from(users).where(inArray(users.id, userIds)).all(),
       db.select({ repId: salesAssignments.repId }).from(salesAssignments)
         .where(and(inArray(salesAssignments.userId, userIds), eq(salesAssignments.isActive, true))).all().catch(() => []),
     ]);
-    return [...new Set([...userRows, ...assignmentRows].map((r) => r.repId).filter((id): id is string => Boolean(id)))];
+    const resolvedIds = [...new Set([...userRows, ...assignmentRows].map((r) => r.repId).filter((id): id is string => Boolean(id)))];
+    return resolvedIds.length > 0 ? resolvedIds : loadLegacyScopedRepIds(session.id);
   },
   async getScopedRepresentatives(session: UserSessionPayload | null, mode: HierarchyScopeMode = 'ALL_DESCENDANTS') {
     const ids = await this.getScopedRepIds(session, mode);
@@ -119,11 +154,13 @@ export const hierarchyService = {
       .from(representatives).where(and(inArray(representatives.id, ids), eq(representatives.isActive, true))).all();
   },
   async assertUserVisible(session: UserSessionPayload | null, userId: string) {
+    if (session?.systemRole === 'ADMIN') return;
     assertManagerSession(session);
     if (userId === session.id) return;
     if (!(await this.getScopedUserIds(session)).includes(userId)) throw new AppError('غير مصرح لك بالوصول إلى هذا المستخدم', 403);
   },
   async assertRepVisible(session: UserSessionPayload | null, repId: string) {
+    if (session?.systemRole === 'ADMIN') return;
     assertManagerSession(session);
     if (!(await this.getScopedRepIds(session)).includes(repId)) throw new AppError('غير مصرح لك بالوصول إلى هذا المندوب', 403);
   },

@@ -1,5 +1,5 @@
 import { db, representatives, hospitalVisits, pharmacyVisits, doctorVisits } from '@/lib/db';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, inArray } from 'drizzle-orm';
 import { calculateCoverage, RepCoverageResult } from '@/lib/business/coverage';
 import { INITIAL_REPRESENTATIVES } from '@/lib/constants';
 
@@ -103,46 +103,73 @@ export async function getRepresentativeCoverage(repId: string): Promise<RepCover
 }
 
 /**
+ * Computes coverage for a list of representatives using batched queries (3 total queries).
+ */
+export async function getRepresentativesCoverageBatch(
+  reps: Array<{
+    id: string;
+    name: string;
+    area: string;
+    assignedHospitals?: number | null;
+    assignedPharmacies?: number | null;
+    assignedDrs?: number | null;
+  }>
+): Promise<RepCoverageResult[]> {
+  if (!reps || !reps.length) return [];
+  const repIds = reps.map((r) => r.id);
+
+  const [hospRows, pharmRows, drRows] = await Promise.all([
+    db
+      .select({ repId: hospitalVisits.repId, count: sql<number>`count(distinct ${hospitalVisits.hospitalId})` })
+      .from(hospitalVisits)
+      .where(inArray(hospitalVisits.repId, repIds))
+      .groupBy(hospitalVisits.repId)
+      .all()
+      .catch(() => []),
+    db
+      .select({ repId: pharmacyVisits.repId, count: sql<number>`count(distinct ${pharmacyVisits.pharmacyId})` })
+      .from(pharmacyVisits)
+      .where(inArray(pharmacyVisits.repId, repIds))
+      .groupBy(pharmacyVisits.repId)
+      .all()
+      .catch(() => []),
+    db
+      .select({ repId: doctorVisits.repId, count: sql<number>`count(distinct ${doctorVisits.doctorId})` })
+      .from(doctorVisits)
+      .where(inArray(doctorVisits.repId, repIds))
+      .groupBy(doctorVisits.repId)
+      .all()
+      .catch(() => []),
+  ]);
+
+  const hospMap = new Map((hospRows || []).map((r) => [r.repId, Number(r.count)]));
+  const pharmMap = new Map((pharmRows || []).map((r) => [r.repId, Number(r.count)]));
+  const drMap = new Map((drRows || []).map((r) => [r.repId, Number(r.count)]));
+
+  return reps.map((rep) =>
+    calculateCoverage(
+      {
+        repId: rep.id,
+        repName: rep.name,
+        area: rep.area,
+        assignedHospitals: rep.assignedHospitals ?? 0,
+        assignedPharmacies: rep.assignedPharmacies ?? 0,
+        assignedDrs: rep.assignedDrs ?? 0,
+      },
+      {
+        hospitals: hospMap.get(rep.id) || 0,
+        pharmacies: pharmMap.get(rep.id) || 0,
+        doctors: drMap.get(rep.id) || 0,
+      }
+    )
+  );
+}
+
+/**
  * Computes coverage for all representatives in parallel with distinct counting.
  */
 export async function getAllRepresentativesCoverage(): Promise<RepCoverageResult[]> {
   const allReps = await getAllRepresentatives();
-
-  return await Promise.all(
-    allReps.map(async (rep) => {
-      const [hospRes, pharmRes, drRes] = await Promise.all([
-        db
-          .select({ count: sql<number>`count(distinct ${hospitalVisits.hospitalId})` })
-          .from(hospitalVisits)
-          .where(eq(hospitalVisits.repId, rep.id))
-          .get(),
-        db
-          .select({ count: sql<number>`count(distinct ${pharmacyVisits.pharmacyId})` })
-          .from(pharmacyVisits)
-          .where(eq(pharmacyVisits.repId, rep.id))
-          .get(),
-        db
-          .select({ count: sql<number>`count(distinct ${doctorVisits.doctorId})` })
-          .from(doctorVisits)
-          .where(eq(doctorVisits.repId, rep.id))
-          .get(),
-      ]);
-
-      return calculateCoverage(
-        {
-          repId: rep.id,
-          repName: rep.name,
-          area: rep.area,
-          assignedHospitals: rep.assignedHospitals,
-          assignedPharmacies: rep.assignedPharmacies,
-          assignedDrs: rep.assignedDrs,
-        },
-        {
-          hospitals: hospRes?.count || 0,
-          pharmacies: pharmRes?.count || 0,
-          doctors: drRes?.count || 0,
-        }
-      );
-    })
-  );
+  return getRepresentativesCoverageBatch(allReps);
 }
+

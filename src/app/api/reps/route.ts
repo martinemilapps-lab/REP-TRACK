@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getRepresentativeCoverage } from '@/lib/services/representativeService';
+import { getRepresentativesCoverageBatch } from '@/lib/services/representativeService';
 import { db, representatives } from '@/lib/db';
 import { eq, inArray } from 'drizzle-orm';
 import { requireAuthenticatedUser } from '@/lib/auth';
@@ -18,15 +18,20 @@ const CoverageTargetUpdateSchema = z.object({
 export async function GET() {
   try {
     const session = await requireAuthenticatedUser();
-    const allowedIds = session.role === 'REPRESENTATIVE'
-      ? [session.repId].filter((id): id is string => Boolean(id))
-      : await hierarchyService.getScopedRepIds(session);
+    let allowedIds: string[] = [];
+    if (session.systemRole === 'ADMIN') {
+      const allActiveReps = await db.select({ id: representatives.id }).from(representatives).where(eq(representatives.isActive, true)).all();
+      allowedIds = allActiveReps.map((r) => r.id);
+    } else if (session.role === 'REPRESENTATIVE') {
+      allowedIds = [session.repId].filter((id): id is string => Boolean(id));
+    } else {
+      allowedIds = await hierarchyService.getScopedRepIds(session);
+    }
     const allReps = allowedIds.length ? await db.select().from(representatives).where(inArray(representatives.id, allowedIds)).all() : [];
 
-    let coverageSummaries: Array<Awaited<ReturnType<typeof getRepresentativeCoverage>>> = [];
+    let coverageSummaries: Awaited<ReturnType<typeof getRepresentativesCoverageBatch>> = [];
     try {
-      const allowed = new Set(allReps.map((rep) => rep.id));
-      coverageSummaries = (await Promise.all([...allowed].map(getRepresentativeCoverage))).filter(Boolean);
+      coverageSummaries = await getRepresentativesCoverageBatch(allReps);
     } catch (covErr) {
       console.warn('Could not compute coverage summaries for reps:', covErr);
     }

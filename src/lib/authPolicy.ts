@@ -18,6 +18,7 @@ export function assertManagerSession(
   session: UserSessionPayload | null,
 ): asserts session is UserSessionPayload {
   assertAuthenticatedSession(session);
+  if (session.systemRole === 'ADMIN') return;
   if (session.role !== 'MANAGER' || !managerPositions.has(session.positionCode ?? '')) {
     throw new AppError('هذا الإجراء مخصص للمناصب الإدارية المعتمدة فقط', 403);
   }
