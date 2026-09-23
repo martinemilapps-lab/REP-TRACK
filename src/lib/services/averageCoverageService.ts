@@ -45,22 +45,38 @@ export interface EntityFrequencyItem {
   name: string;
   area: string;
   category: CustomerCategory;
+  categoryLabel?: { ar: string; en: string };
   cycleDays: number;
   expectedVisits: number;
   actualVisits: number;
+  // Frequency metrics
   color: FrequencyColor;
   status: 'SAME' | 'OVER' | 'LESS';
+  frequencyColor: FrequencyColor;
+  frequencyStatus: 'SAME' | 'OVER' | 'LESS';
+  // Coverage metrics
+  isCovered: boolean;
+  coveragePct: number;
+  coverageColor: CoverageColor;
+  coverageStatus: 'FULL' | 'PARTIAL' | 'UNCOVERED';
+  // Average metrics
+  averageDailyRate: number;
   lastVisitDate?: string | null;
   extraInfo?: string | null;
 }
+
+export type CustomerReportItem = EntityFrequencyItem;
 
 export interface CategoryFrequencySummary {
   category: CustomerCategory;
   categoryLabel: { ar: string; en: string };
   totalEntities: number;
+  visitedEntitiesCount: number;
+  coveragePct: number;
   sameCount: number; // GREEN: actual === expected
   overCount: number; // RED: actual > expected
   lessCount: number; // YELLOW: actual < expected
+  unvisitedCount: number;
   items: EntityFrequencyItem[];
 }
 
@@ -71,13 +87,18 @@ export interface VisitsFrequencyReport {
   branch: CategoryFrequencySummary;
   overall: {
     totalEntities: number;
+    totalVisited: number;
+    overallCoveragePct: number;
     sameCount: number;
     overCount: number;
     lessCount: number;
+    unvisitedCount: number;
     samePct: number;
     overPct: number;
     lessPct: number;
+    unvisitedPct: number;
   };
+  allItems?: EntityFrequencyItem[];
 }
 
 export interface AverageCoverageReport {
@@ -494,6 +515,7 @@ export async function calculateAverageAndCoverage(
     let sameCount = 0;
     let overCount = 0;
     let lessCount = 0;
+    let visitedEntitiesCount = 0;
 
     const items: EntityFrequencyItem[] = entities.map((ent) => {
       const cycleDays = ent.defaultCycle && ent.defaultCycle > 0 ? ent.defaultCycle : 7;
@@ -506,6 +528,20 @@ export async function calculateAverageAndCoverage(
       else if (color === 'RED') overCount++;
       else lessCount++;
 
+      const isCovered = actual > 0;
+      if (isCovered) visitedEntitiesCount++;
+
+      // Coverage percentage and status
+      const coveragePct = expected > 0
+        ? Math.min(100, Math.round((actual / expected) * 100))
+        : (isCovered ? 100 : 0);
+      const coverageColor: CoverageColor = getCoverageColor(coveragePct);
+      const coverageStatus: 'FULL' | 'PARTIAL' | 'UNCOVERED' =
+        coveragePct >= 100 ? 'FULL' : (coveragePct > 0 ? 'PARTIAL' : 'UNCOVERED');
+
+      // Average daily rate
+      const averageDailyRate = Math.round((actual / periodDays) * 100) / 100;
+
       const extraInfo = ent.specialty || ent.type || (ent.classification ? `Class ${ent.classification}` : null);
 
       return {
@@ -513,23 +549,41 @@ export async function calculateAverageAndCoverage(
         name: ent.name,
         area: ent.area || ent.coverageArea || '',
         category,
+        categoryLabel: labels,
         cycleDays,
         expectedVisits: expected,
         actualVisits: actual,
+        // Frequency
         color,
         status,
+        frequencyColor: color,
+        frequencyStatus: status,
+        // Coverage
+        isCovered,
+        coveragePct,
+        coverageColor,
+        coverageStatus,
+        // Average
+        averageDailyRate,
         lastVisitDate: visitInfo.lastDate || null,
         extraInfo,
       };
     });
 
+    const categoryCoveragePct = entities.length > 0
+      ? Math.min(100, Math.round((visitedEntitiesCount / entities.length) * 1000) / 10)
+      : 0;
+
     return {
       category,
       categoryLabel: labels,
       totalEntities: entities.length,
+      visitedEntitiesCount,
+      coveragePct: categoryCoveragePct,
       sameCount,
       overCount,
       lessCount,
+      unvisitedCount: entities.length - visitedEntitiesCount,
       items,
     };
   };
@@ -540,13 +594,26 @@ export async function calculateAverageAndCoverage(
   const freqBranch = buildFrequencySummary('DISTRIBUTION_BRANCH', { ar: 'فروع ومخازن التوزيع', en: 'Distribution Branches' }, branchList, branchVisitMap);
 
   const freqTotalEntities = freqHosp.totalEntities + freqDoc.totalEntities + freqPharm.totalEntities + freqBranch.totalEntities;
+  const freqTotalVisited = freqHosp.visitedEntitiesCount + freqDoc.visitedEntitiesCount + freqPharm.visitedEntitiesCount + freqBranch.visitedEntitiesCount;
+  const freqOverallCoveragePct = freqTotalEntities > 0
+    ? Math.min(100, Math.round((freqTotalVisited / freqTotalEntities) * 1000) / 10)
+    : 0;
   const freqTotalSame = freqHosp.sameCount + freqDoc.sameCount + freqPharm.sameCount + freqBranch.sameCount;
   const freqTotalOver = freqHosp.overCount + freqDoc.overCount + freqPharm.overCount + freqBranch.overCount;
   const freqTotalLess = freqHosp.lessCount + freqDoc.lessCount + freqPharm.lessCount + freqBranch.lessCount;
+  const freqTotalUnvisited = freqTotalEntities - freqTotalVisited;
 
   const samePct = freqTotalEntities > 0 ? Math.round((freqTotalSame / freqTotalEntities) * 1000) / 10 : 0;
   const overPct = freqTotalEntities > 0 ? Math.round((freqTotalOver / freqTotalEntities) * 1000) / 10 : 0;
   const lessPct = freqTotalEntities > 0 ? Math.round((freqTotalLess / freqTotalEntities) * 1000) / 10 : 0;
+  const unvisitedPct = freqTotalEntities > 0 ? Math.round((freqTotalUnvisited / freqTotalEntities) * 1000) / 10 : 0;
+
+  const allItems: EntityFrequencyItem[] = [
+    ...freqHosp.items,
+    ...freqDoc.items,
+    ...freqPharm.items,
+    ...freqBranch.items,
+  ];
 
   return {
     repId,
@@ -590,13 +657,18 @@ export async function calculateAverageAndCoverage(
       branch: freqBranch,
       overall: {
         totalEntities: freqTotalEntities,
+        totalVisited: freqTotalVisited,
+        overallCoveragePct: freqOverallCoveragePct,
         sameCount: freqTotalSame,
         overCount: freqTotalOver,
         lessCount: freqTotalLess,
+        unvisitedCount: freqTotalUnvisited,
         samePct,
         overPct,
         lessPct,
+        unvisitedPct,
       },
+      allItems,
     },
   };
 }

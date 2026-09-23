@@ -7,6 +7,9 @@ import { calculateAverageAndCoverage } from '@/lib/services/averageCoverageServi
 import { db, representatives } from '@/lib/db';
 import { eq } from 'drizzle-orm';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(request: NextRequest) {
   try {
     const session = await requireAuthenticatedUser();
@@ -30,7 +33,13 @@ export async function GET(request: NextRequest) {
           report,
           scopedReps: [{ id: repId, name: session.name, area: session.primarySalesAssignment?.territoryName || '' }],
         },
-        { headers: { 'Cache-Control': 'private, no-store' } },
+        {
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+            Pragma: 'no-cache',
+            Expires: '0',
+          },
+        },
       );
     }
 
@@ -128,7 +137,13 @@ export async function GET(request: NextRequest) {
         scopedReps,
         teamSummary,
       },
-      { headers: { 'Cache-Control': 'private, no-store' } },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      },
     );
   } catch (error) {
     return handleApiError(error);
