@@ -67,6 +67,22 @@ async function fetchWorkerApi<T = unknown>(
   return data as T;
 }
 
+import { executeLocalFallback, queryLocalFallback } from '@/lib/db/localFallbackDb';
+
+function isQuotaOrD1Error(err: unknown): boolean {
+  if (!err) return false;
+  const msg = err instanceof Error ? err.message : String(err);
+  return (
+    msg.includes('daily row read limit') ||
+    msg.includes('exceeded D1') ||
+    msg.includes('D1_ERROR') ||
+    msg.includes('code: 7500') ||
+    msg.includes('HTTP 500') ||
+    msg.includes('Failed to fetch') ||
+    msg.includes('NetworkError')
+  );
+}
+
 export const dataGatewayClient = {
   /**
    * Directly executes a parameterized query for Drizzle's sqlite-proxy driver.
@@ -76,20 +92,33 @@ export const dataGatewayClient = {
     params: unknown[],
     method: 'run' | 'all' | 'values' | 'get'
   ): Promise<{ rows: unknown }> {
-    const data = await fetchWorkerApi<WorkerApiResponse>('/api/query', {
-      method: 'POST',
-      body: JSON.stringify({ sql, params, method }),
-    });
+    try {
+      const data = await fetchWorkerApi<WorkerApiResponse>('/api/query', {
+        method: 'POST',
+        body: JSON.stringify({ sql, params, method }),
+      });
 
-    if (!data.success) {
-      throw new Error(data.error || 'D1 query failed');
+      if (!data.success) {
+        throw new Error(data.error || 'D1 query failed');
+      }
+
+      // Also mirror writes to local fallback db
+      if (method === 'run') {
+        void executeLocalFallback(sql, params, method).catch(() => {});
+      }
+
+      if (method === 'get') {
+        return { rows: data.rows !== undefined ? data.rows : undefined };
+      }
+
+      return { rows: data.rows || [] };
+    } catch (error) {
+      if (isQuotaOrD1Error(error)) {
+        console.warn('[DataGatewayClient] D1 limit reached or service error. Falling back to local database for query:', sql.slice(0, 100));
+        return await executeLocalFallback(sql, params, method);
+      }
+      throw error;
     }
-
-    if (method === 'get') {
-      return { rows: data.rows !== undefined ? data.rows : undefined };
-    }
-
-    return { rows: data.rows || [] };
   },
 
   /**
@@ -98,42 +127,58 @@ export const dataGatewayClient = {
   async executeDrizzleProxyBatch(
     queries: { sql: string; params: unknown[]; method: 'run' | 'all' | 'values' | 'get' }[]
   ): Promise<{ rows: unknown }[]> {
-    const data = await fetchWorkerApi<WorkerApiResponse>('/api/batch', {
-      method: 'POST',
-      body: JSON.stringify({
-        statements: queries.map((q) => ({
-          sql: q.sql,
-          params: q.params,
-          method: q.method,
-        })),
-      }),
-    });
+    try {
+      const data = await fetchWorkerApi<WorkerApiResponse>('/api/batch', {
+        method: 'POST',
+        body: JSON.stringify({
+          statements: queries.map((q) => ({
+            sql: q.sql,
+            params: q.params,
+            method: q.method,
+          })),
+        }),
+      });
 
-    if (!data.success) {
-      throw new Error(data.error || 'D1 batch failed');
+      if (!data.success) {
+        throw new Error(data.error || 'D1 batch failed');
+      }
+
+      if (data.batchRows && Array.isArray(data.batchRows)) {
+        return data.batchRows.map((b) => ({ rows: b.rows || [] }));
+      }
+
+      return (data.results || []).map((r) => ({ rows: r || [] }));
+    } catch (error) {
+      if (isQuotaOrD1Error(error)) {
+        console.warn('[DataGatewayClient] D1 limit reached in batch. Falling back to local database.');
+        return await Promise.all(queries.map((q) => executeLocalFallback(q.sql, q.params, q.method)));
+      }
+      throw error;
     }
-
-    if (data.batchRows && Array.isArray(data.batchRows)) {
-      return data.batchRows.map((b) => ({ rows: b.rows || [] }));
-    }
-
-    return (data.results || []).map((r) => ({ rows: r || [] }));
   },
 
   /**
    * Helper: Execute an arbitrary parameterized query returning array of object records.
    */
   async query<T = Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<T[]> {
-    const data = await fetchWorkerApi<WorkerApiResponse<T>>('/api/query', {
-      method: 'POST',
-      body: JSON.stringify({ sql, params }),
-    });
+    try {
+      const data = await fetchWorkerApi<WorkerApiResponse<T>>('/api/query', {
+        method: 'POST',
+        body: JSON.stringify({ sql, params }),
+      });
 
-    if (!data.success) {
-      throw new Error(data.error || 'D1 query failed');
+      if (!data.success) {
+        throw new Error(data.error || 'D1 query failed');
+      }
+
+      return data.results || [];
+    } catch (error) {
+      if (isQuotaOrD1Error(error)) {
+        console.warn('[DataGatewayClient] D1 limit reached in query. Falling back to local database for:', sql.slice(0, 100));
+        return await queryLocalFallback<T>(sql, params);
+      }
+      throw error;
     }
-
-    return data.results || [];
   },
 
   /**

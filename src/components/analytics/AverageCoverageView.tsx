@@ -150,22 +150,6 @@ export function AverageCoverageView({ initialRepId, currentUser }: AverageCovera
     void loadData(true);
   }, [loadData]);
 
-  // Live Auto-Sync: Automatic updates on tab focus and every 25 seconds
-  useEffect(() => {
-    const onFocus = () => void loadData(false);
-    window.addEventListener('focus', onFocus);
-
-    const timer = setInterval(() => {
-      if (typeof document !== 'undefined' && !document.hidden) {
-        void loadData(false);
-      }
-    }, 25000);
-
-    return () => {
-      window.removeEventListener('focus', onFocus);
-      clearInterval(timer);
-    };
-  }, [loadData]);
 
   // Handle explicit report submission up hierarchy
   const handleSendReport = async () => {

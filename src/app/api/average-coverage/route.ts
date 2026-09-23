@@ -10,6 +10,28 @@ import { eq } from 'drizzle-orm';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+interface CacheEntry {
+  timestamp: number;
+  data: any;
+}
+const avgCoverageCache = new Map<string, CacheEntry>();
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds TTL
+
+function getCached(key: string) {
+  const entry = avgCoverageCache.get(key);
+  if (entry && Date.now() - entry.timestamp < CACHE_TTL_MS) {
+    return entry.data;
+  }
+  return null;
+}
+
+function setCache(key: string, data: any) {
+  if (avgCoverageCache.size > 300) {
+    avgCoverageCache.clear();
+  }
+  avgCoverageCache.set(key, { timestamp: Date.now(), data });
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await requireAuthenticatedUser();
@@ -21,18 +43,38 @@ export async function GET(request: NextRequest) {
     const reqRepId = url.searchParams.get('repId');
     const returnSummary = url.searchParams.get('summary') === 'true';
 
+    const responseCacheKey = `full-get:${session.id}:${targetDate}:${period}:${reqRepId || 'default'}:${returnSummary}`;
+    const cachedResponse = getCached(responseCacheKey);
+    if (cachedResponse) {
+      return NextResponse.json(cachedResponse, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      });
+    }
+
     // 1. If Medical Representative
     if (session.role === 'REPRESENTATIVE' || session.positionCode === 'MR') {
       const repId = resolveWritableRepId(session);
-      const report = await calculateAverageAndCoverage(repId, targetDate, period);
+      const repCacheKey = `rep-report:${repId}:${targetDate}:${period}`;
+      let report = getCached(repCacheKey);
+      if (!report) {
+        report = await calculateAverageAndCoverage(repId, targetDate, period);
+        setCache(repCacheKey, report);
+      }
+
+      const responsePayload = {
+        success: true,
+        isManager: false,
+        report,
+        scopedReps: [{ id: repId, name: session.name, area: session.primarySalesAssignment?.territoryName || '' }],
+      };
+      setCache(responseCacheKey, responsePayload);
 
       return NextResponse.json(
-        {
-          success: true,
-          isManager: false,
-          report,
-          scopedReps: [{ id: repId, name: session.name, area: session.primarySalesAssignment?.territoryName || '' }],
-        },
+        responsePayload,
         {
           headers: {
             'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
@@ -70,9 +112,15 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const report = activeRepId
-      ? await calculateAverageAndCoverage(activeRepId, targetDate, period)
-      : null;
+    let report: any = null;
+    if (activeRepId) {
+      const repCacheKey = `rep-report:${activeRepId}:${targetDate}:${period}`;
+      report = getCached(repCacheKey);
+      if (!report) {
+        report = await calculateAverageAndCoverage(activeRepId, targetDate, period);
+        setCache(repCacheKey, report);
+      }
+    }
 
     // Optional: Return summary of all scoped reps for team matrix
     let teamSummary: Array<{
@@ -94,7 +142,12 @@ export async function GET(request: NextRequest) {
       teamSummary = await Promise.all(
         scopedReps.map(async (r) => {
           try {
-            const repReport = await calculateAverageAndCoverage(r.id, targetDate, period);
+            const repCacheKey = `rep-report:${r.id}:${targetDate}:${period}`;
+            let repReport = getCached(repCacheKey);
+            if (!repReport) {
+              repReport = await calculateAverageAndCoverage(r.id, targetDate, period);
+              setCache(repCacheKey, repReport);
+            }
             return {
               repId: r.id,
               repName: r.name,
@@ -129,14 +182,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const responsePayload = {
+      success: true,
+      isManager: true,
+      report,
+      scopedReps,
+      teamSummary,
+    };
+    setCache(responseCacheKey, responsePayload);
+
     return NextResponse.json(
-      {
-        success: true,
-        isManager: true,
-        report,
-        scopedReps,
-        teamSummary,
-      },
+      responsePayload,
       {
         headers: {
           'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
@@ -164,6 +220,9 @@ export async function POST(request: NextRequest) {
 
     const repId = resolveWritableRepId(session);
     const report = await calculateAverageAndCoverage(repId, targetDate, period);
+
+    // Invalidate average coverage cache
+    avgCoverageCache.clear();
 
     // Resolve all hierarchical ancestors (DM -> AM -> BUM -> SMD)
     let ancestorIds: string[] = [];
