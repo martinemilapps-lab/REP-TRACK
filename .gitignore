@@ -51,4 +51,6 @@ local.db*
 *credentials*.csv
 scripts/provision_dev_organization.sql
 secrets/
+d1_backup.sql
+scripts/system_reset.sql
 

@@ -11,6 +11,7 @@ export async function getLocalFallbackClient(): Promise<Client> {
   initPromise = (async () => {
     const client = createClient({ url: ':memory:' });
     try {
+      await client.execute('PRAGMA foreign_keys = OFF;');
       const statements = FALLBACK_SQL.split(/;\s*[\r\n]+/)
         .map((s) => s.replace(/^--.*$/gm, '').trim())
         .filter((s) => s.length > 0);
