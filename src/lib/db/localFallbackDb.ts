@@ -12,8 +12,8 @@ export async function getLocalFallbackClient(): Promise<Client> {
     const client = createClient({ url: ':memory:' });
     try {
       const statements = FALLBACK_SQL.split(/;\s*[\r\n]+/)
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0 && !s.startsWith('--'));
+        .map((s) => s.replace(/^--.*$/gm, '').trim())
+        .filter((s) => s.length > 0);
 
       const batchSize = 100;
       for (let i = 0; i < statements.length; i += batchSize) {
