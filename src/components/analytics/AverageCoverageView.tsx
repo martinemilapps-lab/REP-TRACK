@@ -31,6 +31,7 @@ import { SectionCard } from '@/components/ui/SectionCard';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { InlineAlert } from '@/components/ui/InlineAlert';
 import { useTranslation } from '@/lib/i18nContext';
+import { downloadExcelFromUrl } from '@/lib/clientExport';
 import type {
   AverageCoverageReport,
   CoverageColor,
@@ -101,6 +102,7 @@ export function AverageCoverageView({ initialRepId, currentUser }: AverageCovera
   const [lastUpdated, setLastUpdated] = useState<string>('');
   const [submittingReport, setSubmittingReport] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState<string | null>(null);
+  const [exportingExcel, setExportingExcel] = useState(false);
 
   const loadData = useCallback(async (showBusy = true) => {
     try {
@@ -192,6 +194,21 @@ export function AverageCoverageView({ initialRepId, currentUser }: AverageCovera
       setError(err instanceof Error ? err.message : 'Failed to send report');
     } finally {
       setSubmittingReport(false);
+    }
+  };
+
+  // Export Official Excel (.xlsx)
+  const handleExportExcel = async () => {
+    setExportingExcel(true);
+    setError(null);
+    try {
+      const q = `/api/exports/coverage?period=${period}&date=${selectedDate}${selectedRepId ? `&repId=${selectedRepId}` : ''}`;
+      const defaultName = `تقرير_تغطية_وتكرار_الزيارات_${report?.repName || 'Rep'}_${period}_${selectedDate}.xlsx`;
+      await downloadExcelFromUrl(q, defaultName);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Export failed');
+    } finally {
+      setExportingExcel(false);
     }
   };
 
@@ -931,15 +948,31 @@ export function AverageCoverageView({ initialRepId, currentUser }: AverageCovera
                 <RefreshCw className={`size-3.5 ${refreshing ? 'animate-spin text-[var(--gold)]' : ''}`} />
               </button>
 
+              {/* Export Excel (.xlsx) Button */}
+              <button
+                type="button"
+                onClick={() => void handleExportExcel()}
+                disabled={exportingExcel}
+                title={ar ? 'تصدير التقرير الرسمي كملف Excel (.xlsx)' : 'Export Official Excel (.xlsx)'}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black bg-[var(--surface)] text-[var(--ink)] border border-emerald-500/40 hover:bg-emerald-500/10 hover:border-emerald-500 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {exportingExcel ? (
+                  <RefreshCw className="size-3.5 animate-spin text-emerald-600" />
+                ) : (
+                  <FileSpreadsheet className="size-3.5 text-emerald-600" />
+                )}
+                <span>{ar ? 'تصدير Excel (.xlsx)' : 'Export Excel (.xlsx)'}</span>
+              </button>
+
               {/* Export CSV Button */}
               <button
                 type="button"
                 onClick={handleExportCsv}
-                title={ar ? 'تصدير التقرير كملف CSV' : 'Export CSV'}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-[var(--surface)] text-[var(--ink)] border border-[var(--line)] hover:bg-[var(--surface-hover)] transition-all cursor-pointer"
+                title={ar ? 'تصدير كملف CSV سريع' : 'Export CSV'}
+                className="inline-flex items-center gap-1 px-2.5 py-2 rounded-xl text-xs font-semibold bg-[var(--surface)] text-[var(--ink-soft)] border border-[var(--line)] hover:bg-[var(--surface-hover)] transition-all cursor-pointer"
               >
-                <Download className="size-3.5 text-[var(--gold-dark)]" />
-                <span>{ar ? 'تصدير CSV' : 'Export CSV'}</span>
+                <Download className="size-3 text-[var(--gold-dark)]" />
+                <span>CSV</span>
               </button>
 
               {/* Submit Report Up Hierarchy to SMD */}

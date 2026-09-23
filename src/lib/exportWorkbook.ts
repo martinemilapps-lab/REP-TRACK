@@ -5,8 +5,12 @@ export const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsh
 export type ExportCell = string | number | boolean | Date | null | undefined;
 export type ExportRow = Record<string, ExportCell>;
 
+/**
+ * Creates an ASCII-safe fallback filename while preserving standard naming.
+ */
 export function safeFilename(value: string): string {
-  const safe = value.replace(/[^A-Za-z0-9._-]+/g, '_').replace(/_+/g, '_').replace(/^[_\.]+|[_\.]+$/g, '');
+  const clean = value.replace(/\.xlsx$/i, '').trim();
+  const safe = clean.replace(/[^A-Za-z0-9._-]+/g, '_').replace(/_+/g, '_').replace(/^[_\.]+|[_\.]+$/g, '');
   return `${safe || 'REP_TRACK_Export'}.xlsx`;
 }
 
@@ -14,44 +18,93 @@ export function dedupeById<T extends { id: string }>(rows: T[]): T[] {
   return [...new Map(rows.map((row) => [row.id, row])).values()];
 }
 
+/**
+ * Sanitizes Excel sheet names to comply with Excel limits:
+ * - Maximum 31 characters
+ * - Cannot contain invalid characters: \ / ? * [ ] :
+ */
+export function sanitizeSheetName(name: string): string {
+  const sanitized = name.replace(/[:\\/?*\[\]]/g, '_').trim();
+  return (sanitized.slice(0, 31) || 'Sheet1').trim();
+}
+
+/**
+ * Builds a professionally formatted multi-sheet Excel workbook using SheetJS.
+ */
 export function createWorkbook(sheets: Array<{ name: string; rows: ExportRow[] }>): Uint8Array {
   const workbook = XLSX.utils.book_new();
+
   for (const { name, rows } of sheets) {
-    const worksheet = XLSX.utils.json_to_sheet(rows.length ? rows : [{ Message: 'No records for the selected filters' }], {
+    const validRows = rows && rows.length ? rows : [{ 'ملاحظة (Notice)': 'لا توجد سجلات مطابقة للفترة المحددة / No records found' }];
+    const worksheet = XLSX.utils.json_to_sheet(validRows, {
       cellDates: true,
     });
-    const headers = rows.length ? Object.keys(rows[0]) : ['Message'];
-    worksheet['!cols'] = headers.map((header) => ({ wch: Math.min(42, Math.max(12, header.length + 2)) }));
+
+    const headers = Object.keys(validRows[0]);
+    // Auto-calculate column widths with padding for Arabic and English text
+    worksheet['!cols'] = headers.map((header) => {
+      let maxLen = header.length;
+      for (let i = 0; i < Math.min(validRows.length, 50); i++) {
+        const val = validRows[i][header];
+        if (val !== undefined && val !== null) {
+          const str = String(val);
+          if (str.length > maxLen) maxLen = str.length;
+        }
+      }
+      return { wch: Math.min(55, Math.max(14, maxLen + 3)) };
+    });
+
+    // Excel features: Autofilter, freeze top header row
     worksheet['!autofilter'] = worksheet['!ref'] ? { ref: worksheet['!ref'] } : undefined;
     worksheet['!freeze'] = { xSplit: 0, ySplit: 1, topLeftCell: 'A2', activePane: 'bottomLeft', state: 'frozen' };
     worksheet['!pageSetup'] = { orientation: 'landscape', fitToWidth: 1, fitToHeight: 0 };
     worksheet['!margins'] = { left: 0.25, right: 0.25, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 };
-    for (const cell of Object.values(worksheet)) if (cell && typeof cell === 'object' && 'v' in cell) {
-      const target=cell as XLSX.CellObject; if(target.v==='Available') target.s={fill:{fgColor:{rgb:'C6EFCE'}},font:{color:{rgb:'006100'},bold:true}}; if(target.v==='Not Available') target.s={fill:{fgColor:{rgb:'FFC7CE'}},font:{color:{rgb:'9C0006'},bold:true}};
-    }
-    XLSX.utils.book_append_sheet(workbook, worksheet, name.slice(0, 31));
+
+    const safeSheetTitle = sanitizeSheetName(name);
+    XLSX.utils.book_append_sheet(workbook, worksheet, safeSheetTitle);
   }
-  return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx', compression: true, cellStyles: true }) as Uint8Array;
+
+  const buffer = XLSX.write(workbook, {
+    type: 'buffer',
+    bookType: 'xlsx',
+    compression: true,
+  });
+
+  return new Uint8Array(buffer);
 }
 
+/**
+ * Builds HTTP response with RFC 5987 / RFC 6266 headers for UTF-8 and ASCII filename support.
+ */
 export function workbookResponse(bytes: Uint8Array, requestedFilename: string): Response {
-  const filename = safeFilename(requestedFilename.replace(/\.xlsx$/i, ''));
+  const cleanName = requestedFilename.replace(/\.xlsx$/i, '').trim();
+  const asciiFallback = safeFilename(cleanName);
+  const encodedUtf8 = encodeURIComponent(`${cleanName}.xlsx`);
+
   return new Response(Buffer.from(bytes), {
     status: 200,
     headers: {
       'Content-Type': XLSX_MIME,
-      'Content-Disposition': `attachment; filename="${filename}"`,
-      'Cache-Control': 'private, no-store',
+      'Content-Disposition': `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encodedUtf8}`,
+      'Cache-Control': 'private, no-store, no-cache, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
       'X-Content-Type-Options': 'nosniff',
     },
   });
 }
 
-export function metadataRows(session: { name: string; positionCode?: string | null }, context: Record<string, string | undefined>): ExportRow[] {
+export function metadataRows(
+  session: { name: string; positionCode?: string | null; username?: string },
+  context: Record<string, string | undefined>
+): ExportRow[] {
   return [
-    { Field: 'Generated At', Value: new Date().toISOString() },
-    { Field: 'Generated By', Value: session.name },
-    { Field: 'Position', Value: session.positionCode ?? '' },
-    ...Object.entries(context).filter(([, value]) => value).map(([key, value]) => ({ Field: key, Value: value ?? '' })),
+    { 'المحدد (Parameter)': 'نظام المنصة (System)', 'القيمة (Value)': 'REP TRACK — Sunny Medical Group' },
+    { 'المحدد (Parameter)': 'تاريخ ووقت التصدير (Exported At)', 'القيمة (Value)': new Date().toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' }) },
+    { 'المحدد (Parameter)': 'الموظف (Generated By)', 'القيمة (Value)': `${session.name} (${session.username || session.positionCode || 'User'})` },
+    { 'المحدد (Parameter)': 'المنصب الإداري (Position)', 'القيمة (Value)': session.positionCode ?? 'N/A' },
+    ...Object.entries(context)
+      .filter(([, value]) => value !== undefined && value !== '')
+      .map(([key, value]) => ({ 'المحدد (Parameter)': key, 'القيمة (Value)': String(value) })),
   ];
 }

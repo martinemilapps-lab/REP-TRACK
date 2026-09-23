@@ -9,10 +9,12 @@ import {
   RefreshCw,
   Sparkles,
   BarChart3,
+  Download,
 } from 'lucide-react';
 import { useTranslation } from '@/lib/i18nContext';
 import { Button } from '@/components/ui/Button';
 import { InlineAlert } from '@/components/ui/InlineAlert';
+import { downloadExcelFromUrl } from '@/lib/clientExport';
 import {
   HospitalAvailabilityReport,
   AvailabilityRecord,
@@ -72,6 +74,21 @@ export function AvailabilityReportsContainer({
   }, [fetchReports, isExternal, refreshSignal]);
 
   const activeRecords = externalRecords || internalRecords;
+
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    setExporting(true);
+    setError(null);
+    try {
+      const filename = `تقرير_توافر_المنتجات_الشامل_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      await downloadExcelFromUrl('/api/exports/reports?type=availability', filename);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Export failed');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div className="space-y-6 pt-6 border-t-2 border-[var(--line)]">
@@ -148,6 +165,18 @@ export function AvailabilityReportsContainer({
               {l('Refresh Reports', 'تحديث التقارير')}
             </Button>
           )}
+
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            onClick={handleExport}
+            isLoading={exporting}
+            leftIcon={<Download className="size-3.5" />}
+            className="text-xs font-bold"
+          >
+            {l('Export Excel (.xlsx)', 'تصدير إكسل (.xlsx)')}
+          </Button>
         </div>
       </div>
 

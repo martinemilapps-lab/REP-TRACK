@@ -1,6 +1,7 @@
 'use client';
 import { useMemo, useState, type ReactNode } from 'react';
-import { FileText } from 'lucide-react';
+import { FileText, Download } from 'lucide-react';
+import { downloadExcelFromUrl } from '@/lib/clientExport';
 import { useTranslation } from '@/lib/i18nContext';
 import { filterReports, type ReportRow } from '@/lib/reportExplorer';
 import { Button } from '@/components/ui/Button';
@@ -315,6 +316,28 @@ export function ReportExplorer({ rows, loading, error, retry, team = false, init
     const [end, setEnd] = useState('');
     const [sort, setSort] = useState('newest');
     const [selected, setSelected] = useState<ReportRow | null>(null);
+    const [exporting, setExporting] = useState(false);
+
+    const handleExportExcel = async () => {
+        try {
+            setExporting(true);
+            const params = new URLSearchParams();
+            params.set('owner', team ? 'team' : 'my');
+            if (types.length === 1 && ['hospital', 'pharmacy', 'doctor', 'branch', 'availability', 'event', 'training', 'specialTask', 'managerActivity'].includes(types[0])) {
+                params.set('type', types[0]);
+            } else {
+                params.set('type', 'all');
+            }
+            if (start) params.set('startDate', start);
+            if (end) params.set('endDate', end);
+            await downloadExcelFromUrl(`/api/exports/reports?${params.toString()}`, `REP_TRACK_Reports_${new Date().toISOString().slice(0, 10)}.xlsx`);
+        } catch (e) {
+            console.error('Export failed', e);
+            alert(ar ? 'فشل تصدير التقرير، يرجى المحاولة مرة أخرى' : 'Failed to export reports, please try again.');
+        } finally {
+            setExporting(false);
+        }
+    };
 
     const activeSelected = rows.find(row => row.id === selected?.id) || null;
 
@@ -435,6 +458,16 @@ export function ReportExplorer({ rows, loading, error, retry, team = false, init
                     }}
                 >
                     {l('Reset', 'إعادة تعيين')}
+                </Button>
+
+                <Button
+                    type="button"
+                    variant="primary"
+                    onClick={handleExportExcel}
+                    isLoading={exporting}
+                    leftIcon={<Download className="h-4 w-4" />}
+                >
+                    {l('Export Excel (.xlsx)', 'تصدير إكسيل (.xlsx)')}
                 </Button>
             </FilterBar>
 

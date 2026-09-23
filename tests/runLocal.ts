@@ -9,6 +9,7 @@ import { runManagerActivityWorkflowTests } from './managerActivityWorkflow.test'
 import { runAvailabilityReportsTests } from './availabilityReports.test';
 import { runVisitsFrequencyTests } from './visitsFrequency.test';
 import { runCustomerReportTests } from './customerReport.test';
+import { runExportSystemTests } from './exportSystem.test';
 
 // Only suites reviewed as local/pure. Never load dotenv or allow a network fallback.
 globalThis.fetch = async () => { throw new Error('Network forbidden in local regression suite'); };
@@ -22,6 +23,7 @@ async function main() {
     runAvailabilityReportsTests(),
     runVisitsFrequencyTests(),
     runCustomerReportTests(),
+    await runExportSystemTests(),
   ];
   const passed = results.reduce((sum, result) => sum + result.passed, 0);
   const failed = results.reduce((sum, result) => sum + result.failed, 0);

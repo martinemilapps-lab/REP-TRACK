@@ -14,9 +14,10 @@ import { DataTable } from '@/components/ui/DataTable';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { InlineAlert } from '@/components/ui/InlineAlert';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { Building2, Hospital, Pill, Stethoscope } from 'lucide-react';
+import { Building2, Hospital, Pill, Stethoscope, Download } from 'lucide-react';
 import { normalizeMasterListsPayload } from '@/lib/masterListsPayload';
 import { MultiSelectDropdown } from '@/components/ui/MultiSelectDropdown';
+import { downloadExcelFromUrl } from '@/lib/clientExport';
 type Customer = MasterHospital | MasterPharmacy | MasterDoctor | MasterBranch;
 type CustomerFields = Partial<MasterHospital & MasterPharmacy & MasterDoctor & MasterBranch>;
 interface MyListsViewProps {
@@ -57,6 +58,27 @@ export function MyListsView({ reps, selectedRep, onSelectRep, onLogVisitForCusto
         text: string;
         isError?: boolean;
     } | null>(null);
+    const [exporting, setExporting] = useState(false);
+
+    const handleExportExcel = async () => {
+        try {
+            setExporting(true);
+            const params = new URLSearchParams();
+            if (readOnly && selectedRep) {
+                const matchedRep = reps.find(r => r.name === selectedRep || r.id === selectedRep);
+                if (matchedRep) params.set('repId', matchedRep.id);
+            }
+            await downloadExcelFromUrl(
+                `/api/exports/lists${params.toString() ? `?${params.toString()}` : ''}`,
+                `REP_TRACK_Master_Lists_${selectedRep || 'mine'}.xlsx`
+            );
+        } catch (e) {
+            console.error('Export failed', e);
+            showNotification(language === 'ar' ? 'فشل تصدير القوائم، يرجى المحاولة مرة أخرى' : 'Failed to export lists, please try again.', true);
+        } finally {
+            setExporting(false);
+        }
+    };
     const repOptions: SelectOption[] = useMemo(() => {
         return reps.map((r) => ({
             value: r.name,
@@ -322,7 +344,18 @@ export function MyListsView({ reps, selectedRep, onSelectRep, onLogVisitForCusto
             onChange={setAreaFilters}
             placeholder={l('All areas', 'كل المناطق')}
         />
-        <Button type="button" variant="secondary" onClick={() => { setSearch(''); setAreaFilters([]); }}>{l('Reset', 'إعادة تعيين')}</Button>{!readOnly && <Button type="button" disabled={saving || syncStatus === 'saving'} onClick={handleOpenCreateModal}>{l('Add customer', 'إضافة عميل')}</Button>}</FilterBar>
+        <Button type="button" variant="secondary" onClick={() => { setSearch(''); setAreaFilters([]); }}>{l('Reset', 'إعادة تعيين')}</Button>
+        <Button
+            type="button"
+            variant="secondary"
+            onClick={handleExportExcel}
+            isLoading={exporting}
+            leftIcon={<Download className="size-4" />}
+        >
+            {l('Export Excel (.xlsx)', 'تصدير إكسيل (.xlsx)')}
+        </Button>
+        {!readOnly && <Button type="button" disabled={saving || syncStatus === 'saving'} onClick={handleOpenCreateModal}>{l('Add customer', 'إضافة عميل')}</Button>}
+    </FilterBar>
  {loadError ? <InlineAlert tone="error">{l('Unable to load lists', 'تعذر تحميل القوائم')} <Button type="button" onClick={() => void loadLists(selectedRep)}>{l('Retry', 'إعادة المحاولة')}</Button>
             </InlineAlert> : loading ? <Skeleton className="h-48"/> : <>
             <p role="status" className="text-sm">{visible.length} {l('customers', 'عميل')}</p>{!visible.length ? <EmptyState title={l('No matching customers', 'لا يوجد عملاء مطابقون')}/> : <>

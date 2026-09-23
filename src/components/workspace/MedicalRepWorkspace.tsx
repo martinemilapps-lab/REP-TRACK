@@ -19,7 +19,7 @@ import { useTranslation } from '@/lib/i18nContext';
 import { RepresentativeOverview } from '@/components/overview/RepresentativeOverview';
 import { ExportCenter } from '@/components/exports/ExportCenter';
 import { AverageCoverageView } from '@/components/analytics/AverageCoverageView';
-import { User, CheckCircle2, MapPin, PackageSearch, ClipboardList, CalendarDays, CalendarCheck, TrendingUp } from 'lucide-react';
+import { User, CheckCircle2, MapPin, PackageSearch, ClipboardList, CalendarDays, CalendarCheck, TrendingUp, Download } from 'lucide-react';
 
 export type MRViewType = 'overview' | 'submit' | 'mylists' | 'myreports' | 'weeklyplan' | 'myweeklyplan' | 'availability' | 'average_coverage' | 'export';
 
@@ -151,6 +151,17 @@ export function MedicalRepWorkspace({
           >
             <TrendingUp className="size-4"/>
             <span className="whitespace-nowrap">{t('nav.averageCoverage', 'Average and Coverage Rate')}</span>
+          </button>
+          <button
+            onClick={() => onViewChange('export')}
+            className={`px-3.5 py-2 rounded-lg text-xs md:text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              activeView === 'export'
+                ? 'bg-gradient-to-r from-[var(--gold)] to-[var(--gold-light)] text-white shadow-xs font-extrabold'
+                : 'text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--surface-hover)]'
+            }`}
+          >
+            <Download className="size-4"/>
+            <span className="whitespace-nowrap">{language === 'ar' ? 'تصدير البيانات' : 'Export Data'}</span>
           </button>
         </nav>
       </div>}

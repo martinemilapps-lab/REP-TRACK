@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Representative, WeeklyPlanRecord } from '@/types';
 import { useTranslation } from '@/lib/i18nContext';
+import { Download } from 'lucide-react';
+import { downloadExcelFromUrl } from '@/lib/clientExport';
 import { Button } from '@/components/ui/Button';
 import { FormField } from '@/components/ui/FormField';
 import { FormSection } from '@/components/ui/FormSection';
@@ -118,7 +120,27 @@ export function WeeklyPlanView({
 
   const [lists, setLists] = useState<Lists>({ hospitals: [], branches: [], doctors: [], pharmacies: [] });
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState('');
+
+  const handleExportExcel = async () => {
+    try {
+      setExporting(true);
+      const params = new URLSearchParams();
+      if (startDate) params.set('weekStart', startDate);
+      if (repId) params.set('repId', repId);
+      params.set('team', isManagerPersonal ? 'true' : 'false');
+      await downloadExcelFromUrl(
+        `/api/exports/weekly-plans?${params.toString()}`,
+        `REP_TRACK_Weekly_Plan_${startDate || new Date().toISOString().slice(0, 10)}.xlsx`
+      );
+    } catch (e) {
+      console.error('Export failed', e);
+      setError(ar ? 'فشل تصدير الخطة الأسبوعية' : 'Failed to export weekly plan');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const repName = useMemo(() => reps.find(r => r.id === repId)?.name, [reps, repId]);
 
@@ -291,6 +313,15 @@ export function WeeklyPlanView({
             )}
           </p>
         </div>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={handleExportExcel}
+          isLoading={exporting}
+          leftIcon={<Download className="size-4" />}
+        >
+          {l('Export Excel (.xlsx)', 'تصدير إكسيل (.xlsx)')}
+        </Button>
       </div>
 
       {error && <InlineAlert tone="error">{error}</InlineAlert>}

@@ -306,6 +306,7 @@ export interface WeeklyPlanRecord {
   userId?: string;
   isManagerPlan?: boolean;
   selectedRepId?: string;
+  userPosition?: string;
   reportContextType?: 'EMPLOYEE' | 'VACANT';
   structuredPlan?: string | Record<string, unknown>;
   rep: string;
