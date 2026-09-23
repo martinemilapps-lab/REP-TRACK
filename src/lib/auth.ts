@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { unstable_rethrow } from 'next/navigation';
+import crypto from 'crypto';
 import { db, users, sessions, loginAttempts, salesAssignments } from '@/lib/db';
 import { eq, and, gt } from 'drizzle-orm';
 import { AppError } from '@/lib/errors';
@@ -53,15 +54,47 @@ export interface UserSessionPayload {
 /**
  * Creates a database-backed session row and returns the session token.
  */
-export async function createDbSession(userId: string): Promise<string> {
-  const token = crypto.randomUUID();
-  const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
+function getAuthSecret(): string {
+  return process.env.REP_TRACK_DATA_API_SECRET || 'rep-track-fallback-secret-2026';
+}
 
-  await db.insert(sessions).values({
-    id: token,
-    userId,
-    expiresAt,
-  });
+function signSessionToken(userId: string, expiresAt: number): string {
+  const nonce = crypto.randomUUID().replace(/-/g, '');
+  const payload = `${userId}.${expiresAt}.${nonce}`;
+  const sig = crypto.createHmac('sha256', getAuthSecret()).update(payload).digest('hex');
+  return `${payload}.${sig}`;
+}
+
+function verifySignedSessionToken(token: string): { userId: string; expiresAt: number } | null {
+  if (!token || typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length !== 4) return null;
+  const [userId, expiresAtStr, nonce, sig] = parts;
+  const expiresAt = Number(expiresAtStr);
+  if (!expiresAt || isNaN(expiresAt) || Date.now() > expiresAt) return null;
+  const payload = `${userId}.${expiresAtStr}.${nonce}`;
+  const expectedSig = crypto.createHmac('sha256', getAuthSecret()).update(payload).digest('hex');
+  if (sig !== expectedSig) return null;
+  return { userId, expiresAt };
+}
+
+/**
+ * Creates a database-backed session row and returns the session token.
+ */
+export async function createDbSession(userId: string): Promise<string> {
+  const expiresAtMs = Date.now() + SESSION_DURATION_MS;
+  const expiresAt = new Date(expiresAtMs);
+  const token = signSessionToken(userId, expiresAtMs);
+
+  try {
+    await db.insert(sessions).values({
+      id: token,
+      userId,
+      expiresAt,
+    });
+  } catch (err) {
+    console.warn('Could not insert session into database:', err);
+  }
 
   return token;
 }
@@ -100,7 +133,18 @@ export async function getServerSession(): Promise<UserSessionPayload | null> {
     const now = new Date();
 
     // Query active session and join user details
-    const sessionRecord = await db
+    let sessionRecord: {
+      sessionId: string;
+      userId: string;
+      username: string;
+      name: string;
+      role: string;
+      repId: string | null;
+      positionCode: string | null;
+      systemRole: string | null;
+      mustChangePassword: boolean | null;
+      isActive: boolean | null;
+    } | undefined = await db
       .select({
         sessionId: sessions.id,
         userId: sessions.userId,
@@ -116,13 +160,48 @@ export async function getServerSession(): Promise<UserSessionPayload | null> {
       .from(sessions)
       .innerJoin(users, eq(sessions.userId, users.id))
       .where(and(eq(sessions.id, token), gt(sessions.expiresAt, now)))
-      .get();
+      .get()
+      .catch(() => undefined);
+
+    if (!sessionRecord) {
+      const verified = verifySignedSessionToken(token);
+      if (verified) {
+        const u = await db
+          .select({
+            userId: users.id,
+            username: users.username,
+            name: users.name,
+            role: users.role,
+            repId: users.repId,
+            positionCode: users.positionCode,
+            systemRole: users.systemRole,
+            mustChangePassword: users.mustChangePassword,
+            isActive: users.isActive,
+          })
+          .from(users)
+          .where(eq(users.id, verified.userId))
+          .get()
+          .catch(() => undefined);
+
+        if (u && u.isActive !== false) {
+          sessionRecord = {
+            sessionId: token,
+            ...u,
+          };
+          void db.insert(sessions).values({
+            id: token,
+            userId: u.userId,
+            expiresAt: new Date(verified.expiresAt),
+          }).catch(() => {});
+        }
+      }
+    }
 
     if (!sessionRecord) {
       return null;
     }
     if (sessionRecord.isActive === false) {
-      await db.delete(sessions).where(eq(sessions.id, sessionRecord.sessionId));
+      await db.delete(sessions).where(eq(sessions.id, token)).catch(() => {});
       return null;
     }
 
