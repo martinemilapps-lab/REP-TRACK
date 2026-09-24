@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Activity, Boxes, BriefcaseBusiness, Building2, KeyRound, LayoutDashboard, ListTree, MapPinned, Target, UserRoundCog, Users } from 'lucide-react';
+import React, { useState } from 'react';
+import { Activity, Boxes, BriefcaseBusiness, Building2, Database, Eye, KeyRound, Languages, LayoutDashboard, ListTree, MapPinned, Pencil, ShieldAlert, Target, Type, UserRoundCog, Users, Zap } from 'lucide-react';
 import { useTranslation } from '@/lib/i18nContext';
 import { AdminAssignments } from './AdminAssignments';
 import { AdminAudit } from './AdminAudit';
@@ -13,8 +13,16 @@ import { AdminSecurity } from './AdminSecurity';
 import { AdminUsers } from './AdminUsers';
 import { AdminCreateUser } from './AdminCreateUser';
 import { AdminVisitRates } from './AdminVisitRates';
+import { AdminDatabaseControl } from './AdminDatabaseControl';
+import { AdminFieldManager } from './AdminFieldManager';
+import { AdminTextEditor } from './AdminTextEditor';
+import { AdminUIRemover } from './AdminUIRemover';
+import { AdminFunctionBuilder } from './AdminFunctionBuilder';
 
-type AdminView = 'overview' | 'users' | 'organization' | 'assignments' | 'representatives' | 'visit-rates' | 'areas' | 'products' | 'objectives' | 'reference' | 'security' | 'audit';
+type AdminView =
+  | 'overview' | 'users' | 'organization' | 'assignments' | 'representatives'
+  | 'visit-rates' | 'areas' | 'products' | 'objectives' | 'reference' | 'security' | 'audit'
+  | 'database' | 'fields' | 'text-editor' | 'ui-remover' | 'functions';
 
 const positions = ['MR', 'DM', 'AM', 'OM', 'BUM', 'PM', 'MM', 'SMD'];
 const catalog = {
@@ -26,42 +34,91 @@ const catalog = {
 
 export function AdminWorkspace() {
   const { language } = useTranslation();
+  const ar = language === 'ar';
   const [view, setView] = useState<AdminView>('users');
   const [usersVersion, setUsersVersion] = useState(0);
-  const items = [
+
+  // Group items into categories for better UX
+  const coreItems = [
     { id: 'overview' as const, en: 'Overview', ar: 'نظرة عامة', icon: LayoutDashboard },
     { id: 'users' as const, en: 'Users', ar: 'المستخدمون', icon: Users },
     { id: 'organization' as const, en: 'Organization', ar: 'المؤسسة', icon: Building2 },
     { id: 'assignments' as const, en: 'Assignments', ar: 'التعيينات', icon: BriefcaseBusiness },
+  ];
+
+  const dataItems = [
     { id: 'representatives' as const, en: 'Representatives', ar: 'المندوبون', icon: UserRoundCog },
     { id: 'visit-rates' as const, en: 'Visit Rates', ar: 'معدلات الزيارة', icon: Target },
     { id: 'areas' as const, en: 'Areas', ar: 'المناطق', icon: MapPinned },
     { id: 'products' as const, en: 'Products', ar: 'المنتجات', icon: Boxes },
     { id: 'objectives' as const, en: 'Visit Objectives', ar: 'أهداف الزيارة', icon: Target },
     { id: 'reference' as const, en: 'Reference Data', ar: 'البيانات المرجعية', icon: ListTree },
+  ];
+
+  const powerItems = [
+    { id: 'fields' as const, en: 'Field Manager', ar: 'مدير الحقول', icon: Type },
+    { id: 'functions' as const, en: 'Function Builder', ar: 'منشئ الوظائف', icon: Zap },
+    { id: 'text-editor' as const, en: 'Text Editor', ar: 'محرر النصوص', icon: Languages },
+    { id: 'ui-remover' as const, en: 'UI Remover', ar: 'إزالة العناصر', icon: Eye },
+    { id: 'database' as const, en: 'Database Control', ar: 'تحكم قاعدة البيانات', icon: Database },
+  ];
+
+  const securityItems = [
     { id: 'security' as const, en: 'Demo Passwords', ar: 'كلمات مرور العرض', icon: KeyRound },
     { id: 'audit' as const, en: 'Audit Log', ar: 'سجل التدقيق', icon: Activity },
   ];
 
-  return <section className="animate-fade-in space-y-5" aria-label={language === 'ar' ? 'إدارة النظام' : 'System administration'}>
-    <header>
-      <h1 className="text-2xl font-black">{language === 'ar' ? 'إدارة النظام' : 'Admin module'}</h1>
-      <p className="text-sm text-[var(--ink-soft)]">{language === 'ar' ? 'صلاحيات إدارية إضافية داخل مساحة عمل المدير' : 'Additional administrative capabilities inside the Manager workspace'}</p>
-    </header>
-    <nav className="flex flex-wrap gap-2" aria-label={language === 'ar' ? 'أقسام الإدارة' : 'Admin sections'}>
-      {items.map(({ id, en, ar, icon: Icon }) => <button key={id} type="button" onClick={() => setView(id)} className={`app-nav-item ${view === id ? 'app-nav-item-active' : ''}`} aria-current={view === id ? 'page' : undefined}><Icon className="size-4"/><span>{language === 'ar' ? ar : en}</span></button>)}
-    </nav>
-    {view === 'overview' && <AdminOverview />}
-    {view === 'users' && <div className="space-y-5"><AdminCreateUser onCreated={async () => setUsersVersion(version => version + 1)}/><AdminUsers key={usersVersion}/></div>}
-    {view === 'organization' && <AdminOrganization />}
-    {view === 'assignments' && <AdminAssignments />}
-    {view === 'representatives' && <AdminCatalog config={catalog.representatives} />}
-    {view === 'visit-rates' && <AdminVisitRates />}
-    {view === 'areas' && <AdminCatalog config={catalog.areas} />}
-    {view === 'products' && <AdminCatalog config={catalog.products} />}
-    {view === 'objectives' && <AdminCatalog config={catalog.objectives} />}
-    {view === 'reference' && <AdminReferenceData />}
-    {view === 'security' && <AdminSecurity />}
-    {view === 'audit' && <AdminAudit />}
-  </section>;
+  const renderNavGroup = (label: string, items: { id: string; en: string; ar: string; icon: React.ComponentType<{ className?: string }> }[]) => (
+    <div className="space-y-1.5">
+      <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--ink-soft)] opacity-60">{label}</p>
+      <div className="flex flex-wrap gap-1.5">
+        {items.map(({ id, en, ar: arLabel, icon: Icon }) => (
+          <button key={id} type="button" onClick={() => setView(id as AdminView)}
+            className={`app-nav-item ${view === id ? 'app-nav-item-active' : ''}`}
+            aria-current={view === id ? 'page' : undefined}>
+            <Icon className="size-4" /><span>{ar ? arLabel : en}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  return (
+    <section className="animate-fade-in space-y-5" aria-label={ar ? 'إدارة النظام' : 'System administration'}>
+      <header>
+        <div className="flex items-center gap-2 mb-1">
+          <ShieldAlert className="size-5 text-[var(--gold-dark)]" />
+          <span className="text-xs font-bold uppercase tracking-widest text-[var(--gold-dark)]">PM1 ADMIN</span>
+        </div>
+        <h1 className="text-2xl font-black">{ar ? 'لوحة تحكم النظام الكاملة' : 'Full System Control Panel'}</h1>
+        <p className="text-sm text-[var(--ink-soft)]">{ar ? 'صلاحيات تحكم كاملة في النظام: إضافة، تعديل، حذف، إدارة قاعدة البيانات' : 'Complete system control: add, edit, remove fields, functions, text, elements, and manage all database operations'}</p>
+      </header>
+
+      <nav className="space-y-3" aria-label={ar ? 'أقسام الإدارة' : 'Admin sections'}>
+        {renderNavGroup(ar ? 'الأساسي' : 'CORE', coreItems)}
+        {renderNavGroup(ar ? 'البيانات' : 'DATA', dataItems)}
+        {renderNavGroup(ar ? 'أدوات التحكم المتقدمة' : 'POWER TOOLS', powerItems)}
+        {renderNavGroup(ar ? 'الأمان' : 'SECURITY', securityItems)}
+      </nav>
+
+      {/* ─── View Router ─── */}
+      {view === 'overview' && <AdminOverview />}
+      {view === 'users' && <div className="space-y-5"><AdminCreateUser onCreated={async () => setUsersVersion(version => version + 1)}/><AdminUsers key={usersVersion}/></div>}
+      {view === 'organization' && <AdminOrganization />}
+      {view === 'assignments' && <AdminAssignments />}
+      {view === 'representatives' && <AdminCatalog config={catalog.representatives} />}
+      {view === 'visit-rates' && <AdminVisitRates />}
+      {view === 'areas' && <AdminCatalog config={catalog.areas} />}
+      {view === 'products' && <AdminCatalog config={catalog.products} />}
+      {view === 'objectives' && <AdminCatalog config={catalog.objectives} />}
+      {view === 'reference' && <AdminReferenceData />}
+      {view === 'fields' && <AdminFieldManager />}
+      {view === 'functions' && <AdminFunctionBuilder />}
+      {view === 'text-editor' && <AdminTextEditor />}
+      {view === 'ui-remover' && <AdminUIRemover />}
+      {view === 'database' && <AdminDatabaseControl />}
+      {view === 'security' && <AdminSecurity />}
+      {view === 'audit' && <AdminAudit />}
+    </section>
+  );
 }
