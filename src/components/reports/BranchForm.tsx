@@ -7,6 +7,7 @@ import { BUSINESS_PRODUCT_OPTIONS } from '@/lib/constants';
 import { useTranslation } from '@/lib/i18nContext';
 import { SavedCustomerDetails, VisitMode } from './SavedCustomerDetails';
 import { getReportingWindowStatus, isDateSubmissionOpen } from '@/lib/business/reportingWindow';
+import { CustomFieldsRenderer } from '@/components/ui/CustomFieldsRenderer';
 
 type Item = {
   id: string;
@@ -42,6 +43,7 @@ export function BranchForm({
   const [companion, setCompanion] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
 
   useEffect(() => {
     Promise.all([
@@ -174,6 +176,11 @@ export function BranchForm({
           if (value === 'Single') setCompanion('');
         }}
         onCompanionChange={setCompanion}
+      />
+      <CustomFieldsRenderer
+        section="branch_visit"
+        values={customFieldValues}
+        onChange={setCustomFieldValues}
       />
       <fieldset>
         <legend className="font-bold">

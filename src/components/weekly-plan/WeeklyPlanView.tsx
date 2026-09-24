@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { FormField } from '@/components/ui/FormField';
 import { FormSection } from '@/components/ui/FormSection';
 import { InlineAlert } from '@/components/ui/InlineAlert';
+import { CustomFieldsRenderer } from '@/components/ui/CustomFieldsRenderer';
 
 const DAYS = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as const;
 const ACTS = ['MEETING', 'TRAINING', 'EVENT', 'SALES_REVIEW_ADMIN', 'OTHERS'] as const;
@@ -122,6 +123,7 @@ export function WeeklyPlanView({
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState('');
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
 
   const handleExportExcel = async () => {
     try {
@@ -368,6 +370,12 @@ export function WeeklyPlanView({
           required
         />
       </FormSection>
+
+      <CustomFieldsRenderer
+        section="weekly_plan"
+        values={customFieldValues}
+        onChange={setCustomFieldValues}
+      />
 
       {DAYS.map(day => (
         <FormSection

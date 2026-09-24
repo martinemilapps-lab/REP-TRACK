@@ -75,6 +75,7 @@ function loadCustomFields(): CustomField[] {
 function saveCustomFields(fields: CustomField[]) {
   if (typeof window === 'undefined') return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(fields));
+  window.dispatchEvent(new CustomEvent('reptrack_admin_update'));
 }
 
 export function getCustomFieldsForSection(section: string): CustomField[] {

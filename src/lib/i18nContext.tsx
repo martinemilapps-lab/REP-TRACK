@@ -14,9 +14,30 @@ interface I18nContextType {
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
 const LANGUAGE_STORAGE_KEY = 'rep_track_lang';
+const OVERRIDES_STORAGE_KEY = 'reptrack_text_overrides';
+
+interface TextOverrideItem {
+  key: string;
+  originalEn?: string;
+  originalAr?: string;
+  overrideEn: string;
+  overrideAr: string;
+  isActive: boolean;
+}
+
+function getStoredOverrides(): TextOverrideItem[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(OVERRIDES_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>('en');
+  const [overrideVersion, setOverrideVersion] = useState(0);
 
   useEffect(() => {
     try {
@@ -27,6 +48,18 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     } catch {
       // Ignore localStorage unavailable
     }
+  }, []);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setOverrideVersion((v) => v + 1);
+    };
+    window.addEventListener('reptrack_admin_update', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('reptrack_admin_update', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
   }, []);
 
   const direction: Direction = language === 'ar' ? 'rtl' : 'ltr';
@@ -53,13 +86,20 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const t = useCallback(
     (key: string, fallback?: string): string => {
+      const overrides = getStoredOverrides();
+      const match = overrides.find((o) => o.isActive && (o.key === key || o.originalEn === key || o.originalAr === key));
+      if (match) {
+        const val = language === 'ar' ? match.overrideAr : match.overrideEn;
+        if (val && val.trim()) return val;
+      }
+
       const item = translations[key];
       if (!item) {
         return fallback || key;
       }
       return item[language] || fallback || key;
     },
-    [language]
+    [language, overrideVersion] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   return (
@@ -76,3 +116,4 @@ export function useTranslation() {
   }
   return context;
 }
+

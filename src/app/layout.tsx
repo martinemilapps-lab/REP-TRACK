@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { I18nProvider } from '@/lib/i18nContext';
 import { MedicalBackground } from '@/components/ui/MedicalBackground';
+import { GlobalUIModifier } from '@/components/layout/GlobalUIModifier';
 
 export const metadata: Metadata = {
   title: 'REP TRACK — Sunny Medical Group',
@@ -37,6 +38,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-[var(--bg)] text-[var(--ink)] antialiased font-sans relative overflow-x-hidden">
         <I18nProvider>
+          <GlobalUIModifier />
           <MedicalBackground />
           <div className="relative z-10">{children}</div>
         </I18nProvider>
@@ -44,3 +46,4 @@ export default function RootLayout({
     </html>
   );
 }
+

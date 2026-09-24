@@ -19,6 +19,7 @@ import { useTranslation } from '@/lib/i18nContext';
 import { RepresentativeOverview } from '@/components/overview/RepresentativeOverview';
 import { ExportCenter } from '@/components/exports/ExportCenter';
 import { AverageCoverageView } from '@/components/analytics/AverageCoverageView';
+import { CustomFunctionsWidget } from '@/components/workspace/CustomFunctionsWidget';
 import { User, CheckCircle2, MapPin, PackageSearch, ClipboardList, CalendarDays, CalendarCheck, TrendingUp, Download } from 'lucide-react';
 
 export type MRViewType = 'overview' | 'submit' | 'mylists' | 'myreports' | 'weeklyplan' | 'myweeklyplan' | 'availability' | 'average_coverage' | 'export';
@@ -175,6 +176,12 @@ export function MedicalRepWorkspace({
           </button>
         </nav>
       </div>}
+
+      <CustomFunctionsWidget
+        positionCode={currentUser.positionCode || 'MR'}
+        currentUser={currentUser}
+        onShowToast={onShowToast}
+      />
 
       {/* ============ VIEW 1: SUBMIT REPORT ============ */}
       {activeView === 'overview' && <RepresentativeOverview user={currentUser} onNavigate={onViewChange}/>}

@@ -6,6 +6,7 @@ import { FormField } from '@/components/ui/FormField';
 import { FormSection } from '@/components/ui/FormSection';
 import { InlineAlert } from '@/components/ui/InlineAlert';
 import { getReportingWindowStatus, isDateSubmissionOpen } from '@/lib/business/reportingWindow';
+import { CustomFieldsRenderer } from '@/components/ui/CustomFieldsRenderer';
 type Option = { id: string; name: string; repId?: string; specialty?: string | null };
 type Manual = {
   name: string;
@@ -96,6 +97,7 @@ export function ManagerActivityForm({
   const [notes, setNotes] = useState(initialActivity?.notes || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
 
   // Initial load of authorized representatives & products
   useEffect(() => {
@@ -638,6 +640,12 @@ export function ManagerActivityForm({
         )}
         <FormField label="Comments" value={notes} onChange={setNotes} multiline />
       </FormSection>
+
+      <CustomFieldsRenderer
+        section="manager_activity"
+        values={customFieldValues}
+        onChange={setCustomFieldValues}
+      />
 
       <div className="flex justify-end gap-2">
         {initialActivity && (

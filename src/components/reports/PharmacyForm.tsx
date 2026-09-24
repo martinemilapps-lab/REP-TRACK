@@ -7,6 +7,7 @@ import { BUSINESS_PRODUCT_OPTIONS } from '@/lib/constants';
 import { useTranslation } from '@/lib/i18nContext';
 import { SavedCustomerDetails, VisitMode } from './SavedCustomerDetails';
 import { getReportingWindowStatus, isDateSubmissionOpen } from '@/lib/business/reportingWindow';
+import { CustomFieldsRenderer } from '@/components/ui/CustomFieldsRenderer';
 
 type Item = { id:string; name:string; area?:string; address?:string; distributors?:string[]; distributorOther?:string; defaultCycle?:number };
 export function PharmacyForm({onSuccess,onError}:{selectedRep:string;onSuccess:(message:string)=>void;onError:(message:string)=>void}) {
@@ -14,7 +15,7 @@ export function PharmacyForm({onSuccess,onError}:{selectedRep:string;onSuccess:(
   const windowStatus=getReportingWindowStatus();
   const [visitDate,setVisitDate]=useState(windowStatus.todayDate);
   const isClosed=!isDateSubmissionOpen(visitDate);
-  const [pharmacies,setPharmacies]=useState<Item[]>([]),[catalog,setCatalog]=useState<Item[]>([]),[pharmacyId,setPharmacyId]=useState(''),[productIds,setProductIds]=useState<string[]>([]),[notes,setNotes]=useState(''),[visitType,setVisitType]=useState<VisitMode>('Single'),[companion,setCompanion]=useState(''),[saving,setSaving]=useState(false),[error,setError]=useState('');
+  const [pharmacies,setPharmacies]=useState<Item[]>([]),[catalog,setCatalog]=useState<Item[]>([]),[pharmacyId,setPharmacyId]=useState(''),[productIds,setProductIds]=useState<string[]>([]),[notes,setNotes]=useState(''),[visitType,setVisitType]=useState<VisitMode>('Single'),[companion,setCompanion]=useState(''),[saving,setSaving]=useState(false),[error,setError]=useState(''),[customFieldValues,setCustomFieldValues]=useState<Record<string,any>>({});
   useEffect(()=>{Promise.all([fetch('/api/lists').then(r=>r.json()),fetch('/api/products').then(r=>r.json())]).then(([a,b])=>{setPharmacies(a.data?.pharmacies||[]);setCatalog(b.products||[])})},[]);
   const products=useMemo(()=>BUSINESS_PRODUCT_OPTIONS.map(x=>({...x,product:catalog.find(p=>p.name.toLowerCase()===x.canonicalName.toLowerCase())})).filter(x=>x.product),[catalog]);
   async function submit(e:React.FormEvent){
@@ -23,11 +24,11 @@ export function PharmacyForm({onSuccess,onError}:{selectedRep:string;onSuccess:(
     if(!pharmacyId||!productIds.length||visitType==='Double'&&!companion.trim()){setError(l('Select a pharmacy and product, and enter a companion for a Double visit.','اختر الصيدلية والمنتج وأدخل المرافق للزيارة المشتركة.'));return}
     setSaving(true);
     try{
-      const r=await fetch('/api/reports/pharmacy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pharmacyId,productIds,notes,visitType,companion,visitDate})});
+      const r=await fetch('/api/reports/pharmacy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pharmacyId,productIds,notes,visitType,companion,visitDate,customFieldValues})});
       const x=await r.json();
       if(!r.ok||!x.success)throw new Error(x.message);
       onSuccess(l('Pharmacy visit saved.','تم حفظ زيارة الصيدلية.'));
-      setPharmacyId('');setProductIds([]);setNotes('');setVisitType('Single');setCompanion('');setError('')
+      setPharmacyId('');setProductIds([]);setNotes('');setVisitType('Single');setCompanion('');setCustomFieldValues({});setError('')
     }catch(reason){const message=reason instanceof Error?reason.message:'Unable to save';setError(message);onError(message)}finally{setSaving(false)}
   }
   return (
@@ -47,6 +48,7 @@ export function PharmacyForm({onSuccess,onError}:{selectedRep:string;onSuccess:(
         </select>
       </label>
       <SavedCustomerDetails category="pharmacy" customer={pharmacies.find(x=>x.id===pharmacyId)} visitMode={visitType} companion={companion} onVisitModeChange={value=>{setVisitType(value);if(value==='Single')setCompanion('')}} onCompanionChange={setCompanion}/>
+      <CustomFieldsRenderer section="pharmacy_visit" values={customFieldValues} onChange={setCustomFieldValues}/>
       <fieldset>
         <legend className="font-bold">{l('Products Discussed','المنتجات التي تمت مناقشتها')}</legend>
         <div className="mt-2 grid gap-2 sm:grid-cols-2">

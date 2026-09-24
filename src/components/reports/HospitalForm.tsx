@@ -8,6 +8,7 @@ import { HOSPITAL_DEPARTMENTS } from '@/lib/constants';
 import { useTranslation } from '@/lib/i18nContext';
 import { SavedCustomerDetails, VisitMode } from './SavedCustomerDetails';
 import { getReportingWindowStatus, isDateSubmissionOpen } from '@/lib/business/reportingWindow';
+import { CustomFieldsRenderer } from '@/components/ui/CustomFieldsRenderer';
 
 type Hospital = {
   id: string;
@@ -28,6 +29,7 @@ type Visit = {
   companion: string;
   hasOthers: boolean;
   othersDescription: string;
+  customFieldValues?: Record<string, any>;
 };
 
 const uid = () => crypto.randomUUID();
@@ -41,6 +43,7 @@ const makeVisit = (): Visit => ({
   companion: '',
   hasOthers: false,
   othersDescription: '',
+  customFieldValues: {},
 });
 
 export function HospitalForm({
@@ -208,6 +211,11 @@ export function HospitalForm({
               change(vi, { ...visit, visitType, companion: visitType === 'Single' ? '' : visit.companion })
             }
             onCompanionChange={(companion) => change(vi, { ...visit, companion })}
+          />
+          <CustomFieldsRenderer
+            section="hospital_visit"
+            values={visit.customFieldValues}
+            onChange={(customFieldValues) => change(vi, { ...visit, customFieldValues })}
           />
           <fieldset className="mt-4">
             <legend className="text-sm font-bold">{l('Products', 'المنتجات')}</legend>

@@ -76,6 +76,7 @@ function loadFunctions(): CustomFunction[] {
 function saveFunctions(fns: CustomFunction[]) {
   if (typeof window === 'undefined') return;
   localStorage.setItem(FUNCTIONS_KEY, JSON.stringify(fns));
+  window.dispatchEvent(new CustomEvent('reptrack_admin_update'));
 }
 
 export function getCustomFunctionsForPosition(positionCode: string): CustomFunction[] {

@@ -15,6 +15,7 @@ import { ExportCenter } from '@/components/exports/ExportCenter';
 import { AdminWorkspace } from '@/components/admin/AdminWorkspace';
 import { BumVisitRatesView } from '@/components/manager/BumVisitRatesView';
 import { AverageCoverageView } from '@/components/analytics/AverageCoverageView';
+import { CustomFunctionsWidget } from '@/components/workspace/CustomFunctionsWidget';
 import {
   Download,
   Target,
@@ -156,6 +157,12 @@ export function ManagerWorkspace({
           ))}
         </nav>
       </div></>}
+
+      <CustomFunctionsWidget
+        positionCode={currentUser.positionCode || 'DM'}
+        currentUser={currentUser}
+        onShowToast={onShowToast}
+      />
 
       {/* ============ NAVIGATION CONTENT ============ */}
       {activeNav === 'overview' && (

@@ -69,6 +69,7 @@ function loadHiddenElements(): HiddenElement[] {
 function saveHiddenElements(elements: HiddenElement[]) {
   if (typeof window === 'undefined') return;
   localStorage.setItem(HIDDEN_KEY, JSON.stringify(elements));
+  window.dispatchEvent(new CustomEvent('reptrack_admin_update'));
 }
 
 export function isElementHidden(elementId: string): boolean {

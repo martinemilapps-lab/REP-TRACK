@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { InlineAlert } from '@/components/ui/InlineAlert';
 import { SectionCard } from '@/components/ui/SectionCard';
 import { AvailabilityReportsContainer } from '@/components/availability/AvailabilityReportsContainer';
+import { CustomFieldsRenderer } from '@/components/ui/CustomFieldsRenderer';
 
 type Hospital = { id: string; name: string; area: string };
 type Product = { id: string; name: string; code?: string | null };
@@ -35,6 +36,7 @@ export function AvailabilityForm({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [refreshSignal, setRefreshSignal] = useState(0);
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
 
   useEffect(() => {
     Promise.all([
@@ -199,6 +201,12 @@ export function AvailabilityForm({
           </InlineAlert>
         )}
       </SectionCard>
+
+      <CustomFieldsRenderer
+        section="availability"
+        values={customFieldValues}
+        onChange={setCustomFieldValues}
+      />
 
       <SectionCard
         title={`${l('Canonical product catalog', 'قائمة المنتجات المعتمدة')} · ${products.length}`}

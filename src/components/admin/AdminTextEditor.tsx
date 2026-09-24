@@ -41,6 +41,7 @@ function loadOverrides(): TextOverride[] {
 function saveOverrides(overrides: TextOverride[]) {
   if (typeof window === 'undefined') return;
   localStorage.setItem(OVERRIDES_KEY, JSON.stringify(overrides));
+  window.dispatchEvent(new CustomEvent('reptrack_admin_update'));
 }
 
 export function getTextOverride(key: string, language: 'en' | 'ar'): string | null {
