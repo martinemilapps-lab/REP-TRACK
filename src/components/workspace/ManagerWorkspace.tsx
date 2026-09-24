@@ -49,6 +49,11 @@ interface ManagerWorkspaceProps {
       territoryName: string;
       titleRaw?: string;
     } | null;
+    directSupervisor?: {
+      id: string;
+      name: string;
+      positionCode: string | null;
+    } | null;
   };
   reps: Representative[];
   onShowToast: (text: string, isError?: boolean) => void;
@@ -153,7 +158,13 @@ export function ManagerWorkspace({
       </div></>}
 
       {/* ============ NAVIGATION CONTENT ============ */}
-      {activeNav === 'overview' && <ManagerOverview name={currentUser.name} position={currentUser.positionCode}/>}
+      {activeNav === 'overview' && (
+        <ManagerOverview
+          name={currentUser.name}
+          position={currentUser.positionCode}
+          directSupervisor={currentUser.directSupervisor}
+        />
+      )}
 
       {/* 1. Submit Activity (Manager Activity Report: Visit, Event, Training, Office Working, Others) */}
       {activeNav === 'submit_activity' && (

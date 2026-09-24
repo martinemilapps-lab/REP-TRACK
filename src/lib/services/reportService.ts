@@ -52,6 +52,9 @@ export async function getUnifiedReports(
 
 const dedupe = <T extends { id: string }>(rows: T[]) => [...new Map(rows.map((row) => [row.id, row])).values()];
 
+import { db, users, salesAssignments, representatives } from '@/lib/db';
+import { inArray, and, eq } from 'drizzle-orm';
+
 export async function getVisibleReports(session: UserSessionPayload | null, options: FilterOptions & {
   requestedRepId?: string | null;
   scopeMode?: HierarchyScopeMode;
@@ -60,7 +63,7 @@ export async function getVisibleReports(session: UserSessionPayload | null, opti
   if (session.role === 'REPRESENTATIVE') {
     if (!session.repId) throw new AppError('لا يوجد مندوب مرتبط بهذا الحساب', 403);
     if (options.requestedRepId && options.requestedRepId !== session.repId) throw new AppError('غير مصرح', 403);
-    return { ...(await getUnifiedReports(session, { ...options, repId: session.repId })), managerActivities: [], reps: [] };
+    return { ...(await getUnifiedReports(session, { ...options, repId: session.repId })), managerActivities: [], reps: [], subordinateUsers: [] };
   }
   assertManagerSession(session);
   const reps = await hierarchyService.getScopedRepresentatives(session, options.scopeMode);
@@ -69,11 +72,52 @@ export async function getVisibleReports(session: UserSessionPayload | null, opti
   const sets = await Promise.all(selected.map((r) => getUnifiedReports(session, { ...options, repId: r.id })));
   const merge = (key: keyof Awaited<ReturnType<typeof getUnifiedReports>>) => dedupe(sets.flatMap((s) => s[key] as Array<{ id: string }>));
   const managerActivities = await getManagerActivitiesForTeam(session, { scopeMode: options.scopeMode });
+
+  const subordinateUserIds = await hierarchyService.getScopedUserIds(session, options.scopeMode);
+  let subordinateUsers: Array<{
+    id: string;
+    name: string;
+    username: string;
+    positionCode: string | null;
+    role: string;
+    repId: string | null;
+    territoryName: string | null;
+  }> = [];
+
+  if (subordinateUserIds.length) {
+    const rawUsers = await db.select({
+      id: users.id,
+      name: users.name,
+      username: users.username,
+      positionCode: users.positionCode,
+      role: users.role,
+      repId: users.repId,
+    }).from(users).where(inArray(users.id, subordinateUserIds)).all();
+
+    const activeAssignments = await db.select({
+      userId: salesAssignments.userId,
+      territoryName: salesAssignments.territoryName,
+    }).from(salesAssignments).where(and(inArray(salesAssignments.userId, subordinateUserIds), eq(salesAssignments.isActive, true))).all();
+
+    const assignmentMap = new Map(activeAssignments.map((a) => [a.userId, a.territoryName]));
+
+    const unmappedRepIds = rawUsers.filter((u) => !assignmentMap.has(u.id) && u.repId).map((u) => u.repId!);
+    const repAreas = unmappedRepIds.length
+      ? await db.select({ id: representatives.id, area: representatives.area }).from(representatives).where(inArray(representatives.id, unmappedRepIds)).all()
+      : [];
+    const repAreaMap = new Map(repAreas.map((r) => [r.id, r.area]));
+
+    subordinateUsers = rawUsers.map((u) => ({
+      ...u,
+      territoryName: assignmentMap.get(u.id) || (u.repId ? repAreaMap.get(u.repId) || null : null),
+    }));
+  }
+
   return {
     hospitals: merge('hospitals'), pharmacies: merge('pharmacies'), doctors: merge('doctors'), branches: merge('branches'),
     availabilities: merge('availabilities'), events: merge('events'), trainings: merge('trainings'), specialTasks: merge('specialTasks'),
     totalVisits: merge('hospitals').length + merge('pharmacies').length + merge('doctors').length + merge('branches').length,
-    managerActivities, reps,
+    managerActivities, reps, subordinateUsers,
   };
 }
 

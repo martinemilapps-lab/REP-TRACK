@@ -47,6 +47,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       reps: allReps,
+      subordinateUsers: reportsData.subordinateUsers || [],
       hospitals: reportsData.hospitals,
       pharmacies: reportsData.pharmacies,
       doctors: reportsData.doctors,

@@ -34,6 +34,11 @@ interface MedicalRepWorkspaceProps {
       territoryName: string;
       titleRaw?: string;
     } | null;
+    directSupervisor?: {
+      id: string;
+      name: string;
+      positionCode: string | null;
+    } | null;
   };
   activeView: MRViewType;
   onViewChange: (view: MRViewType) => void;
@@ -66,7 +71,7 @@ export function MedicalRepWorkspace({
             <User className="w-5 h-5" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-sm md:text-base font-extrabold text-[var(--ink)]">
                 {repName}
               </h2>
@@ -77,6 +82,11 @@ export function MedicalRepWorkspace({
                 <CheckCircle2 className="w-3 h-3" />
                 <span>{language === 'ar' ? 'حساب معتمد' : 'Verified Rep'}</span>
               </span>
+              {currentUser.directSupervisor && (
+                <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <span>{language === 'ar' ? 'المشرف:' : 'Supervisor:'} {currentUser.directSupervisor.name} ({currentUser.directSupervisor.positionCode})</span>
+                </span>
+              )}
             </div>
             <p className="text-xs text-[var(--ink-soft)] font-medium flex items-center gap-1 mt-0.5">
               <MapPin className="w-3.5 h-3.5 text-[var(--ink-muted)]" />

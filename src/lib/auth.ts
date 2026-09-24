@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { unstable_rethrow } from 'next/navigation';
 import crypto from 'crypto';
-import { db, users, sessions, loginAttempts, salesAssignments } from '@/lib/db';
+import { db, users, sessions, loginAttempts, salesAssignments, organizationRelationships, representatives } from '@/lib/db';
 import { eq, and, gt } from 'drizzle-orm';
 import { AppError } from '@/lib/errors';
 import { assertAuthenticatedSession } from '@/lib/authPolicy';
@@ -48,6 +48,11 @@ export interface UserSessionPayload {
     businessLine: number | null;
     territoryName: string;
     repId: string | null;
+  } | null;
+  directSupervisor?: {
+    id: string;
+    name: string;
+    positionCode: string | null;
   } | null;
 }
 
@@ -223,6 +228,60 @@ export async function getServerSession(): Promise<UserSessionPayload | null> {
 
     const effectiveRepId = sessionRecord.repId || primaryAssign?.repId || personalAssign?.repId || null;
 
+    // Resolve direct supervisor from active organization relationships
+    let directSupervisor: { id: string; name: string; positionCode: string | null } | null = null;
+    try {
+      const sup = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          positionCode: users.positionCode,
+        })
+        .from(organizationRelationships)
+        .innerJoin(users, eq(organizationRelationships.managerUserId, users.id))
+        .where(
+          and(
+            eq(organizationRelationships.subordinateUserId, sessionRecord.userId),
+            eq(organizationRelationships.isActive, true)
+          )
+        )
+        .get();
+      if (sup) {
+        directSupervisor = sup;
+      }
+    } catch {
+      // Graceful fallback
+    }
+
+    // Ensure territory is always resolved from representatives if primaryAssign lacks it
+    if (!primaryAssign && effectiveRepId) {
+      try {
+        const repRow = await db
+          .select({ id: representatives.id, name: representatives.name, area: representatives.area })
+          .from(representatives)
+          .where(eq(representatives.id, effectiveRepId))
+          .get();
+        if (repRow && repRow.area) {
+          primaryAssign = {
+            id: 'sa-rep-' + repRow.id,
+            userId: sessionRecord.userId,
+            assignmentType: 'PRIMARY_REP',
+            titleRaw: sessionRecord.positionCode || 'MR',
+            businessLine: null,
+            areaId: null,
+            territoryName: repRow.area,
+            repId: repRow.id,
+            sourceRow: null,
+            isActive: true,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+        }
+      } catch {
+        // Fallback
+      }
+    }
+
     return {
       id: sessionRecord.userId,
       username: sessionRecord.username,
@@ -247,6 +306,7 @@ export async function getServerSession(): Promise<UserSessionPayload | null> {
         territoryName: primaryAssign.territoryName,
         repId: primaryAssign.repId,
       } : null,
+      directSupervisor,
     };
   } catch (error) {
     unstable_rethrow(error);

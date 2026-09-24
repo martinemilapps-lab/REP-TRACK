@@ -82,17 +82,9 @@ export const hierarchyService = {
       const resolved = resolveHierarchyUserIds(session.id, graph.edges, graph.activeUserIds, mode);
       if (resolved.length > 0) return resolved;
 
-      const repIds = await loadLegacyScopedRepIds(session.id);
-      if (!repIds.length) return [];
-      const rows = await db.select({ id: users.id }).from(users)
-        .where(and(inArray(users.repId, repIds), eq(users.isActive, true))).all();
-      return [...new Set(rows.map((row) => row.id))];
+      return [];
     } catch {
-      const repIds = await loadLegacyScopedRepIds(session.id);
-      if (!repIds.length) return [];
-      const rows = await db.select({ id: users.id }).from(users)
-        .where(and(inArray(users.repId, repIds), eq(users.isActive, true))).all();
-      return [...new Set(rows.map((row) => row.id))];
+      return [];
     }
   },
   async getDirectManagerIds(session: UserSessionPayload | null) {
@@ -122,30 +114,22 @@ export const hierarchyService = {
     }
     assertManagerSession(session);
 
-    // 1. Direct O(1) lookup from pre-computed manager_rep_scopes
-    if (mode === 'ALL_DESCENDANTS') {
-      try {
-        const directScopes = await loadLegacyScopedRepIds(session.id);
-        if (directScopes.length > 0) {
-          return directScopes;
-        }
-      } catch (err) {
-        console.warn('Direct manager_rep_scopes lookup failed, checking hierarchy graph:', err);
+    // 1. Authoritative resolution via hierarchy graph & transitive closure paths
+    const userIds = await this.getScopedUserIds(session, mode);
+    if (userIds.length > 0) {
+      const [userRows, assignmentRows] = await Promise.all([
+        db.select({ repId: users.repId }).from(users).where(inArray(users.id, userIds)).all(),
+        db.select({ repId: salesAssignments.repId }).from(salesAssignments)
+          .where(and(inArray(salesAssignments.userId, userIds), eq(salesAssignments.isActive, true))).all().catch(() => []),
+      ]);
+      const resolvedIds = [...new Set([...userRows, ...assignmentRows].map((r) => r.repId).filter((id): id is string => Boolean(id)))];
+      if (resolvedIds.length > 0) {
+        return resolvedIds;
       }
     }
 
-    // 2. Transitive / graph lookup via userIds
-    const userIds = await this.getScopedUserIds(session, mode);
-    if (!userIds.length) {
-      return loadLegacyScopedRepIds(session.id);
-    }
-    const [userRows, assignmentRows] = await Promise.all([
-      db.select({ repId: users.repId }).from(users).where(inArray(users.id, userIds)).all(),
-      db.select({ repId: salesAssignments.repId }).from(salesAssignments)
-        .where(and(inArray(salesAssignments.userId, userIds), eq(salesAssignments.isActive, true))).all().catch(() => []),
-    ]);
-    const resolvedIds = [...new Set([...userRows, ...assignmentRows].map((r) => r.repId).filter((id): id is string => Boolean(id)))];
-    return resolvedIds.length > 0 ? resolvedIds : loadLegacyScopedRepIds(session.id);
+    // 2. Pre-computed manager_rep_scopes fallback
+    return loadLegacyScopedRepIds(session.id);
   },
   async getScopedRepresentatives(session: UserSessionPayload | null, mode: HierarchyScopeMode = 'ALL_DESCENDANTS') {
     const ids = await this.getScopedRepIds(session, mode);
