@@ -251,14 +251,14 @@ export function AverageCoverageView({ initialRepId, currentUser }: AverageCovera
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
             <CheckCircle2 className="size-3.5" />
-            <span>{pct}% ({ar ? '90-100% ممتاز' : '90-100% High'})</span>
+            <span>{pct}% ({ar ? '95-100% ممتاز' : '95-100% High'})</span>
           </span>
         );
       case 'YELLOW':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
             <AlertTriangle className="size-3.5" />
-            <span>{pct}% ({ar ? '80-90% متوسط' : '80-90% Mid'})</span>
+            <span>{pct}% ({ar ? '90-95% متوسط' : '90-95% Mid'})</span>
           </span>
         );
       case 'RED':
@@ -266,7 +266,7 @@ export function AverageCoverageView({ initialRepId, currentUser }: AverageCovera
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30">
             <XCircle className="size-3.5" />
-            <span>{pct}% ({ar ? '< 80% منخفض' : '< 80% Low'})</span>
+            <span>{pct}% ({ar ? '< 90% منخفض' : '< 90% Low'})</span>
           </span>
         );
     }
@@ -613,7 +613,7 @@ export function AverageCoverageView({ initialRepId, currentUser }: AverageCovera
               </h2>
             </div>
             <span className="text-xs text-[var(--ink-soft)] font-semibold hidden sm:inline">
-              🟢 90-100% · 🟡 80-90% · 🔴 &lt; 80%
+              🟢 95-100% · 🟡 90-95% · 🔴 &lt; 90%
             </span>
           </div>
 

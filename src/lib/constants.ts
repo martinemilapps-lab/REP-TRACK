@@ -121,7 +121,7 @@ export const BUSINESS_PRODUCT_OPTIONS = [
 export const OUR_PRODUCTS_DISCUSSED_LIST = BUSINESS_PRODUCT_OPTIONS.map((product) => product.canonicalName);
 export const SUNNY_PRODUCTS_LIST = PRODUCTS_LIST;
 
-export const HOSPITAL_DEPARTMENTS = ['ICU','CCU','Cardio','Anaesthesia','IM','Pedia','Onco','Neuro','Neuro ICU','Gyna','Cardiosurgery','Emergency','Nephro'] as const;
+export const HOSPITAL_DEPARTMENTS = ['ICU','CCU','Cardio','Anaesthesia','IM','Pedia','Onco','Neuro','Neuro ICU','Gyna','Cardiosurgery','Emergency','Nephro','Pharmacist','Purchasing'] as const;
 export const PHARMACY_DISTRIBUTORS = ['PHARMAOVERSEAS','ETO','DIRECT','OTHERS'] as const;
 
 export const HOSPITAL_TYPES = [

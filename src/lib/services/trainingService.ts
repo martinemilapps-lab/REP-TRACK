@@ -22,8 +22,7 @@ export async function createTrainingRecord(
 ) {
   assertAuthenticatedSession(session);
   const input = TrainingSchema.parse(rawInput);
-  assertReportSubmissionOpen(input.trainingDate);
-  const repId = resolveWritableRepId(session);
+    const repId = resolveWritableRepId(session);
 
   const [record] = await db
     .insert(trainings)

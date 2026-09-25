@@ -140,14 +140,14 @@ export interface AverageCoverageReport {
 }
 
 /**
- * 1- Coverage Color rule:
- * Green: 90% - 100%
- * Yellow: 80% - 89.9%
- * Red: Less than 80%
+ * 1- Coverage Color rule (Edit 6):
+ * Green: 95% - 100%
+ * Yellow: 90% - 94.9% (95% - 90%)
+ * Red: Less than 90%
  */
 export function getCoverageColor(percentage: number): CoverageColor {
-  if (percentage >= 90) return 'GREEN';
-  if (percentage >= 80) return 'YELLOW';
+  if (percentage >= 95) return 'GREEN';
+  if (percentage >= 90) return 'YELLOW';
   return 'RED';
 }
 

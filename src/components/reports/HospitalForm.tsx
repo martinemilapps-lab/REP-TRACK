@@ -29,6 +29,7 @@ type Visit = {
   companion: string;
   hasOthers: boolean;
   othersDescription: string;
+  notes: string;
   customFieldValues?: Record<string, any>;
 };
 
@@ -43,6 +44,7 @@ const makeVisit = (): Visit => ({
   companion: '',
   hasOthers: false,
   othersDescription: '',
+  notes: '',
   customFieldValues: {},
 });
 
@@ -123,6 +125,7 @@ export function HospitalForm({
           reportDate,
           visits: visits.map((v) => ({
             ...v,
+            notes: v.notes ? v.notes.trim() : '',
             hasOthers: v.hasOthers,
             othersDescription: v.hasOthers ? v.othersDescription.trim() : '',
             departments: v.departments.map((d) => ({
@@ -270,7 +273,9 @@ export function HospitalForm({
                   >
                     <option value="">{l('Select department…', 'اختر القسم…')}</option>
                     {HOSPITAL_DEPARTMENTS.map((x) => (
-                      <option key={x}>{x}</option>
+                      <option key={x} value={x}>
+                        {x === 'Pharmacist' ? (ar ? 'صيدلي (Pharmacist)' : 'Pharmacist') : x === 'Purchasing' ? (ar ? 'مشتريات (Purchasing)' : 'Purchasing') : x}
+                      </option>
                     ))}
                   </select>
                   {visit.departments.length > 1 && (
@@ -290,52 +295,62 @@ export function HospitalForm({
                   )}
                 </div>
                 <div className="mt-3 space-y-2">
-                  {department.doctors.map((doctor, dri) => (
-                    <div key={doctor.key} className="flex gap-2">
-                      <div className="flex-1">
-                        <FormField
-                          required
-                          label={`${l('Doctor name', 'اسم الطبيب')} ${dri + 1}`}
-                          value={doctor.name}
-                          onChange={(name) =>
-                            change(vi, {
-                              ...visit,
-                              departments: visit.departments.map((d, n) =>
-                                n === di
-                                  ? {
-                                      ...d,
-                                      doctors: d.doctors.map((x, m) => (m === dri ? { ...x, name } : x)),
-                                    }
-                                  : d
-                              ),
-                            })
-                          }
-                        />
+                  {department.doctors.map((doctor, dri) => {
+                    const isPharmacist = department.department === 'Pharmacist';
+                    const isPurchasing = department.department === 'Purchasing';
+                    const staffLabel = isPharmacist
+                      ? `${l('Pharmacist name', 'اسم الصيدلي')} ${dri + 1}`
+                      : isPurchasing
+                      ? `${l('Purchasing name', 'اسم المشتريات')} ${dri + 1}`
+                      : `${l('Doctor name', 'اسم الطبيب')} ${dri + 1}`;
+
+                    return (
+                      <div key={doctor.key} className="flex gap-2">
+                        <div className="flex-1">
+                          <FormField
+                            required
+                            label={staffLabel}
+                            value={doctor.name}
+                            onChange={(name) =>
+                              change(vi, {
+                                ...visit,
+                                departments: visit.departments.map((d, n) =>
+                                  n === di
+                                    ? {
+                                        ...d,
+                                        doctors: d.doctors.map((x, m) => (m === dri ? { ...x, name } : x)),
+                                      }
+                                    : d
+                                ),
+                              })
+                            }
+                          />
+                        </div>
+                        {department.doctors.length > 1 && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="danger"
+                            onClick={() =>
+                              change(vi, {
+                                ...visit,
+                                departments: visit.departments.map((d, n) =>
+                                  n === di
+                                    ? {
+                                        ...d,
+                                        doctors: d.doctors.filter((x) => x.key !== doctor.key),
+                                      }
+                                    : d
+                                ),
+                              })
+                            }
+                          >
+                            {l('Remove', 'حذف')}
+                          </Button>
+                        )}
                       </div>
-                      {department.doctors.length > 1 && (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="danger"
-                          onClick={() =>
-                            change(vi, {
-                              ...visit,
-                              departments: visit.departments.map((d, n) =>
-                                n === di
-                                  ? {
-                                      ...d,
-                                      doctors: d.doctors.filter((x) => x.key !== doctor.key),
-                                    }
-                                  : d
-                              ),
-                            })
-                          }
-                        >
-                          {l('Remove', 'حذف')}
-                        </Button>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                   <Button
                     type="button"
                     size="sm"
@@ -349,11 +364,26 @@ export function HospitalForm({
                       })
                     }
                   >
-                    {l('Add Doctor', 'إضافة طبيب')}
+                    {department.department === 'Pharmacist'
+                      ? l('Add Pharmacist', 'إضافة صيدلي')
+                      : department.department === 'Purchasing'
+                      ? l('Add Purchasing', 'إضافة مشتريات')
+                      : l('Add Doctor', 'إضافة طبيب')}
                   </Button>
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Blank field called Notes for manual MR entry */}
+          <div className="mt-4">
+            <FormField
+              multiline
+              label={l('Notes', 'ملاحظات')}
+              placeholder={l('Write visit notes manually…', 'اكتب ملاحظات الزيارة يدوياً…')}
+              value={visit.notes || ''}
+              onChange={(notes) => change(vi, { ...visit, notes })}
+            />
           </div>
 
           {/* Area marked green: "Others" field with description */}

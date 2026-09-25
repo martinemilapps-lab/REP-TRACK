@@ -44,6 +44,7 @@ export const HospitalDailyReportSchema = z.object({
     departments: z.array(z.object({ department: z.enum(HOSPITAL_DEPARTMENTS), doctors: z.array(z.string().trim().min(1).max(120)).min(1) })).default([]),
     hasOthers: z.boolean().optional().default(false),
     othersDescription: z.string().trim().max(2000).optional().default(''),
+    notes: z.string().trim().max(4000).optional().default(''),
     ...VisitModeFields,
   })).min(1),
 }).superRefine((data,ctx)=>data.visits.forEach((visit,index)=>{if(new Set(visit.productIds).size!==visit.productIds.length)ctx.addIssue({code:'custom',path:['visits',index,'productIds'],message:'Duplicate products are not allowed'});if(new Set(visit.departments.map(x=>x.department)).size!==visit.departments.length)ctx.addIssue({code:'custom',path:['visits',index,'departments'],message:'Duplicate departments are not allowed'});if(visit.visitType==='Double'&&!visit.companion)ctx.addIssue({code:'custom',path:['visits',index,'companion'],message:'Companion is required for a Double visit'});if(visit.hasOthers&&!visit.othersDescription.trim())ctx.addIssue({code:'custom',path:['visits',index,'othersDescription'],message:'Others description is required when Others is selected'})}));
@@ -219,9 +220,9 @@ export const SpecialTaskSchema = z.object({
 });
 
 const rateValues = PRESCRIPTION_RATE_OPTIONS.map((option) => option.value) as [string, ...string[]];
-export const DoctorVisitV3Schema = z.object({ visitDate: z.string().date().optional(), doctorId:z.string().min(1), products:z.array(z.object({ productId:z.string().min(1), prescriptionRate:z.enum(rateValues) })).min(1), ...VisitModeFields }).refine(x=>x.visitType!=='Double'||Boolean(x.companion),{path:['companion'],message:'Companion is required for a Double visit'});
-export const PharmacyVisitV3Schema = z.object({ visitDate: z.string().date().optional(), pharmacyId:z.string().min(1), productIds:z.array(z.string().min(1)).min(1), notes:z.string().trim().max(4000).optional().default(''), ...VisitModeFields }).refine(x=>x.visitType!=='Double'||Boolean(x.companion),{path:['companion'],message:'Companion is required for a Double visit'});
-export const BranchVisitV3Schema = z.object({ visitDate: z.string().date().optional(), branchId:z.string().min(1), products:z.array(z.object({productId:z.string().min(1),observation:z.string().trim().max(2000)})).min(1), ...VisitModeFields }).refine(x=>x.visitType!=='Double'||Boolean(x.companion),{path:['companion'],message:'Companion is required for a Double visit'});
+export const DoctorVisitV3Schema = z.object({ visitDate: z.string().date().optional(), doctorId:z.string().min(1), products:z.array(z.object({ productId:z.string().min(1), prescriptionRate:z.enum(rateValues) })).min(1), notes:z.string().trim().max(4000).optional().default(''), ...VisitModeFields }).refine(x=>x.visitType!=='Double'||Boolean(x.companion),{path:['companion'],message:'Companion is required for a Double visit'});
+export const PharmacyVisitV3Schema = z.object({ visitDate: z.string().date().optional(), pharmacyId:z.string().min(1), productIds:z.array(z.string().min(1)).optional().default([]), notes:z.string().trim().max(4000).optional().default(''), ...VisitModeFields }).refine(x=>x.visitType!=='Double'||Boolean(x.companion),{path:['companion'],message:'Companion is required for a Double visit'});
+export const BranchVisitV3Schema = z.object({ visitDate: z.string().date().optional(), branchId:z.string().min(1), products:z.array(z.object({productId:z.string().min(1),observation:z.string().trim().max(2000)})).optional().default([]), notes:z.string().trim().max(4000).optional().default(''), ...VisitModeFields }).refine(x=>x.visitType!=='Double'||Boolean(x.companion),{path:['companion'],message:'Companion is required for a Double visit'});
 
 export const CalendarDateSchema = z.string().trim().date('تاريخ غير صالح (YYYY-MM-DD)');
 export const WeeklyPlanStatusSchema = z.enum(['Draft', 'Submitted', 'Approved']);
@@ -249,7 +250,6 @@ export const StructuredPlanCellSchema = z.object({
   if (cell.visitType === 'Double' && !cell.companion?.trim()) ctx.addIssue({ code: 'custom', path: ['companion'], message: 'Companion name is required for a Double visit' });
   if (cell.activities.includes('OTHERS') && !cell.othersDescription?.trim()) ctx.addIssue({ code: 'custom', path: ['othersDescription'], message: 'Others description is required' });
   if (cell.activities.includes('SALES_REVIEW_ADMIN') && !cell.salesReviewDescription?.trim()) ctx.addIssue({ code: 'custom', path: ['salesReviewDescription'], message: 'Sales Review / Admin Work description is required' });
-  if (cell.activities.includes('MEETING') && !cell.meetingDescription?.trim()) ctx.addIssue({ code: 'custom', path: ['meetingDescription'], message: 'Meeting description is required' });
   if (cell.activities.includes('TRAINING') && !cell.trainingDescription?.trim()) ctx.addIssue({ code: 'custom', path: ['trainingDescription'], message: 'Training description is required' });
   if (cell.activities.includes('EVENT') && !cell.eventDescription?.trim()) ctx.addIssue({ code: 'custom', path: ['eventDescription'], message: 'Event description is required' });
 });

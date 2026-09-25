@@ -43,8 +43,7 @@ export function EventForm({ selectedRep, onSuccess, onError }: EventFormProps) {
     notes: '',
   });
 
-  const isClosed = !isDateSubmissionOpen(formData.eventDate);
-
+  const isClosed = false;
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -54,15 +53,7 @@ export function EventForm({ selectedRep, onSuccess, onError }: EventFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isClosed) {
-      onError(
-        l(
-          'Submission window closed for this date. Reports must be submitted by maximum 9:00 AM the next day. The system cannot accept reporting after this time.',
-          'انتهت مهلة التقديم لهذا اليوم (الحد الأقصى 9:00 صباحاً في اليوم التالي). لا يقبل النظام تقارير بعد هذا الوقت.'
-        )
-      );
-      return;
-    }
+    
     if (!selectedRep) {
       onError(t('msg.requiredRep'));
       return;
@@ -171,22 +162,12 @@ export function EventForm({ selectedRep, onSuccess, onError }: EventFormProps) {
               type="date"
               id="eventDate"
               value={formData.eventDate}
-              min={windowStatus.minAllowedDate}
-              max={windowStatus.maxAllowedDate}
+              
+              
               onChange={handleChange}
               className="w-full px-3.5 py-2.5 rounded-[var(--radius-sm)] border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--gold)] transition-colors"
               required
             />
-            {isClosed && (
-              <div className="mt-1">
-                <InlineAlert tone="error">
-                  {l(
-                    'Submission window closed for this date. Reports are accepted maximum the next day at 9:00 AM. System cannot accept reporting after this time.',
-                    'انتهت مهلة التقديم لهذا التاريخ (الحد الأقصى 9:00 صباحاً في اليوم التالي). لا يقبل النظام تقارير بعد هذا الوقت.'
-                  )}
-                </InlineAlert>
-              </div>
-            )}
           </div>
 
           <div>

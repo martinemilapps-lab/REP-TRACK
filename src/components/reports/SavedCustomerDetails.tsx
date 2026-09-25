@@ -11,7 +11,7 @@ const LABELS: Record<string, [string, string]> = {
   address: ['Address', 'العنوان'], specialty: ['Specialty', 'التخصص'], clinicAddress: ['Clinic address', 'عنوان العيادة'], classification: ['Classification', 'التصنيف'],
   distributors: ['Distributor dealt with', 'الموزع المتعامل معه'], distributorOther: ['Other distributor', 'موزع آخر'], contact: ['Contact', 'جهة الاتصال'], phone: ['Phone', 'الهاتف'], distributedProducts: ['Distributed products', 'المنتجات الموزعة'],
 };
-const FIELDS = { hospital: ['hospitalTypes', 'area', 'address'], doctor: ['specialty', 'clinicAddress', 'area', 'address', 'classification'], pharmacy: ['area', 'address', 'distributors', 'distributorOther'], branch: ['coverageArea', 'address', 'contact', 'phone', 'distributedProducts'] } as const;
+const FIELDS = { hospital: ['hospitalTypes', 'area', 'address'], doctor: ['specialty', 'clinicAddress', 'area', 'address', 'classification'], pharmacy: ['area', 'address', 'distributors', 'distributorOther'], branch: ['coverageArea'] } as const;
 const show = (value: unknown) => {
   if (value === null || value === undefined || value === '') return '—';
   if (Array.isArray(value)) return value.join(', ');

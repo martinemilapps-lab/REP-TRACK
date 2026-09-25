@@ -1,9 +1,8 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { FormField } from '@/components/ui/FormField';
 import { InlineAlert } from '@/components/ui/InlineAlert';
-import { BUSINESS_PRODUCT_OPTIONS } from '@/lib/constants';
 import { useTranslation } from '@/lib/i18nContext';
 import { SavedCustomerDetails, VisitMode } from './SavedCustomerDetails';
 import { getReportingWindowStatus, isDateSubmissionOpen } from '@/lib/business/reportingWindow';
@@ -13,10 +12,6 @@ type Item = {
   id: string;
   name: string;
   coverageArea?: string;
-  address?: string;
-  contact?: string;
-  phone?: string;
-  distributedProducts?: string;
   defaultCycle?: number;
 };
 
@@ -36,9 +31,8 @@ export function BranchForm({
   const isClosed = !isDateSubmissionOpen(visitDate);
 
   const [branches, setBranches] = useState<Item[]>([]);
-  const [catalog, setCatalog] = useState<Item[]>([]);
   const [branchId, setBranchId] = useState('');
-  const [observations, setObservations] = useState<Record<string, string>>({});
+  const [notes, setNotes] = useState('');
   const [visitType, setVisitType] = useState<VisitMode>('Single');
   const [companion, setCompanion] = useState('');
   const [saving, setSaving] = useState(false);
@@ -46,25 +40,13 @@ export function BranchForm({
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/lists').then((r) => r.json()),
-      fetch('/api/products').then((r) => r.json()),
-    ]).then(([a, b]) => {
-      setBranches(a.data?.branches || []);
-      setCatalog(b.products || []);
-    });
+    fetch('/api/lists')
+      .then((r) => r.json())
+      .then((a) => {
+        setBranches(a.data?.branches || []);
+      })
+      .catch(() => {});
   }, []);
-
-  const products = useMemo(
-    () =>
-      BUSINESS_PRODUCT_OPTIONS.map((x) => ({
-        ...x,
-        product: catalog.find(
-          (p) => p.name.toLowerCase() === x.canonicalName.toLowerCase()
-        ),
-      })).filter((x) => x.product),
-    [catalog]
-  );
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -77,19 +59,11 @@ export function BranchForm({
       );
       return;
     }
-    const rows = Object.entries(observations).map(([productId, observation]) => ({
-      productId,
-      observation,
-    }));
-    if (
-      !branchId ||
-      !rows.length ||
-      (visitType === 'Double' && !companion.trim())
-    ) {
+    if (!branchId || (visitType === 'Double' && !companion.trim())) {
       setError(
         l(
-          'Select a branch and product, and enter a companion for a Double visit.',
-          'اختر الفرع والمنتج وأدخل المرافق للزيارة المشتركة.'
+          'Select a branch, and enter a companion for a Double visit.',
+          'اختر الفرع وأدخل المرافق للزيارة المشتركة.'
         )
       );
       return;
@@ -101,19 +75,22 @@ export function BranchForm({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           branchId,
-          products: rows,
+          products: [],
+          notes,
           visitType,
           companion,
           visitDate,
+          customFieldValues,
         }),
       });
       const x = await r.json();
       if (!r.ok || !x.success) throw new Error(x.message);
       onSuccess(l('Distribution Branch visit saved.', 'تم حفظ زيارة فرع التوزيع.'));
       setBranchId('');
-      setObservations({});
+      setNotes('');
       setVisitType('Single');
       setCompanion('');
+      setCustomFieldValues({});
       setError('');
     } catch (reason) {
       const message = reason instanceof Error ? reason.message : 'Unable to save';
@@ -182,50 +159,16 @@ export function BranchForm({
         values={customFieldValues}
         onChange={setCustomFieldValues}
       />
-      <fieldset>
-        <legend className="font-bold">
-          {l('Distributed Products', 'المنتجات الموزعة')}
-        </legend>
-        <div className="mt-3 space-y-3">
-          {products.map(({ label, product }) => (
-            <div
-              key={product!.id}
-              className="rounded-xl border border-[var(--line)] p-3"
-            >
-              <label className="flex gap-2">
-                <input
-                  type="checkbox"
-                  checked={observations[product!.id] !== undefined}
-                  onChange={(e) =>
-                    setObservations((current) => {
-                      const next = { ...current };
-                      if (e.target.checked) next[product!.id] = '';
-                      else delete next[product!.id];
-                      return next;
-                    })
-                  }
-                />
-                {label}
-              </label>
-              {observations[product!.id] !== undefined && (
-                <div className="mt-2">
-                  <FormField
-                    multiline
-                    label={l('Notes and Observations', 'الملاحظات لكل منتج')}
-                    value={observations[product!.id]}
-                    onChange={(observation) =>
-                      setObservations({
-                        ...observations,
-                        [product!.id]: observation,
-                      })
-                    }
-                  />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </fieldset>
+
+      {/* Blank field called Notes to make MR write in it manually for each visit */}
+      <FormField
+        multiline
+        label={l('Notes', 'ملاحظات')}
+        placeholder={l('Write visit notes manually…', 'اكتب ملاحظات الزيارة يدوياً…')}
+        value={notes}
+        onChange={setNotes}
+      />
+
       <Button type="submit" isLoading={saving} disabled={isClosed}>
         {isClosed
           ? l('Closed (Past 9:00 AM)', 'مغلق (بعد 9:00 ص)')
@@ -234,4 +177,3 @@ export function BranchForm({
     </form>
   );
 }
-

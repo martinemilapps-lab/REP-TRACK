@@ -22,7 +22,6 @@ export async function createEventRecord(
 ) {
   assertAuthenticatedSession(session);
   const input = EventSchema.parse(rawInput);
-  assertReportSubmissionOpen(input.eventDate);
   const repId = resolveWritableRepId(session);
 
   const [record] = await db

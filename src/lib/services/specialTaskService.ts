@@ -22,8 +22,7 @@ export async function createSpecialTaskRecord(
 ) {
   assertAuthenticatedSession(session);
   const input = SpecialTaskSchema.parse(rawInput);
-  assertReportSubmissionOpen(new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' }));
-  const repId = resolveWritableRepId(session);
+    const repId = resolveWritableRepId(session);
 
   const [record] = await db
     .insert(specialTasks)

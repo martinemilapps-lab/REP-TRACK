@@ -207,7 +207,7 @@ export function renderStructuredPlanCell(cell: Record<string, unknown>, ar: bool
                                 {actStr === 'SALES_REVIEW_ADMIN'
                                     ? l('Sales Review / Admin Work', 'مراجعة المبيعات / عمل إداري')
                                     : actStr === 'MEETING'
-                                    ? l('Meeting', 'اجتماع')
+                                    ? l('Weekly Meeting', 'اجتماع أسبوعي')
                                     : actStr === 'TRAINING'
                                     ? l('Training', 'تدريب')
                                     : actStr === 'EVENT'

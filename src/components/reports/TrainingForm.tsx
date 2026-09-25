@@ -22,22 +22,14 @@ export function TrainingForm({
   const windowStatus = getReportingWindowStatus();
   const [title, setTitle] = useState('');
   const [trainingDate, setTrainingDate] = useState(windowStatus.todayDate);
-  const isClosed = !isDateSubmissionOpen(trainingDate);
+  const isClosed = false;
   const [location, setLocation] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (isClosed) {
-      setError(
-        l(
-          'Submission window closed for this date. Reports must be submitted by maximum 9:00 AM the next day. The system cannot accept reporting after this time.',
-          'انتهت مهلة التقديم لهذا اليوم (الحد الأقصى 9:00 صباحاً في اليوم التالي). لا يقبل النظام تقارير بعد هذا الوقت.'
-        )
-      );
-      return;
-    }
+    
     setSaving(true);
     try {
       const r = await fetch('/api/reports/trainings', {
@@ -77,25 +69,17 @@ export function TrainingForm({
           type="date"
           className="input mt-1 w-full"
           value={trainingDate}
-          min={windowStatus.minAllowedDate}
-          max={windowStatus.maxAllowedDate}
+          
+          
           onChange={(e) => setTrainingDate(e.target.value)}
         />
       </label>
-      {isClosed && (
-        <InlineAlert tone="error">
-          {l(
-            'Submission window closed for this date. Reports are accepted maximum the next day at 9:00 AM. System cannot accept reporting after this time.',
-            'انتهت مهلة التقديم لهذا التاريخ (الحد الأقصى 9:00 صباحاً في اليوم التالي). لا يقبل النظام تقارير بعد هذا الوقت.'
-          )}
-        </InlineAlert>
-      )}
       <FormField
         label={l('Training Location', 'مكان التدريب')}
         value={location}
         onChange={setLocation}
       />
-      <Button type="submit" isLoading={saving} disabled={isClosed}>
+      <Button type="submit" isLoading={saving} disabled={false}>
         {isClosed
           ? l('Closed (Past 9:00 AM)', 'مغلق (بعد 9:00 ص)')
           : l('Submit', 'إرسال')}

@@ -216,15 +216,6 @@ export function WeeklyPlanView({
           onError?.(msg);
           return;
         }
-        if (c.activities.includes('MEETING') && !c.meetingDescription.trim()) {
-          const msg = l(
-            `Meeting description is required for ${periodLabel}`,
-            `وصف الاجتماع مطلوب لـ ${periodLabel}`
-          );
-          setError(msg);
-          onError?.(msg);
-          return;
-        }
         if (c.activities.includes('TRAINING') && !c.trainingDescription.trim()) {
           const msg = l(
             `Training description is required for ${periodLabel}`,
@@ -554,7 +545,7 @@ export function WeeklyPlanView({
                         {a === 'SALES_REVIEW_ADMIN'
                           ? l('Sales Review / Admin Work', 'مراجعة المبيعات / عمل إداري')
                           : a === 'MEETING'
-                          ? l('Meeting', 'اجتماع')
+                          ? l('Weekly Meeting', 'اجتماع أسبوعي')
                           : a === 'TRAINING'
                           ? l('Training', 'تدريب')
                           : a === 'EVENT'
@@ -566,17 +557,6 @@ export function WeeklyPlanView({
                 </fieldset>
 
                 {/* 4. Conditional Description Fields for Activities */}
-                {c.activities.includes('MEETING') && (
-                  <div className="animate-fade-in">
-                    <FormField
-                      label={l('Meeting description', 'وصف الاجتماع')}
-                      placeholder={l('Describe the meeting...', 'أدخل تفاصيل الاجتماع...')}
-                      value={c.meetingDescription}
-                      onChange={v => change(day, period, { meetingDescription: v })}
-                      required
-                    />
-                  </div>
-                )}
 
                 {c.activities.includes('TRAINING') && (
                   <div className="animate-fade-in">

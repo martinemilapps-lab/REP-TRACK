@@ -166,10 +166,6 @@ export function MyListsView({ reps, selectedRep, onSelectRep, onLogVisitForCusto
             setModalFormData({
                 name: '',
                 coverageArea: '',
-                address: '',
-                contact: '',
-                phone: '',
-                distributedProducts: '',
                 defaultCycle: 7,
             });
         }
@@ -312,7 +308,7 @@ export function MyListsView({ reps, selectedRep, onSelectRep, onLogVisitForCusto
         name: ['Name', 'الاسم'], area: ['Area', 'المنطقة'], address: ['Address', 'العنوان'], contact: ['Contact', 'جهة الاتصال'], phone: ['Phone', 'الهاتف'], classification: ['Classification', 'التصنيف'], specialty: ['Specialty', 'التخصص'], clinicAddress: ['Clinic address', 'عنوان العيادة'], distributorOther: ['Other distributor', 'موزع آخر'], coverageArea: ['Coverage area', 'منطقة التغطية'], distributedProducts: ['Distributed products', 'المنتجات الموزعة'], defaultCycle: ['Visit cycle (days)', 'دورة الزيارة (أيام)']
     };
     const keys: Record<ListCategory, string[]> = {
-        hospitals: ['name', 'area', 'address'], pharmacies: ['name', 'area', 'address'], doctors: ['name', 'area', 'address', 'specialty', 'clinicAddress', 'classification'], branches: ['name', 'coverageArea', 'address', 'contact', 'phone', 'distributedProducts']
+        hospitals: ['name', 'area', 'address'], pharmacies: ['name', 'area', 'address'], doctors: ['name', 'area', 'address', 'specialty', 'clinicAddress', 'classification'], branches: ['name', 'coverageArea']
     };
     const visible = filteredList.filter(item => areaFilters.length === 0 || areaFilters.includes((item as unknown as Record<string, string>).area || (item as unknown as Record<string, string>).coverageArea || ''));
     const actions = (item: typeof currentList[number]) => <div className="flex flex-wrap gap-2">
@@ -372,7 +368,7 @@ export function MyListsView({ reps, selectedRep, onSelectRep, onLogVisitForCusto
                 </>}</>}
  </>}
  <Drawer open={Boolean(detail)} title={String(detail?.name || l('Customer details', 'تفاصيل العميل'))} onClose={() => setDetail(null)}>
-    <dl className="grid gap-4 sm:grid-cols-2">{Object.entries(fields).map(([key, label]) => detail?.[key] !== undefined && detail?.[key] !== '' ? <div key={key}>
+    <dl className="grid gap-4 sm:grid-cols-2">{Object.entries(fields).filter(([key]) => activeCategory !== 'branches' || ['name', 'coverageArea', 'defaultCycle'].includes(key)).map(([key, label]) => detail?.[key] !== undefined && detail?.[key] !== '' ? <div key={key}>
         <dt className="text-xs text-[var(--ink-soft)]">{label[ar ? 1 : 0]}</dt>
         <dd className="break-words whitespace-pre-wrap">{String(detail[key])}</dd>
         </div> : null)}</dl>
